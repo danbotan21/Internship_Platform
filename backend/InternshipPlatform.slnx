@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="InternshipPlatform.API/InternshipPlatform.API.csproj" Id="2c37cd20-f597-4e91-ad73-aa000871632f" />
+  <Project Path="InternshipPlatform.BusinessLayer/InternshipPlatform.BusinessLayer.csproj" Id="e3473a22-a84f-4697-b65e-0c4008cacc2d" />
+  <Project Path="InternshipPlatform.DataAccess/InternshipPlatform.DataAccess.csproj" Id="0b186be1-1ae1-415c-a646-6cd70ba65c98" />
+  <Project Path="InternshipPlatform.Domain/InternshipPlatform.Domain.csproj" Id="5118b07c-c72e-4cd1-b14f-16680c75ca40" />
+</Solution>

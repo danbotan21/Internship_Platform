@@ -1,0 +1,57 @@
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+appsettings.Local.json
+appsettings.*.Local.json
+
+# Frontend: Node.js, Vite, TypeScript and tests
+node_modules/
+dist/
+dist-ssr/
+.vite/
+coverage/
+*.tsbuildinfo
+.eslintcache
+
+# Backend: .NET build and test output
+bin/
+obj/
+artifacts/
+TestResults/
+*.nupkg
+*.snupkg
+
+# Visual Studio user files and caches
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# VS Code and other editor-local state
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local database files and Docker-mounted database directories
+*.db
+*.sqlite
+*.sqlite3
+pgdata/
+postgres-data/
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+Desktop.ini
+
