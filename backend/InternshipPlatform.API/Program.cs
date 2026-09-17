@@ -1,5 +1,6 @@
 using InternshipPlatform.DataAccess.Context;
 using Microsoft.EntityFrameworkCore;
+using InternshipPlatform.DataAccess.Seed;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,5 +45,13 @@ app.UseCors("AllowAll");
 app.UseAuthorization();
 
 app.MapControllers();
+
+
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await SeedData.EnsureSeededAsync(context);
+}
 
 app.Run();
