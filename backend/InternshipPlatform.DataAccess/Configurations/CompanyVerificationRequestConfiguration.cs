@@ -14,7 +14,7 @@ public class CompanyVerificationRequestConfiguration
         builder.Property(r => r.LegalName).HasMaxLength(200);
         builder.Property(r => r.RegistrationNumber).HasMaxLength(100);
         builder.Property(r => r.Website).HasMaxLength(200);
-        builder.Property(r => r.HeadQuarters).HasMaxLength(200);
+        builder.Property(r => r.Headquarters).HasMaxLength(200);
         builder.Property(r => r.Industry).HasMaxLength(50);
         builder.Property(r => r.CompanySize).HasMaxLength(50);
 
@@ -29,6 +29,22 @@ public class CompanyVerificationRequestConfiguration
 
         builder.Property(r => r.RejectionReason).HasMaxLength(1000);
         
+        builder.HasOne(r => r.Requester)
+            .WithMany()
+            .HasForeignKey(r => r.RequesterUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(r => r.DecidedBy)
+            .WithMany()
+            .HasForeignKey(r => r.DecidedByUserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasOne(r => r.Company)
+            .WithOne()
+            .HasForeignKey<CompanyVerificationRequest>(r => r.CompanyId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+
         builder.HasIndex(r => r.Status);
     }
 }

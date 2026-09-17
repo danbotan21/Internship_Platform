@@ -9,6 +9,9 @@ public class AppDbContext : DbContext
         : base(options)
     {
     }
+    public DbSet<User> Users => Set<User>();
+    public DbSet<Company> Companies => Set<Company>();
+    public DbSet<CompanyMembership> CompanyMemberships => Set<CompanyMembership>();
 
     public DbSet<CompanyVerificationRequest> CompanyVerificationRequests
         => Set<CompanyVerificationRequest>();
