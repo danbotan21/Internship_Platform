@@ -12,11 +12,23 @@ public class UserActions
     //private readonly EmailLogic _emailLogic;
 
 
-    public UserActions()
+    public UserActions(AppDbContext context)
     {
-        _context = new AppDbContext();
-        //_tokenService = new TokenService();
-        //_emailLogic = new EmailLogic();
+        _context = context;
+    }
+
+    public UserEntity? GetUserByIdAction(int userId)
+    {
+        return _context.Users
+            .FirstOrDefault(x => x.Id == userId);
+    }
+
+    public Opportunity CreateOpportunityAction(Opportunity opportunity)
+    {
+        _context.Opportunities.Add(opportunity);
+        _context.SaveChanges();
+
+        return opportunity;
     }
 
     public List<UserDirectoryDto> GetUserListAction()

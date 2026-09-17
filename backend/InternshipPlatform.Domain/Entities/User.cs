@@ -27,6 +27,7 @@ public class UserEntity
     [EmailAddress(ErrorMessage = "Wrong email format.")]
     [MaxLength(100)]
     public string Email { get; set; }
+    public string Status { get; set; }
     public UserRole Role { get; set; }
     public string Password { get; set; }
     public string PasswordSalt { get; set; }
