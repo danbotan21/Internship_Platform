@@ -1,8 +1,3 @@
-<<<<<<< Updated upstream
-function App() {
-  return (
-    <h1 className='text-3xl font-bold text-blue-600'>Internship Platform</h1>
-=======
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Overview from './pages/Overview'
@@ -43,8 +38,8 @@ function App() {
         <Route path="/audit-log" element={<AuditLog />} />
       </Route>
     </Routes>
->>>>>>> Stashed changes
   )
 }
 
 export default App
+
