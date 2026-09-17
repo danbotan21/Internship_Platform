@@ -1,5 +1,6 @@
-﻿using static InternshipPlatform.Domain.Entities.User;
+﻿using InternshipPlatform.Domain.Entities.User;
 using InternshipPlatform.Domain.Models.User;
+using InternshipPlatform.DataAccess.Context;
 using InternshipPlatform.Domain.Entities;
 
 namespace InternshipPlatform.BusinessLayer.Structure;

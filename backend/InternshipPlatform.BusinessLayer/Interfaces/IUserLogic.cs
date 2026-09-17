@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using static InternshipPlatform.Domain.Entities.User;
+using InternshipPlatform.Domain.Entities.User;
 using InternshipPlatform.Domain.Models.User;
+using InternshipPlatform.Domain.Models.Service;
 
 namespace InternshipPlatform.BusinessLayer.Interfaces;
 
-public class IUserLogic
+public interface IUserLogic
 {
     ServiceResponse GetUserList();
 }

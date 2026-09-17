@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
-namespace InternshipPlatform.Domain.Entities;
+namespace InternshipPlatform.Domain.Entities.User;
 
 public enum UserRole
 {
@@ -13,7 +13,7 @@ public enum UserRole
     Admin
 }
 
-public class User
+public class UserEntity
 {
     [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
@@ -34,5 +34,7 @@ public class User
     public int? Age { get; set; }
     public string Organisation { get; set; }
     public DateTime? LastActive { get; set; }
+
+    public ICollection<Opportunity> CreatedOpportunities { get; set; }
 
 }
