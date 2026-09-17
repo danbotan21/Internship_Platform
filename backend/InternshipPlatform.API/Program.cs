@@ -1,3 +1,5 @@
+using InternshipPlatform.BusinessLayer.Core;
+using InternshipPlatform.BusinessLayer.Interfaces;
 using InternshipPlatform.DataAccess.Context;
 using Microsoft.EntityFrameworkCore;
 
@@ -24,6 +26,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+
+builder.Services.AddScoped<IUserLogic, UserLogic>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();

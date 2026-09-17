@@ -11,11 +11,11 @@ public class OpportunityActions
     private readonly AppDbContext _context;
 
 
-    public Opportunity CreateOpportunityAction(Opportunity opportunity)
-    {
-        _context.Opportunities.Add(opportunity);
-        _context.SaveChanges();
+    //public Opportunity CreateOpportunityAction(Opportunity opportunity)
+    //{
+    //    _context.Opportunities.Add(opportunity);
+    //    _context.SaveChanges();
 
-        return opportunity;
-    }
+    //    return opportunity;
+    //}
 }
