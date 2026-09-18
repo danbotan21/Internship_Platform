@@ -1,18 +1,16 @@
 using InternshipPlatform.BusinessLayer.Interfaces;
-using InternshipPlatform.Domain.Entities;
 using InternshipPlatform.Domain.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Net.Http.Headers;
 
 namespace InternshipPlatform.API.Controllers;
 
+// Student endpoints: drafts, evidence and submission.
 [ApiController]
 [Route("api/contributions")]
-public sealed class ContributionsController : ControllerBase
+public sealed class ContributionsController : ContributionControllerBase
 {
-    private static readonly Guid DefaultStudentId =
-        Guid.Parse("11111111-1111-1111-1111-111111111111");
-    private static readonly Guid DefaultMentorId =
-        Guid.Parse("22222222-2222-2222-2222-222222222222");
+    private const long MaximumUploadBytes = 6 * 1024 * 1024;
 
     private readonly IContributionAction _contributionAction;
 
@@ -22,42 +20,19 @@ public sealed class ContributionsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<IActionResult> GetMyContributions(
-        [FromQuery] string? search,
-        [FromQuery] ContributionStatus? status,
-        [FromQuery] ContributionCategory? category,
-        CancellationToken ct)
-    {
-        var result = await _contributionAction.GetStudentContributionsAsync(
-            GetActorId("X-Student-Id", DefaultStudentId),
-            search,
-            status,
-            category,
-            ct);
-        return Ok(result);
-    }
+    public async Task<IActionResult> GetMyContributions(CancellationToken ct) =>
+        ToActionResult(await _contributionAction.GetStudentContributionsAsync(CurrentUserId, ct));
 
     [HttpGet("{contributionId:guid}")]
-    public async Task<IActionResult> GetMyContribution(
-        Guid contributionId,
-        CancellationToken ct)
-    {
-        var result = await _contributionAction.GetStudentContributionAsync(
-            contributionId,
-            GetActorId("X-Student-Id", DefaultStudentId),
-            ct);
-        return ToActionResult(result);
-    }
+    public async Task<IActionResult> GetMyContribution(Guid contributionId, CancellationToken ct) =>
+        ToActionResult(await _contributionAction.GetStudentContributionAsync(contributionId, CurrentUserId, ct));
 
     [HttpPost]
     public async Task<IActionResult> CreateDraft(
         [FromBody] SaveContributionDraftRequest request,
         CancellationToken ct)
     {
-        var result = await _contributionAction.CreateDraftAsync(
-            request,
-            GetActorId("X-Student-Id", DefaultStudentId),
-            ct);
+        var result = await _contributionAction.CreateDraftAsync(request, CurrentUserId, ct);
         if (!result.IsSuccess)
         {
             return ToActionResult(result);
@@ -73,258 +48,90 @@ public sealed class ContributionsController : ControllerBase
     public async Task<IActionResult> SaveDraft(
         Guid contributionId,
         [FromBody] SaveContributionDraftRequest request,
-        CancellationToken ct)
-    {
-        var result = await _contributionAction.UpdateDraftAsync(
-            contributionId,
-            request,
-            GetActorId("X-Student-Id", DefaultStudentId),
-            ct);
-        return ToActionResult(result);
-    }
+        CancellationToken ct) =>
+        ToActionResult(await _contributionAction.UpdateDraftAsync(contributionId, request, CurrentUserId, ct));
 
-    [HttpPost("{contributionId:guid}/evidence/links")]
-    public async Task<IActionResult> AddLinkEvidence(
-        Guid contributionId,
-        [FromBody] AddContributionLinkRequest request,
-        CancellationToken ct)
+    [HttpDelete("{contributionId:guid}")]
+    public async Task<IActionResult> DeleteDraft(Guid contributionId, CancellationToken ct)
     {
-        var result = await _contributionAction.AddLinkEvidenceAsync(
-            contributionId,
-            request,
-            GetActorId("X-Student-Id", DefaultStudentId),
-            ct);
-        return ToActionResult(result);
-    }
-
-    [HttpPost("{contributionId:guid}/evidence/files")]
-    [RequestSizeLimit(2 * 1024 * 1024)]
-    public async Task<IActionResult> AddFileEvidence(
-        Guid contributionId,
-        [FromForm] IFormFile file,
-        [FromForm] string? name,
-        CancellationToken ct)
-    {
-        await using var content = file.OpenReadStream();
-        var result = await _contributionAction.AddFileEvidenceAsync(
-            contributionId,
-            GetActorId("X-Student-Id", DefaultStudentId),
-            name ?? file.FileName,
-            file.FileName,
-            file.ContentType,
-            file.Length,
-            content,
-            ct);
-        return ToActionResult(result);
-    }
-
-    [HttpDelete("{contributionId:guid}/evidence/{evidenceId:guid}")]
-    public async Task<IActionResult> RemoveEvidence(
-        Guid contributionId,
-        Guid evidenceId,
-        CancellationToken ct)
-    {
-        var result = await _contributionAction.RemoveEvidenceAsync(
-            contributionId,
-            evidenceId,
-            GetActorId("X-Student-Id", DefaultStudentId),
-            ct);
-        return ToActionResult(result);
+        var result = await _contributionAction.DeleteDraftAsync(contributionId, CurrentUserId, ct);
+        return result.IsSuccess ? NoContent() : ToActionResult(result);
     }
 
     [HttpPost("{contributionId:guid}/submit")]
     public async Task<IActionResult> Submit(
         Guid contributionId,
         [FromBody] SubmitContributionRequest request,
-        CancellationToken ct)
-    {
-        var result = await _contributionAction.SubmitAsync(
-            contributionId,
-            request,
-            GetActorId("X-Student-Id", DefaultStudentId),
-            ct);
-        return ToActionResult(result);
-    }
+        CancellationToken ct) =>
+        ToActionResult(await _contributionAction.SubmitAsync(contributionId, request, CurrentUserId, ct));
 
-    [HttpGet("mentor/queue")]
-    public async Task<IActionResult> GetReviewQueue(
-        [FromQuery] string? search,
-        [FromQuery] ContributionCategory? category,
-        CancellationToken ct)
-    {
-        var result = await _contributionAction.GetReviewQueueAsync(
-            search,
-            category,
-            ct);
-        return Ok(result);
-    }
-
-    [HttpGet("mentor/{contributionId:guid}")]
-    public async Task<IActionResult> GetForMentor(
+    [HttpPost("{contributionId:guid}/evidence/links")]
+    public async Task<IActionResult> AddLinkEvidence(
         Guid contributionId,
+        [FromBody] AddContributionLinkRequest request,
+        CancellationToken ct) =>
+        ToActionResult(await _contributionAction.AddLinkEvidenceAsync(contributionId, request, CurrentUserId, ct));
+
+    [HttpPost("{contributionId:guid}/evidence/github")]
+    public async Task<IActionResult> AddGitHubEvidence(
+        Guid contributionId,
+        [FromBody] AddGitHubEvidenceRequest request,
+        CancellationToken ct) =>
+        ToActionResult(await _contributionAction.AddGitHubEvidenceAsync(contributionId, request, CurrentUserId, ct));
+
+    [HttpPost("{contributionId:guid}/evidence/files")]
+    [RequestSizeLimit(MaximumUploadBytes)]
+    [RequestFormLimits(MultipartBodyLengthLimit = MaximumUploadBytes)]
+    public async Task<IActionResult> AddFileEvidence(
+        Guid contributionId,
+        [FromForm] IFormFile file,
+        [FromForm] string? caption,
         CancellationToken ct)
     {
-        var result = await _contributionAction.GetMentorContributionAsync(
+        await using var content = file.OpenReadStream();
+        return ToActionResult(await _contributionAction.AddFileEvidenceAsync(
             contributionId,
-            ct);
-        return ToActionResult(result);
+            CurrentUserId,
+            caption ?? string.Empty,
+            file.FileName,
+            file.Length,
+            content,
+            ct));
     }
 
-    [HttpPost("mentor/{contributionId:guid}/request-changes")]
-    public async Task<IActionResult> RequestChanges(
+    [HttpDelete("{contributionId:guid}/evidence/{evidenceId:guid}")]
+    public async Task<IActionResult> RemoveEvidence(
         Guid contributionId,
-        [FromBody] RequestContributionChangesRequest request,
-        CancellationToken ct)
-    {
-        var result = await _contributionAction.RequestChangesAsync(
-            contributionId,
-            request,
-            GetActorId("X-Mentor-Id", DefaultMentorId),
-            ct);
-        return ToActionResult(result);
-    }
+        Guid evidenceId,
+        CancellationToken ct) =>
+        ToActionResult(await _contributionAction.RemoveEvidenceAsync(contributionId, evidenceId, CurrentUserId, ct));
 
-    [HttpPost("mentor/{contributionId:guid}/validate")]
-    public async Task<IActionResult> Validate(
-        Guid contributionId,
-        [FromBody] ValidateContributionRequest request,
-        CancellationToken ct)
+    // Author, collaborators and the student's mentor can open uploaded files.
+    [HttpGet("evidence/{evidenceId:guid}/file")]
+    public async Task<IActionResult> DownloadEvidenceFile(Guid evidenceId, CancellationToken ct)
     {
-        var result = await _contributionAction.ValidateAsync(
-            contributionId,
-            request,
-            GetActorId("X-Mentor-Id", DefaultMentorId),
-            ct);
-        return ToActionResult(result);
-    }
-
-    [HttpPost("mentor/{contributionId:guid}/reject")]
-    public async Task<IActionResult> Reject(
-        Guid contributionId,
-        [FromBody] RejectContributionRequest request,
-        CancellationToken ct)
-    {
-        var result = await _contributionAction.RejectAsync(
-            contributionId,
-            request,
-            GetActorId("X-Mentor-Id", DefaultMentorId),
-            ct);
-        return ToActionResult(result);
-    }
-
-    [HttpPost("{contributionId:guid}/collaborators")]
-    public async Task<IActionResult> AddCollaborator(
-        Guid contributionId,
-        [FromBody] AddContributionCollaboratorRequest request,
-        CancellationToken ct)
-    {
-        var result = await _contributionAction.AddCollaboratorAsync(
-            contributionId,
-            request,
-            GetActorId("X-Student-Id", DefaultStudentId),
-            ct);
-        return ToActionResult(result);
-    }
-
-    [HttpPut("{contributionId:guid}/collaborators/{collaboratorId:guid}")]
-    public async Task<IActionResult> UpdateCollaboratorRole(
-        Guid contributionId,
-        Guid collaboratorId,
-        [FromBody] UpdateContributionCollaboratorRoleRequest request,
-        CancellationToken ct)
-    {
-        var result = await _contributionAction.UpdateCollaboratorRoleAsync(
-            contributionId,
-            collaboratorId,
-            request,
-            GetActorId("X-Student-Id", DefaultStudentId),
-            ct);
-        return ToActionResult(result);
-    }
-
-    [HttpPost("{contributionId:guid}/collaborators/{collaboratorId:guid}/confirm")]
-    public async Task<IActionResult> ConfirmParticipation(
-        Guid contributionId,
-        Guid collaboratorId,
-        CancellationToken ct)
-    {
-        var actorId = GetActorId("X-Collaborator-Id", Guid.Empty);
-        if (actorId != collaboratorId)
+        var result = await _contributionAction.OpenEvidenceFileAsync(evidenceId, CurrentUserId, ct);
+        if (!result.IsSuccess)
         {
-            return StatusCode(
-                StatusCodes.Status403Forbidden,
-                new { message = "The collaborator identity does not match the attribution being confirmed." });
+            return ToActionResult(result);
         }
 
-        var result = await _contributionAction.ConfirmParticipationAsync(
-            contributionId,
-            collaboratorId,
-            ct);
-        return ToActionResult(result);
-    }
-
-    [HttpPost("{contributionId:guid}/collaborators/{collaboratorId:guid}/dispute")]
-    public async Task<IActionResult> DisputeParticipation(
-        Guid contributionId,
-        Guid collaboratorId,
-        [FromBody] DisputeContributionParticipationRequest request,
-        CancellationToken ct)
-    {
-        var actorId = GetActorId("X-Collaborator-Id", Guid.Empty);
-        if (actorId != collaboratorId)
+        var file = result.Data!;
+        Response.Headers[HeaderNames.XContentTypeOptions] = "nosniff";
+        Response.Headers[HeaderNames.ContentDisposition] = new ContentDispositionHeaderValue("inline")
         {
-            return StatusCode(
-                StatusCodes.Status403Forbidden,
-                new { message = "The collaborator identity does not match the attribution being disputed." });
-        }
-
-        var result = await _contributionAction.DisputeParticipationAsync(
-            contributionId,
-            collaboratorId,
-            request,
-            ct);
-        return ToActionResult(result);
+            FileNameStar = file.FileName
+        }.ToString();
+        return File(file.Content, file.ContentType);
     }
 
-    [HttpPost("{contributionId:guid}/collaborators/{collaboratorId:guid}/resolve")]
-    public async Task<IActionResult> ResolveAttribution(
-        Guid contributionId,
-        Guid collaboratorId,
-        [FromBody] ResolveContributionAttributionRequest request,
-        CancellationToken ct)
-    {
-        var result = await _contributionAction.ResolveAttributionAsync(
-            contributionId,
-            collaboratorId,
-            request,
-            GetActorId("X-Student-Id", DefaultStudentId),
-            ct);
-        return ToActionResult(result);
-    }
+    // Current GitHub state (CI, pull request) of the evidence snapshots.
+    [HttpGet("{contributionId:guid}/github-status")]
+    public async Task<IActionResult> GetGitHubStatus(Guid contributionId, CancellationToken ct) =>
+        ToActionResult(await _contributionAction.GetLiveGitHubStatusAsync(contributionId, CurrentUserId, ct));
 
-    private Guid GetActorId(string headerName, Guid fallback)
-    {
-        var value = Request.Headers[headerName].FirstOrDefault();
-        return Guid.TryParse(value, out var actorId) && actorId != Guid.Empty
-            ? actorId
-            : fallback;
-    }
-
-    private IActionResult ToActionResult(ServiceResult<ContributionDetailsDto> result)
-    {
-        if (result.IsSuccess)
-        {
-            return Ok(result.Data);
-        }
-
-        var body = new { message = result.Error };
-        return result.ErrorType switch
-        {
-            ServiceErrorType.Validation => BadRequest(body),
-            ServiceErrorType.NotFound => NotFound(body),
-            ServiceErrorType.Forbidden => StatusCode(StatusCodes.Status403Forbidden, body),
-            ServiceErrorType.Conflict => Conflict(body),
-            _ => StatusCode(StatusCodes.Status500InternalServerError, body)
-        };
-    }
+    // Students of the same mentor who can be added as collaborators.
+    [HttpGet("team-members")]
+    public async Task<IActionResult> GetTeamMembers(CancellationToken ct) =>
+        ToActionResult(await _contributionAction.GetTeamMembersAsync(CurrentUserId, ct));
 }

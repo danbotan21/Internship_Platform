@@ -36,6 +36,13 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 builder.Services.AddScoped<IContributionAction, ContributionActionExecution>();
 builder.Services.AddScoped<IContributionFileStorageAction, LocalContributionFileStorage>();
 
+// TEMPORARY: replaced by the Authentication / internship Epics' user directory.
+builder.Services.AddSingleton<IInternshipDirectoryAction, DemoInternshipDirectory>();
+
+builder.Services.AddMemoryCache();
+builder.Services.Configure<GitHubOptions>(builder.Configuration.GetSection("GitHub"));
+builder.Services.AddHttpClient<IGitHubAction, GitHubApiClient>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
