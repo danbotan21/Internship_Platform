@@ -19,4 +19,7 @@ public class Contribution
 
     public ICollection<ContributionRevision> Revisions { get; set; } =
         new List<ContributionRevision>();
+
+    public ICollection<ContributionCollaborator> Collaborators { get; set; } =
+        new List<ContributionCollaborator>();
 }

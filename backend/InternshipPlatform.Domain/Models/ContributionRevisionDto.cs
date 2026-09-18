@@ -31,4 +31,7 @@ public sealed class ContributionRevisionDto
 
     public IReadOnlyCollection<ContributionReviewDto> Reviews { get; set; } =
         Array.Empty<ContributionReviewDto>();
+
+    public IReadOnlyCollection<ContributionDecisionDto> Decisions { get; set; } =
+        Array.Empty<ContributionDecisionDto>();
 }

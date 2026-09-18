@@ -26,18 +26,30 @@ export function RevisionHistory({ item }: { item: Contribution }) {
         {events.map((event) => (
           <li
             key={event.id}
-            className='relative text-[11px] before:absolute before:-left-[21px] before:top-1 before:size-2.5 before:rounded-full before:bg-[#2b6a50]'
+            className={`relative text-[11px] before:absolute before:-left-[21px] before:top-1 before:size-2.5 before:rounded-full ${
+              event.kind === 'rejected'
+                ? 'before:bg-[#a1332b]'
+                : event.kind === 'validated'
+                  ? 'before:bg-[#184b38]'
+                  : 'before:bg-[#2b6a50]'
+            }`}
           >
             <strong
               className={
-                event.kind === 'changes-requested'
+                event.kind === 'changes-requested' || event.kind === 'rejected'
                   ? 'text-[#a1332b]'
-                  : 'text-[#14211b]'
+                  : event.kind === 'validated'
+                    ? 'text-[#184b38]'
+                    : 'text-[#14211b]'
               }
             >
               {event.kind === 'changes-requested'
                 ? 'Changes requested'
-                : `v${event.revision} ${event.kind === 'resubmitted' ? 'resubmitted' : 'submitted'}`}
+                : event.kind === 'validated'
+                  ? 'Validated'
+                  : event.kind === 'rejected'
+                    ? 'Rejected'
+                    : `v${event.revision} ${event.kind === 'resubmitted' ? 'resubmitted' : 'submitted'}`}
             </strong>
             <p className='mt-1 text-[#6f7c76]'>
               {new Date(event.at).toLocaleString('en-GB', {

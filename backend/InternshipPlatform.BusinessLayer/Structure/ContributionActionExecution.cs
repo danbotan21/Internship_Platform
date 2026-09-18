@@ -99,4 +99,64 @@ public sealed class ContributionActionExecution : ContributionActions, IContribu
         Guid mentorId,
         CancellationToken ct = default) =>
         RequestChangesExecution(contributionId, request, mentorId, ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> ValidateAsync(
+        Guid contributionId,
+        ValidateContributionRequest request,
+        Guid mentorId,
+        CancellationToken ct = default) =>
+        ValidateExecution(contributionId, request, mentorId, ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> RejectAsync(
+        Guid contributionId,
+        RejectContributionRequest request,
+        Guid mentorId,
+        CancellationToken ct = default) =>
+        RejectExecution(contributionId, request, mentorId, ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> AddCollaboratorAsync(
+        Guid contributionId,
+        AddContributionCollaboratorRequest request,
+        Guid studentId,
+        CancellationToken ct = default) =>
+        AddCollaboratorExecution(contributionId, request, studentId, ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> UpdateCollaboratorRoleAsync(
+        Guid contributionId,
+        Guid collaboratorId,
+        UpdateContributionCollaboratorRoleRequest request,
+        Guid studentId,
+        CancellationToken ct = default) =>
+        UpdateCollaboratorRoleExecution(
+            contributionId,
+            collaboratorId,
+            request,
+            studentId,
+            ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> ConfirmParticipationAsync(
+        Guid contributionId,
+        Guid collaboratorId,
+        CancellationToken ct = default) =>
+        ConfirmParticipationExecution(contributionId, collaboratorId, ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> DisputeParticipationAsync(
+        Guid contributionId,
+        Guid collaboratorId,
+        DisputeContributionParticipationRequest request,
+        CancellationToken ct = default) =>
+        DisputeParticipationExecution(contributionId, collaboratorId, request, ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> ResolveAttributionAsync(
+        Guid contributionId,
+        Guid collaboratorId,
+        ResolveContributionAttributionRequest request,
+        Guid studentId,
+        CancellationToken ct = default) =>
+        ResolveAttributionExecution(
+            contributionId,
+            collaboratorId,
+            request,
+            studentId,
+            ct);
 }

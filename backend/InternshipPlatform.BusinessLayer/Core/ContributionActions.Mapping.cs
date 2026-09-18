@@ -30,6 +30,10 @@ public partial class ContributionActions
             .SelectMany(revision => revision.Reviews)
             .OrderByDescending(review => review.ChangesRequestedAtUtc)
             .FirstOrDefault();
+        var latestDecision = contribution.Revisions
+            .SelectMany(revision => revision.Decisions)
+            .OrderByDescending(decision => decision.DecidedAtUtc)
+            .FirstOrDefault();
 
         var history = contribution.Revisions
             .SelectMany(revision =>
@@ -58,6 +62,18 @@ public partial class ContributionActions
                         OccurredAtUtc = review.ChangesRequestedAtUtc,
                         Note = review.Feedback
                     }));
+
+                events.AddRange(revision.Decisions.Select(decision =>
+                    new ContributionHistoryEventDto
+                    {
+                        Id = decision.Id,
+                        Type = decision.Decision == ContributionDecisionType.Validated
+                            ? ContributionHistoryEventType.Validated
+                            : ContributionHistoryEventType.Rejected,
+                        RevisionNumber = revision.RevisionNumber,
+                        OccurredAtUtc = decision.DecidedAtUtc,
+                        Note = decision.Note ?? decision.Reason
+                    }));
                 return events;
             })
             .OrderBy(item => item.OccurredAtUtc)
@@ -73,7 +89,12 @@ public partial class ContributionActions
             UpdatedAtUtc = contribution.UpdatedAtUtc,
             SubmittedAtUtc = contribution.SubmittedAtUtc,
             CurrentRevision = MapRevision(current),
+            Collaborators = contribution.Collaborators
+                .OrderBy(item => item.AddedAtUtc)
+                .Select(MapCollaborator)
+                .ToList(),
             LatestReview = latestReview is null ? null : MapReview(latestReview),
+            LatestDecision = latestDecision is null ? null : MapDecision(latestDecision),
             History = history
         };
     }
@@ -99,6 +120,10 @@ public partial class ContributionActions
             Reviews = revision.Reviews
                 .OrderBy(item => item.ChangesRequestedAtUtc)
                 .Select(MapReview)
+                .ToList(),
+            Decisions = revision.Decisions
+                .OrderBy(item => item.DecidedAtUtc)
+                .Select(MapDecision)
                 .ToList()
         };
 
@@ -121,5 +146,31 @@ public partial class ContributionActions
             MentorId = review.MentorId,
             Feedback = review.Feedback,
             ChangesRequestedAtUtc = review.ChangesRequestedAtUtc
+        };
+
+    private static ContributionDecisionDto MapDecision(ContributionDecision decision) =>
+        new()
+        {
+            Id = decision.Id,
+            MentorId = decision.MentorId,
+            Decision = decision.Decision,
+            Reason = decision.Reason,
+            Note = decision.Note,
+            DecidedAtUtc = decision.DecidedAtUtc
+        };
+
+    private static ContributionCollaboratorDto MapCollaborator(
+        ContributionCollaborator collaborator) =>
+        new()
+        {
+            Id = collaborator.Id,
+            Name = collaborator.Name,
+            Email = collaborator.Email,
+            Role = collaborator.Role,
+            Status = collaborator.Status,
+            DisputeReason = collaborator.DisputeReason,
+            ResolutionNote = collaborator.ResolutionNote,
+            AddedAtUtc = collaborator.AddedAtUtc,
+            UpdatedAtUtc = collaborator.UpdatedAtUtc
         };
 }

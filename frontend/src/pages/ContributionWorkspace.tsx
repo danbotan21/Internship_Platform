@@ -10,17 +10,12 @@ import {
 } from '../components/ContributionUi'
 import { RevisionHistory } from '../components/RevisionHistory'
 import ContributionRevisionPage from './ContributionRevisionPage'
-import type { Category, Contribution, Role } from '../types/contribution'
-
-const overviewIcon = '/icons/sidebar/overview.svg'
-const tasksIcon = '/icons/sidebar/tasks.svg'
-const attendanceIcon = '/icons/sidebar/attendance.svg'
-const reportsIcon = '/icons/sidebar/reports.svg'
-const contributionsIcon = '/icons/sidebar/contributions.svg'
-const evaluationIcon = '/icons/sidebar/evaluation.svg'
-const messagesIcon = '/icons/sidebar/messages.svg'
-const calendarIcon = '/icons/sidebar/calendar.svg'
-const resourcesIcon = '/icons/sidebar/resources.svg'
+import { useWorkspaceRole } from '../components/WorkspaceRoleContext'
+import ContributionAttributionPanel from '../components/ContributionAttributionPanel'
+import type { Category, Contribution } from '../types/contribution'
+import ContributionDecisionDialog, {
+  type ContributionDecisionKind,
+} from '../components/ContributionDecisionDialog'
 
 type Screen =
   | 'list'
@@ -31,48 +26,14 @@ type Screen =
   | 'student-detail'
   | 'queue'
   | 'mentor-detail'
-type NavItem = { label: string; icon: string; available?: boolean }
-const studentNav: { title: string; items: NavItem[] }[] = [
-  {
-    title: 'WORK',
-    items: [
-      { label: 'Overview', icon: overviewIcon },
-      { label: 'Tasks', icon: tasksIcon },
-      { label: 'Attendance', icon: attendanceIcon },
-      { label: 'Reports', icon: reportsIcon },
-      { label: 'Contributions', icon: contributionsIcon, available: true },
-      { label: 'Evaluations', icon: evaluationIcon },
-    ],
-  },
-  {
-    title: 'CONNECT',
-    items: [
-      { label: 'Messages', icon: messagesIcon },
-      { label: 'Calendar', icon: calendarIcon },
-      { label: 'Resources', icon: resourcesIcon },
-    ],
-  },
-]
-const mentorNav: { title: string; items: NavItem[] }[] = [
-  {
-    title: 'WORK',
-    items: [
-      { label: 'Overview', icon: overviewIcon },
-      { label: 'Interns', icon: attendanceIcon },
-      { label: 'Review queue', icon: contributionsIcon, available: true },
-      { label: 'Reports', icon: reportsIcon },
-      { label: 'Evaluations', icon: evaluationIcon },
-    ],
-  },
-  {
-    title: 'CONNECT',
-    items: [
-      { label: 'Messages', icon: messagesIcon },
-      { label: 'Calendar', icon: calendarIcon },
-      { label: 'Resources', icon: resourcesIcon },
-    ],
-  },
-]
+
+const rejectionReasons = [
+  'Evidence cannot be verified',
+  'Work is outside the internship scope',
+  'Contribution is duplicated',
+  'Attribution cannot be verified',
+  'Other',
+] as const
 const card = 'rounded-[10px] border border-[#d9e0dc] bg-white'
 const field =
   'mt-2 w-full rounded-lg border border-[#d9e0dc] bg-white px-3 py-3 text-[13px] text-[#14211b] outline-none focus:border-[#2b6a50] focus:ring-2 focus:ring-[#2b6a50]/15'
@@ -121,6 +82,10 @@ function issuesFor(item: Contribution) {
   return issues
 }
 
+function hasDisputedAttribution(item: Contribution) {
+  return item.collaborators.some((collaborator) => collaborator.status === 'Disputed')
+}
+
 function errorMessage(error: unknown) {
   return error instanceof Error
     ? error.message
@@ -128,9 +93,11 @@ function errorMessage(error: unknown) {
 }
 
 export default function ContributionWorkspace() {
+  const { role } = useWorkspaceRole()
   const [items, setItems] = useState<Contribution[]>([])
-  const [role, setRole] = useState<Role>('student')
-  const [screen, setScreen] = useState<Screen>('list')
+  const [screen, setScreen] = useState<Screen>(() =>
+    role === 'student' ? 'list' : 'queue',
+  )
   const [working, setWorking] = useState<Contribution | null>(null)
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [search, setSearch] = useState('')
@@ -142,6 +109,13 @@ export default function ContributionWorkspace() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [mentorFeedback, setMentorFeedback] = useState('')
+  const [decisionKind, setDecisionKind] =
+    useState<ContributionDecisionKind | null>(null)
+  const [validationNote, setValidationNote] = useState('')
+  const [rejectionReason, setRejectionReason] = useState<string>(
+    rejectionReasons[0],
+  )
+  const [rejectionExplanation, setRejectionExplanation] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
   const selected = items.find((item) => item.id === selectedId)
   const go = (next: Screen) => {
@@ -152,6 +126,14 @@ export default function ContributionWorkspace() {
   const update = (changes: Partial<Contribution>) =>
     setWorking((current) => (current ? { ...current, ...changes } : current))
 
+  const closeDecisionDialog = () => {
+    if (busy) return
+    setDecisionKind(null)
+    setValidationNote('')
+    setRejectionReason(rejectionReasons[0])
+    setRejectionExplanation('')
+  }
+
   useEffect(() => {
     let active = true
     const request =
@@ -160,7 +142,9 @@ export default function ContributionWorkspace() {
         : contributionApi.listMentor()
     request
       .then((data) => {
-        if (active) setItems(data)
+        if (active) {
+          setItems(data)
+        }
       })
       .catch((error: unknown) => {
         if (active) setMessage(errorMessage(error))
@@ -197,7 +181,16 @@ export default function ContributionWorkspace() {
       ? await run(() => contributionApi.getStudent(item.id))
       : makeContribution()
     if (!editable) return
-    setWorking({ ...editable, evidence: [...editable.evidence] })
+    if (!['Draft', 'Changes requested'].includes(editable.status)) {
+      replaceItem(editable)
+      go('student-detail')
+      return
+    }
+    setWorking({
+      ...editable,
+      evidence: [...editable.evidence],
+      collaborators: [...editable.collaborators],
+    })
     setLinkName('')
     setLinkUrl('')
     go(editable.status === 'Changes requested' ? 'revision' : 'details')
@@ -298,6 +291,125 @@ export default function ContributionWorkspace() {
     setMentorFeedback('')
     go('queue')
   }
+
+  const addCollaborator = async (
+    contributionId: string,
+    input: { name: string; email: string; role: string },
+  ) => {
+    if (!contributionId) {
+      setMessage('Save the contribution before adding attribution details.')
+      return
+    }
+
+    const result = await run(() =>
+      contributionApi.addCollaborator(contributionId, input),
+    )
+    if (!result) return
+    setWorking((current) =>
+      current?.id === contributionId ? { ...current, collaborators: result.collaborators } : current,
+    )
+    replaceItem(result)
+    setMessage('Collaborator added. They must confirm their participation.')
+  }
+
+  const updateCollaboratorRole = async (
+    contributionId: string,
+    collaboratorId: string,
+    role: string,
+  ) => {
+    const result = await run(() =>
+      contributionApi.updateCollaboratorRole(contributionId, collaboratorId, role),
+    )
+    if (!result) return
+    setWorking((current) =>
+      current?.id === contributionId ? { ...current, collaborators: result.collaborators } : current,
+    )
+    replaceItem(result)
+  }
+
+  const confirmParticipation = async (
+    contributionId: string,
+    collaboratorId: string,
+  ) => {
+    const result = await run(() =>
+      contributionApi.confirmParticipation(contributionId, collaboratorId),
+    )
+    if (!result) return
+    replaceItem(result)
+    setMessage('Participation confirmed for this collaborator.')
+  }
+
+  const disputeParticipation = async (
+    contributionId: string,
+    collaboratorId: string,
+    reason: string,
+  ) => {
+    const result = await run(() =>
+      contributionApi.disputeParticipation(contributionId, collaboratorId, reason),
+    )
+    if (!result) return
+    replaceItem(result)
+    setMessage('Participation dispute submitted. The author must resolve it.')
+  }
+
+  const resolveDispute = async (
+    contributionId: string,
+    collaboratorId: string,
+    note: string,
+  ) => {
+    const result = await run(() =>
+      contributionApi.resolveAttribution(contributionId, collaboratorId, note),
+    )
+    if (!result) return
+    replaceItem(result)
+    setMessage('Attribution dispute resolved. The mentor can review it again.')
+  }
+
+  const openDecisionDialog = (kind: ContributionDecisionKind) => {
+    if (!selected || selected.status !== 'Submitted' || busy) return
+    if (kind === 'validate' && hasDisputedAttribution(selected)) {
+      setMessage('Resolve all attribution disputes before validating this contribution.')
+      return
+    }
+    setDecisionKind(kind)
+    setValidationNote('')
+    setRejectionReason(rejectionReasons[0])
+    setRejectionExplanation('')
+  }
+
+  const recordDecision = async () => {
+    if (!selected || !decisionKind) return
+    if (selected.status !== 'Submitted') {
+      setMessage('Only submitted contributions can receive a mentor decision.')
+      return
+    }
+
+    if (decisionKind === 'validate' && hasDisputedAttribution(selected)) {
+      setMessage('Resolve all attribution disputes before validating this contribution.')
+      return
+    }
+
+    if (decisionKind === 'reject' && !rejectionExplanation.trim()) {
+      setMessage('Add a clear explanation before rejecting the contribution.')
+      return
+    }
+
+    const result = await run(() =>
+      decisionKind === 'validate'
+        ? contributionApi.validate(selected.id, validationNote)
+        : contributionApi.reject(
+            selected.id,
+            rejectionReason,
+            rejectionExplanation,
+          ),
+    )
+    if (!result) return
+
+    replaceItem(result)
+    closeDecisionDialog()
+    setSelectedId(null)
+    go('queue')
+  }
   const filtered = items.filter(
     (item) =>
       item.title.toLowerCase().includes(search.toLowerCase()) &&
@@ -310,120 +422,8 @@ export default function ContributionWorkspace() {
       item.title.toLowerCase().includes(search.toLowerCase()) &&
       (categoryFilter === 'All' || item.category === categoryFilter),
   )
-  const switchRole = (next: Role) => {
-    if (next === role) {
-      go(next === 'student' ? 'list' : 'queue')
-      return
-    }
-    setLoading(true)
-    setRole(next)
-    setSearch('')
-    setCategoryFilter('All')
-    setStatusFilter('All')
-    setWorking(null)
-    setSelectedId(null)
-    setMentorFeedback('')
-    go(next === 'student' ? 'list' : 'queue')
-  }
-
   return (
-    <div className='min-h-screen bg-[#f5f7f6] text-[#14211b] md:flex'>
-      <aside className='flex w-full shrink-0 flex-col bg-[#1b4332] p-5 text-white md:min-h-screen md:w-[232px]'>
-        <div className='flex h-[52px] items-center gap-3'>
-          <div className='relative size-9 shrink-0 overflow-hidden rounded-[9px] border-[3px] border-[#ff8710] bg-white'>
-            <img
-              src='/Logo/logo.svg'
-              alt=''
-              className='absolute left-[-11px] top-0 h-[52px] w-[54px] max-w-none'
-            />
-          </div>
-          <span className='text-[24px] font-bold tracking-[-0.04em] text-white'>
-            internflow
-          </span>
-        </div>
-        <div className='mt-[22px] rounded-[10px] bg-[#244f3c] p-3'>
-          <p className='text-[12px] font-semibold'>practica</p>
-          <p className='mt-0.5 text-[11px] text-[#b5ccbe]'>
-            {role === 'student' ? 'Student workspace' : 'Mentor workspace'}
-          </p>
-        </div>
-        <nav aria-label='Workspace navigation' className='mt-[22px] space-y-4'>
-          {(role === 'student' ? studentNav : mentorNav).map((group) => (
-            <div key={group.title}>
-              <p className='mb-[5px] text-[9px] font-bold text-[#8fae9c]'>
-                {group.title}
-              </p>
-              <div className='space-y-[5px]'>
-                {group.items.map((item) => (
-                  <button
-                    key={item.label}
-                    type='button'
-                    disabled={!item.available}
-                    title={
-                      item.available
-                        ? undefined
-                        : 'Outside this contribution preview'
-                    }
-                    onClick={() => go(role === 'student' ? 'list' : 'queue')}
-                    className={`flex h-10 w-full items-center gap-3 rounded-lg px-[10px] text-left text-[13px] ${item.available ? 'bg-[#275341] font-semibold text-white hover:bg-[#316e57]' : 'cursor-not-allowed text-[#d6e4db]'}`}
-                  >
-                    <img src={item.icon} alt='' className='size-5 shrink-0' />
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </nav>
-        <div className='mt-auto hidden pt-10 md:block'>
-          <p className='text-[13px] font-bold'>DB&nbsp;&nbsp; Daniel Botan</p>
-          <p className='mt-1 pl-8 text-[11px] text-[#b5ccbe]'>
-            {role === 'student' ? 'Student' : 'Mentor preview'}
-          </p>
-        </div>
-      </aside>
-      <div className='min-w-0 flex-1'>
-        <header className='flex min-h-20 flex-wrap items-center justify-between gap-3 border-b border-[#eef1ef] bg-white px-5 py-3 md:px-8'>
-          <p className='text-[12px] text-[#6f7c76]'>
-            {role === 'student'
-              ? 'Student / Contributions'
-              : 'Mentor / Contribution review'}
-            {screen === 'details'
-              ? ' / Edit'
-              : screen === 'revision'
-                ? ' / Revision'
-                : screen === 'evidence'
-                  ? ' / Evidence'
-                  : screen === 'review'
-                    ? ' / Submit'
-                    : ''}
-          </p>
-          <div className='flex items-center gap-3'>
-            <span className='hidden text-[11px] text-[#8a5200] sm:block'>
-              Connected to API and PostgreSQL
-            </span>
-            <div
-              className='flex rounded-lg border border-[#d9e0dc] p-1 text-[11px]'
-              aria-label='Preview role'
-            >
-              <button
-                type='button'
-                onClick={() => switchRole('student')}
-                className={`rounded-md px-3 py-1.5 ${role === 'student' ? 'bg-[#184b38] text-white' : 'text-[#6f7c76]'}`}
-              >
-                Student
-              </button>
-              <button
-                type='button'
-                onClick={() => switchRole('mentor')}
-                className={`rounded-md px-3 py-1.5 ${role === 'mentor' ? 'bg-[#184b38] text-white' : 'text-[#6f7c76]'}`}
-              >
-                Mentor
-              </button>
-            </div>
-          </div>
-        </header>
-        <main className='mx-auto max-w-[1210px] px-5 py-7 md:px-8'>
+    <div className='w-full'>
           {loading && (
             <div className='mb-5 rounded-lg border border-[#d9e0dc] bg-white p-4 text-[12px] text-[#6f7c76]'>
               Loading contributions...
@@ -453,7 +453,7 @@ export default function ContributionWorkspace() {
                   </button>
                 }
               />
-              <div className='mb-5 grid gap-3 sm:grid-cols-3'>
+              <div className='mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
                 <Stat
                   title='Drafts'
                   count={items.filter((x) => x.status === 'Draft').length}
@@ -471,6 +471,11 @@ export default function ContributionWorkspace() {
                   }
                   caption='can resubmit'
                 />
+                <Stat
+                  title='Validated'
+                  count={items.filter((x) => x.status === 'Validated').length}
+                  caption='accepted evidence'
+                />
               </div>
               <div className={`${card} mb-4 flex flex-wrap gap-3 p-3`}>
                 <input
@@ -486,11 +491,16 @@ export default function ContributionWorkspace() {
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
                 >
-                  {['All', 'Draft', 'Submitted', 'Changes requested'].map(
-                    (x) => (
-                      <option key={x}>{x}</option>
-                    ),
-                  )}
+                  {[
+                    'All',
+                    'Draft',
+                    'Submitted',
+                    'Changes requested',
+                    'Validated',
+                    'Rejected',
+                  ].map((x) => (
+                    <option key={x}>{x}</option>
+                  ))}
                 </select>
                 <select
                   className={filterField}
@@ -543,14 +553,20 @@ export default function ContributionWorkspace() {
                             }
                             disabled={busy}
                             onClick={() => {
-                              if (item.status === 'Submitted') {
+                              if (
+                                item.status === 'Submitted' ||
+                                item.status === 'Validated' ||
+                                item.status === 'Rejected'
+                              ) {
                                 void openStudentDetail(item.id)
                               } else {
                                 void openEditor(item)
                               }
                             }}
                           >
-                            {item.status === 'Submitted'
+                            {item.status === 'Submitted' ||
+                            item.status === 'Validated' ||
+                            item.status === 'Rejected'
                               ? 'View'
                               : item.status === 'Draft'
                                 ? 'Edit'
@@ -570,20 +586,31 @@ export default function ContributionWorkspace() {
             </>
           )}
           {screen === 'revision' && working && (
-            <ContributionRevisionPage
-              item={working}
-              linkName={linkName}
-              linkUrl={linkUrl}
-              onLinkName={setLinkName}
-              onLinkUrl={setLinkUrl}
-              onUpdate={update}
-              onRemoveEvidence={removeEvidence}
-              onAddLink={addLink}
-              onUpload={addFile}
-              onSave={saveDraft}
-              onReview={() => go('review')}
-              onEditDetails={() => go('details')}
-            />
+            <>
+              <ContributionRevisionPage
+                item={working}
+                linkName={linkName}
+                linkUrl={linkUrl}
+                onLinkName={setLinkName}
+                onLinkUrl={setLinkUrl}
+                onUpdate={update}
+                onRemoveEvidence={removeEvidence}
+                onAddLink={addLink}
+                onUpload={addFile}
+                onSave={saveDraft}
+                onReview={() => go('review')}
+                onEditDetails={() => go('details')}
+              />
+              <ContributionAttributionPanel
+                item={working}
+                mode='author'
+                editable
+                onAddCollaborator={(input) => addCollaborator(working.id, input)}
+                onUpdateRole={(collaboratorId, roleValue) =>
+                  updateCollaboratorRole(working.id, collaboratorId, roleValue)
+                }
+              />
+            </>
           )}
           {screen === 'details' && working && (
             <>
@@ -713,6 +740,15 @@ export default function ContributionWorkspace() {
                   ))}
                 </aside>
               </div>
+              <ContributionAttributionPanel
+                item={working}
+                mode='author'
+                editable
+                onAddCollaborator={(input) => addCollaborator(working.id, input)}
+                onUpdateRole={(collaboratorId, roleValue) =>
+                  updateCollaboratorRole(working.id, collaboratorId, roleValue)
+                }
+              />
             </>
           )}
           {screen === 'evidence' && working && (
@@ -947,11 +983,63 @@ export default function ContributionWorkspace() {
                 description={`${selected.category} · ${selected.workPeriod} · Submitted ${formatDate(selected.submittedAt)}`}
                 right={<Badge status={selected.status} />}
               />
-              <div className='mb-5 rounded-lg bg-[#eaf0ff] p-4 text-[12px] text-[#3057a6]'>
-                This contribution is submitted and read-only while the mentor
-                reviews it.
+              <div
+                className={`mb-5 rounded-lg p-4 text-[12px] ${
+                  selected.status === 'Validated'
+                    ? 'bg-[#e8f2ed] text-[#184b38]'
+                    : selected.status === 'Rejected'
+                      ? 'bg-[#fde8e7] text-[#a1332b]'
+                      : 'bg-[#eaf0ff] text-[#3057a6]'
+                }`}
+              >
+                <strong>
+                  {selected.status === 'Validated'
+                    ? 'Contribution validated'
+                    : selected.status === 'Rejected'
+                      ? 'Contribution rejected'
+                      : 'Pending mentor review'}
+                </strong>
+                <p className='mt-1'>
+                  {selected.status === 'Validated'
+                    ? 'The mentor verified the work and evidence. This contribution is now trusted read-only context.'
+                    : selected.status === 'Rejected'
+                      ? 'This submitted revision is locked. Create a new contribution if the work needs to be documented again.'
+                      : 'This contribution is submitted and read-only while the mentor reviews it.'}
+                </p>
               </div>
+              {selected.reviewDecision?.note ? (
+                <div className='mb-5 rounded-lg border border-[#d9e0dc] bg-white p-4 text-[12px]'>
+                  <strong>
+                    {selected.status === 'Rejected'
+                      ? 'Mentor explanation'
+                      : 'Validation note'}
+                  </strong>
+                  <p className='mt-1 text-[#6f7c76]'>
+                    {selected.reviewDecision.note}
+                  </p>
+                  {selected.reviewDecision.reason ? (
+                    <p className='mt-2 text-[11px] text-[#6f7c76]'>
+                      Reason: {selected.reviewDecision.reason}
+                    </p>
+                  ) : null}
+                </div>
+              ) : null}
               <ContributionDetails item={selected} />
+              <ContributionAttributionPanel
+                item={selected}
+                mode='author'
+                allowResolve={selected.status === 'Submitted'}
+                showConfirmationPreview={selected.status !== 'Validated' && selected.status !== 'Rejected'}
+                onResolveDispute={(collaboratorId, note) =>
+                  resolveDispute(selected.id, collaboratorId, note)
+                }
+                onConfirmParticipation={(collaboratorId) =>
+                  confirmParticipation(selected.id, collaboratorId)
+                }
+                onDisputeParticipation={(collaboratorId, reason) =>
+                  disputeParticipation(selected.id, collaboratorId, reason)
+                }
+              />
               {selected.history?.length ? (
                 <div className='mt-4'>
                   <RevisionHistory item={selected} />
@@ -964,6 +1052,15 @@ export default function ContributionWorkspace() {
               >
                 Back to contributions
               </button>
+              {selected.status === 'Rejected' ? (
+                <button
+                  type='button'
+                  className={`${primary} ml-2 mt-5`}
+                  onClick={() => void openEditor()}
+                >
+                  Create new contribution
+                </button>
+              ) : null}
             </>
           )}
           {screen === 'queue' && role === 'mentor' && (
@@ -1072,36 +1169,84 @@ export default function ContributionWorkspace() {
                 Back to queue
               </button>
               <ContributionDetails item={selected} />
-              <section className={`${card} mt-5 p-5`}>
-                <h2 className='text-[16px] font-bold'>Request changes</h2>
-                <p className='mt-1 text-[11px] text-[#6f7c76]'>
-                  Explain concretely what the student must update before
-                  resubmitting.
-                </p>
-                <label className={`${label} mt-4`}>
-                  Feedback *
-                  <textarea
-                    className={`${field} min-h-24 resize-y`}
-                    value={mentorFeedback}
-                    onChange={(event) => setMentorFeedback(event.target.value)}
-                    placeholder='What needs to be corrected?'
-                  />
-                </label>
-                <div className='mt-4 flex justify-end'>
-                  <button
-                    type='button'
-                    className={primary}
-                    disabled={busy}
-                    onClick={() => void requestChanges()}
-                  >
-                    {busy ? 'Saving...' : 'Request changes'}
-                  </button>
-                </div>
-              </section>
+              <ContributionAttributionPanel item={selected} mode='mentor' />
+              {selected.status === 'Submitted' ? (
+                <section className={`${card} mt-5 p-5`}>
+                  <div className='flex flex-wrap items-start justify-between gap-4'>
+                    <div>
+                      <h2 className='text-[16px] font-bold'>Review decision</h2>
+                      <p className='mt-1 text-[11px] text-[#6f7c76]'>
+                        Record one clear outcome for this submitted contribution.
+                        The decision is saved with your note and timestamp.
+                      </p>
+                    </div>
+                    <Badge status='Submitted' />
+                  </div>
+                  <label className={`${label} mt-5`}>
+                    Request changes feedback
+                    <textarea
+                      className={`${field} min-h-24 resize-y`}
+                      value={mentorFeedback}
+                      onChange={(event) => setMentorFeedback(event.target.value)}
+                      placeholder='Explain concretely what the student must update before resubmitting.'
+                      disabled={busy}
+                    />
+                  </label>
+                  <div className='mt-4 flex flex-wrap justify-end gap-2'>
+                    <button
+                      type='button'
+                      className='rounded-lg border border-[#efc1bb] bg-white px-4 py-2.5 text-[13px] font-semibold text-[#a1332b] hover:bg-[#fde8e7] disabled:cursor-not-allowed disabled:opacity-60'
+                      disabled={busy}
+                      onClick={() => openDecisionDialog('reject')}
+                    >
+                      Reject
+                    </button>
+                    <button
+                      type='button'
+                      className={secondary}
+                      disabled={busy}
+                      onClick={() => void requestChanges()}
+                    >
+                      {busy ? 'Saving...' : 'Request changes'}
+                    </button>
+                    <button
+                      type='button'
+                      className={primary}
+                      disabled={busy || hasDisputedAttribution(selected)}
+                      onClick={() => openDecisionDialog('validate')}
+                    >
+                      Validate
+                    </button>
+                  </div>
+                </section>
+              ) : (
+                <section className={`${card} mt-5 p-5`}>
+                  <h2 className='text-[16px] font-bold'>Decision recorded</h2>
+                  <p className='mt-1 text-[12px] text-[#6f7c76]'>
+                    This contribution is {selected.status.toLowerCase()} and
+                    read-only. No further mentor decision can be recorded for
+                    this revision.
+                  </p>
+                </section>
+              )}
             </>
           )}
-        </main>
-      </div>
+          {decisionKind && selected ? (
+            <ContributionDecisionDialog
+              item={selected}
+              kind={decisionKind}
+              validationNote={validationNote}
+              rejectionReason={rejectionReason}
+              rejectionExplanation={rejectionExplanation}
+              rejectionReasons={rejectionReasons}
+              busy={busy}
+              onValidationNoteChange={setValidationNote}
+              onRejectionReasonChange={setRejectionReason}
+              onRejectionExplanationChange={setRejectionExplanation}
+              onCancel={closeDecisionDialog}
+              onConfirm={() => void recordDecision()}
+            />
+          ) : null}
     </div>
   )
 }

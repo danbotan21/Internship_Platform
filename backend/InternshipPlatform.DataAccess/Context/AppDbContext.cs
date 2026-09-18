@@ -21,6 +21,12 @@ public class AppDbContext : DbContext
     public DbSet<ContributionReview> ContributionReviews =>
         Set<ContributionReview>();
 
+    public DbSet<ContributionDecision> ContributionDecisions =>
+        Set<ContributionDecision>();
+
+    public DbSet<ContributionCollaborator> ContributionCollaborators =>
+        Set<ContributionCollaborator>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
@@ -29,6 +35,8 @@ public class AppDbContext : DbContext
         ConfigureContributionRevision(modelBuilder);
         ConfigureContributionEvidence(modelBuilder);
         ConfigureContributionReview(modelBuilder);
+        ConfigureContributionDecision(modelBuilder);
+        ConfigureContributionCollaborator(modelBuilder);
     }
 
     private static void ConfigureContribution(ModelBuilder modelBuilder)
@@ -42,7 +50,7 @@ public class AppDbContext : DbContext
                 "\"CurrentRevisionNumber\" >= 1");
             table.HasCheckConstraint(
                 "CK_Contributions_Status",
-                "\"Status\" IN (1, 2, 3)");
+                "\"Status\" IN (1, 2, 3, 4, 5)");
         });
 
         contribution.HasKey(item => item.Id);
@@ -58,6 +66,12 @@ public class AppDbContext : DbContext
             .HasMany(item => item.Revisions)
             .WithOne(revision => revision.Contribution)
             .HasForeignKey(revision => revision.ContributionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        contribution
+            .HasMany(item => item.Collaborators)
+            .WithOne(collaborator => collaborator.Contribution)
+            .HasForeignKey(collaborator => collaborator.ContributionId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 
@@ -100,6 +114,12 @@ public class AppDbContext : DbContext
             .WithOne(review => review.ContributionRevision)
             .HasForeignKey(review => review.ContributionRevisionId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        revision
+            .HasMany(item => item.Decisions)
+            .WithOne(decision => decision.ContributionRevision)
+            .HasForeignKey(decision => decision.ContributionRevisionId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 
     private static void ConfigureContributionEvidence(ModelBuilder modelBuilder)
@@ -138,5 +158,57 @@ public class AppDbContext : DbContext
             .HasIndex(item => item.ContributionRevisionId)
             .IsUnique();
         review.HasIndex(item => item.MentorId);
+    }
+
+    private static void ConfigureContributionDecision(ModelBuilder modelBuilder)
+    {
+        var decision = modelBuilder.Entity<ContributionDecision>();
+
+        decision.ToTable("ContributionDecisions", table =>
+        {
+            table.HasCheckConstraint(
+                "CK_ContributionDecisions_Decision",
+                "\"Decision\" IN (1, 2)");
+        });
+
+        decision.HasKey(item => item.Id);
+        decision.Property(item => item.Decision).HasConversion<int>();
+        decision.Property(item => item.Reason).HasMaxLength(200);
+        decision.Property(item => item.Note).HasMaxLength(2000);
+
+        decision
+            .HasIndex(item => item.ContributionRevisionId)
+            .IsUnique();
+        decision.HasIndex(item => item.MentorId);
+    }
+
+    private static void ConfigureContributionCollaborator(ModelBuilder modelBuilder)
+    {
+        var collaborator = modelBuilder.Entity<ContributionCollaborator>();
+
+        collaborator.ToTable("ContributionCollaborators", table =>
+        {
+            table.HasCheckConstraint(
+                "CK_ContributionCollaborators_Status",
+                "\"Status\" IN (1, 2, 3, 4)");
+            table.HasCheckConstraint(
+                "CK_ContributionCollaborators_DisputeData",
+                "(\"Status\" = 3 AND \"DisputeReason\" IS NOT NULL) " +
+                "OR (\"Status\" <> 3)");
+        });
+
+        collaborator.HasKey(item => item.Id);
+        collaborator.Property(item => item.Status).HasConversion<int>();
+        collaborator.Property(item => item.Name).HasMaxLength(200);
+        collaborator.Property(item => item.Email).HasMaxLength(320);
+        collaborator.Property(item => item.NormalizedEmail).HasMaxLength(320);
+        collaborator.Property(item => item.Role).HasMaxLength(500);
+        collaborator.Property(item => item.DisputeReason).HasMaxLength(2000);
+        collaborator.Property(item => item.ResolutionNote).HasMaxLength(2000);
+
+        collaborator
+            .HasIndex(item => new { item.ContributionId, item.NormalizedEmail })
+            .IsUnique();
+        collaborator.HasIndex(item => new { item.ContributionId, item.Status });
     }
 }

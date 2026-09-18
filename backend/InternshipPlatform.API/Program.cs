@@ -41,6 +41,14 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Apply local schema changes at startup so a fresh Docker database receives
+// the contribution and attribution tables before the first API request.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {

@@ -10,6 +10,8 @@ export function Badge({ status }: { status: Status }) {
     Draft: 'bg-[#fff1d8] text-[#8a5200]',
     Submitted: 'bg-[#eaf0ff] text-[#3057a6]',
     'Changes requested': 'bg-[#fde8e7] text-[#a1332b]',
+    Validated: 'bg-[#e8f2ed] text-[#184b38]',
+    Rejected: 'bg-[#fde8e7] text-[#a1332b]',
   }
 
   return (
@@ -92,9 +94,7 @@ export function EvidenceList({
           <div>
             <p className='text-[12px] font-semibold'>{item.name}</p>
             <p className='mt-1 text-[11px] text-[#6f7c76]'>
-              {item.kind === 'link'
-                ? 'External link'
-                : 'Uploaded file'}
+              {item.kind === 'link' ? 'External link' : 'Uploaded file'}
             </p>
           </div>
           <div className='flex gap-2'>

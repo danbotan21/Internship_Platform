@@ -1,5 +1,7 @@
 import type {
   Category,
+  Collaborator,
+  CollaboratorParticipationStatus,
   Contribution,
   ContributionEvent,
   Evidence,
@@ -12,7 +14,27 @@ type EvidenceDto = {
   name: string
   url: string
 }
-type ReviewDto = { feedback: string }
+type CollaboratorDto = {
+  id: string
+  name: string
+  email: string
+  role: string
+  status: CollaboratorParticipationStatus
+  disputeReason?: string
+  resolutionNote?: string
+  addedAtUtc: string
+  updatedAtUtc: string
+}
+type ReviewDto = {
+  id?: string
+  mentorId?: string
+  feedback?: string
+  note?: string
+  reason?: string
+  decision?: 'Validated' | 'Rejected' | 'validated' | 'rejected'
+  decidedAtUtc?: string
+  changesRequestedAtUtc?: string
+}
 type RevisionDto = {
   revisionNumber: number
   title: string
@@ -27,7 +49,12 @@ type RevisionDto = {
 }
 type HistoryDto = {
   id: string
-  type: 'Submitted' | 'ChangesRequested' | 'Resubmitted'
+  type:
+    | 'Submitted'
+    | 'ChangesRequested'
+    | 'Resubmitted'
+    | 'Validated'
+    | 'Rejected'
   revisionNumber: number
   occurredAtUtc: string
   note?: string
@@ -40,7 +67,9 @@ type ContributionDetailsDto = {
   updatedAtUtc: string
   submittedAtUtc?: string
   currentRevision: RevisionDto
+  collaborators?: CollaboratorDto[]
   latestReview?: ReviewDto
+  latestDecision?: ReviewDto
   history: HistoryDto[]
 }
 type ContributionListItemDto = { id: string }
@@ -68,7 +97,26 @@ function mapDetails(dto: ContributionDetailsDto): Contribution {
     Submitted: 'submitted',
     ChangesRequested: 'changes-requested',
     Resubmitted: 'resubmitted',
+    Validated: 'validated',
+    Rejected: 'rejected',
   }
+  const decisionDto =
+    dto.latestDecision ??
+    (dto.latestReview?.decision ? dto.latestReview : undefined)
+  const decisionType = decisionDto?.decision?.toLowerCase()
+  const collaborators: Collaborator[] = (dto.collaborators ?? []).map(
+    (item) => ({
+      id: item.id,
+      name: item.name,
+      email: item.email,
+      role: item.role,
+      status: item.status,
+      disputeReason: item.disputeReason,
+      resolutionNote: item.resolutionNote,
+      addedAt: item.addedAtUtc,
+      updatedAt: item.updatedAtUtc,
+    }),
+  )
   return {
     id: dto.id,
     title: revision.title,
@@ -79,8 +127,19 @@ function mapDetails(dto: ContributionDetailsDto): Contribution {
     ownRole: revision.ownRole,
     status: dto.status,
     evidence,
+    collaborators,
     evidenceNote: revision.evidenceNote ?? '',
     mentorFeedback: dto.latestReview?.feedback,
+    reviewDecision:
+      decisionType === 'validated' || decisionType === 'rejected'
+        ? {
+            type: decisionType,
+            mentorId: decisionDto?.mentorId,
+            note: decisionDto?.note ?? decisionDto?.feedback,
+            reason: decisionDto?.reason,
+            at: decisionDto?.decidedAtUtc,
+          }
+        : undefined,
     revisionNote: revision.revisionNote ?? '',
     history: dto.history.map((item) => ({
       id: item.id,
@@ -164,4 +223,60 @@ export const contributionApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ feedback }),
     }).then(mapDetails),
+  validate: (id: string, note?: string) =>
+    api<ContributionDetailsDto>(`/mentor/${id}/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ note: note?.trim() || undefined }),
+    }).then(mapDetails),
+  reject: (id: string, reason: string, explanation: string) =>
+    api<ContributionDetailsDto>(`/mentor/${id}/reject`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason, feedback: explanation.trim() }),
+    }).then(mapDetails),
+  addCollaborator: (
+    id: string,
+    input: { name: string; email: string; role: string },
+  ) =>
+    api<ContributionDetailsDto>(`/${id}/collaborators`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input),
+    }).then(mapDetails),
+  updateCollaboratorRole: (id: string, collaboratorId: string, role: string) =>
+    api<ContributionDetailsDto>(`/${id}/collaborators/${collaboratorId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role }),
+    }).then(mapDetails),
+  confirmParticipation: (id: string, collaboratorId: string) =>
+    api<ContributionDetailsDto>(
+      `/${id}/collaborators/${collaboratorId}/confirm`,
+      {
+        method: 'POST',
+        headers: { 'X-Collaborator-Id': collaboratorId },
+      },
+    ).then(mapDetails),
+  disputeParticipation: (id: string, collaboratorId: string, reason: string) =>
+    api<ContributionDetailsDto>(
+      `/${id}/collaborators/${collaboratorId}/dispute`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Collaborator-Id': collaboratorId,
+        },
+        body: JSON.stringify({ reason }),
+      },
+    ).then(mapDetails),
+  resolveAttribution: (id: string, collaboratorId: string, note: string) =>
+    api<ContributionDetailsDto>(
+      `/${id}/collaborators/${collaboratorId}/resolve`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ note }),
+      },
+    ).then(mapDetails),
 }

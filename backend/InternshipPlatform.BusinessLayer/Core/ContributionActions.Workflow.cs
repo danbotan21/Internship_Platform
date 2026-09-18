@@ -143,6 +143,141 @@ public partial class ContributionActions
         return Success(MapDetails(contribution));
     }
 
+    internal async Task<ServiceResult<ContributionDetailsDto>> ValidateExecution(
+        Guid contributionId,
+        ValidateContributionRequest request,
+        Guid mentorId,
+        CancellationToken ct)
+    {
+        if (mentorId == Guid.Empty)
+        {
+            return Failure("A mentor identifier is required.", ServiceErrorType.Validation);
+        }
+
+        var contribution = await ContributionGraph(tracking: true)
+            .FirstOrDefaultAsync(item => item.Id == contributionId, ct);
+        if (contribution is null || contribution.Status == ContributionStatus.Draft)
+        {
+            return Failure("Contribution not found.", ServiceErrorType.NotFound);
+        }
+
+        if (contribution.Status != ContributionStatus.Submitted)
+        {
+            return Failure(
+                "A decision can only be recorded for a submitted contribution.",
+                ServiceErrorType.Conflict);
+        }
+
+        var revision = GetCurrentRevision(contribution);
+        if (revision.SubmittedAtUtc is null)
+        {
+            return Failure("The current revision has not been submitted.", ServiceErrorType.Conflict);
+        }
+
+        if (revision.Reviews.Count != 0 || revision.Decisions.Count != 0)
+        {
+            return Failure(
+                "A review decision has already been recorded for this revision.",
+                ServiceErrorType.Conflict);
+        }
+
+        if (contribution.Collaborators.Any(item =>
+                item.Status == ContributionCollaboratorStatus.Disputed))
+        {
+            return Failure(
+                "Resolve all disputed collaborator attributions before validating the contribution.",
+                ServiceErrorType.Conflict);
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var decision = new ContributionDecision
+        {
+            Id = Guid.NewGuid(),
+            ContributionRevisionId = revision.Id,
+            MentorId = mentorId,
+            Decision = ContributionDecisionType.Validated,
+            Note = TrimOrNull(request.Note),
+            DecidedAtUtc = now
+        };
+
+        revision.Decisions.Add(decision);
+        Context.ContributionDecisions.Add(decision);
+        contribution.Status = ContributionStatus.Validated;
+        contribution.UpdatedAtUtc = now;
+
+        await Context.SaveChangesAsync(ct);
+        return Success(MapDetails(contribution));
+    }
+
+    internal async Task<ServiceResult<ContributionDetailsDto>> RejectExecution(
+        Guid contributionId,
+        RejectContributionRequest request,
+        Guid mentorId,
+        CancellationToken ct)
+    {
+        if (mentorId == Guid.Empty)
+        {
+            return Failure("A mentor identifier is required.", ServiceErrorType.Validation);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Reason))
+        {
+            return Failure("A rejection reason is required.", ServiceErrorType.Validation);
+        }
+
+        if (string.IsNullOrWhiteSpace(request.Feedback))
+        {
+            return Failure("Mentor explanation is required.", ServiceErrorType.Validation);
+        }
+
+        var contribution = await ContributionGraph(tracking: true)
+            .FirstOrDefaultAsync(item => item.Id == contributionId, ct);
+        if (contribution is null || contribution.Status == ContributionStatus.Draft)
+        {
+            return Failure("Contribution not found.", ServiceErrorType.NotFound);
+        }
+
+        if (contribution.Status != ContributionStatus.Submitted)
+        {
+            return Failure(
+                "A decision can only be recorded for a submitted contribution.",
+                ServiceErrorType.Conflict);
+        }
+
+        var revision = GetCurrentRevision(contribution);
+        if (revision.SubmittedAtUtc is null)
+        {
+            return Failure("The current revision has not been submitted.", ServiceErrorType.Conflict);
+        }
+
+        if (revision.Reviews.Count != 0 || revision.Decisions.Count != 0)
+        {
+            return Failure(
+                "A review decision has already been recorded for this revision.",
+                ServiceErrorType.Conflict);
+        }
+
+        var now = DateTimeOffset.UtcNow;
+        var decision = new ContributionDecision
+        {
+            Id = Guid.NewGuid(),
+            ContributionRevisionId = revision.Id,
+            MentorId = mentorId,
+            Decision = ContributionDecisionType.Rejected,
+            Reason = request.Reason.Trim(),
+            Note = request.Feedback.Trim(),
+            DecidedAtUtc = now
+        };
+
+        revision.Decisions.Add(decision);
+        Context.ContributionDecisions.Add(decision);
+        contribution.Status = ContributionStatus.Rejected;
+        contribution.UpdatedAtUtc = now;
+
+        await Context.SaveChangesAsync(ct);
+        return Success(MapDetails(contribution));
+    }
+
     private static string? ValidateForSubmission(
         ContributionRevision revision,
         bool isResubmission)

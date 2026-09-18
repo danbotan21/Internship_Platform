@@ -22,7 +22,12 @@ public sealed class ContributionDetailsDto
 
     public ContributionRevisionDto CurrentRevision { get; set; } = new();
 
+    public IReadOnlyCollection<ContributionCollaboratorDto> Collaborators { get; set; } =
+        Array.Empty<ContributionCollaboratorDto>();
+
     public ContributionReviewDto? LatestReview { get; set; }
+
+    public ContributionDecisionDto? LatestDecision { get; set; }
 
     public IReadOnlyCollection<ContributionHistoryEventDto> History { get; set; } =
         Array.Empty<ContributionHistoryEventDto>();

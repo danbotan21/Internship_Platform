@@ -4,7 +4,9 @@ public enum ContributionHistoryEventType
 {
     Submitted = 1,
     ChangesRequested = 2,
-    Resubmitted = 3
+    Resubmitted = 3,
+    Validated = 4,
+    Rejected = 5
 }
 
 public sealed class ContributionHistoryEventDto

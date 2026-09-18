@@ -15,10 +15,13 @@ public partial class ContributionActions
         }
 
         return query
+            .Include(item => item.Collaborators)
             .Include(item => item.Revisions)
                 .ThenInclude(revision => revision.Evidence)
             .Include(item => item.Revisions)
                 .ThenInclude(revision => revision.Reviews)
+            .Include(item => item.Revisions)
+                .ThenInclude(revision => revision.Decisions)
             .AsSplitQuery();
     }
 

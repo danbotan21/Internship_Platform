@@ -3,6 +3,7 @@ using System;
 using InternshipPlatform.DataAccess.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace InternshipPlatform.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260917175225_AddContributionDecisions")]
+    partial class AddContributionDecisions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -59,76 +62,6 @@ namespace InternshipPlatform.DataAccess.Migrations
                             t.HasCheckConstraint("CK_Contributions_CurrentRevisionNumber", "\"CurrentRevisionNumber\" >= 1");
 
                             t.HasCheckConstraint("CK_Contributions_Status", "\"Status\" IN (1, 2, 3, 4, 5)");
-                        });
-                });
-
-            modelBuilder.Entity("InternshipPlatform.Domain.Entities.ContributionCollaborator", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset?>("ConfirmedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<Guid>("ContributionId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTimeOffset?>("DisputedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DisputeReason")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<string>("Email")
-                        .IsRequired()
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)");
-
-                    b.Property<DateTimeOffset>("AddedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<string>("NormalizedEmail")
-                        .IsRequired()
-                        .HasMaxLength(320)
-                        .HasColumnType("character varying(320)");
-
-                    b.Property<string>("ResolutionNote")
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)");
-
-                    b.Property<DateTimeOffset?>("ResolvedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Role")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTimeOffset>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ContributionId", "NormalizedEmail")
-                        .IsUnique();
-
-                    b.HasIndex("ContributionId", "Status");
-
-                    b.ToTable("ContributionCollaborators", null, t =>
-                        {
-                            t.HasCheckConstraint("CK_ContributionCollaborators_DisputeData", "(\"Status\" = 3 AND \"DisputeReason\" IS NOT NULL) OR (\"Status\" <> 3)");
-
-                            t.HasCheckConstraint("CK_ContributionCollaborators_Status", "\"Status\" IN (1, 2, 3, 4)");
                         });
                 });
 
@@ -321,17 +254,6 @@ namespace InternshipPlatform.DataAccess.Migrations
                         });
                 });
 
-            modelBuilder.Entity("InternshipPlatform.Domain.Entities.ContributionCollaborator", b =>
-                {
-                    b.HasOne("InternshipPlatform.Domain.Entities.Contribution", "Contribution")
-                        .WithMany("Collaborators")
-                        .HasForeignKey("ContributionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Contribution");
-                });
-
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.ContributionDecision", b =>
                 {
                     b.HasOne("InternshipPlatform.Domain.Entities.ContributionRevision", "ContributionRevision")
@@ -378,8 +300,6 @@ namespace InternshipPlatform.DataAccess.Migrations
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Contribution", b =>
                 {
-                    b.Navigation("Collaborators");
-
                     b.Navigation("Revisions");
                 });
 

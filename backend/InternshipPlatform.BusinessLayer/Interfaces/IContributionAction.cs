@@ -70,4 +70,47 @@ public interface IContributionAction
         RequestContributionChangesRequest request,
         Guid mentorId,
         CancellationToken ct = default);
+
+    Task<ServiceResult<ContributionDetailsDto>> ValidateAsync(
+        Guid contributionId,
+        ValidateContributionRequest request,
+        Guid mentorId,
+        CancellationToken ct = default);
+
+    Task<ServiceResult<ContributionDetailsDto>> RejectAsync(
+        Guid contributionId,
+        RejectContributionRequest request,
+        Guid mentorId,
+        CancellationToken ct = default);
+
+    Task<ServiceResult<ContributionDetailsDto>> AddCollaboratorAsync(
+        Guid contributionId,
+        AddContributionCollaboratorRequest request,
+        Guid studentId,
+        CancellationToken ct = default);
+
+    Task<ServiceResult<ContributionDetailsDto>> UpdateCollaboratorRoleAsync(
+        Guid contributionId,
+        Guid collaboratorId,
+        UpdateContributionCollaboratorRoleRequest request,
+        Guid studentId,
+        CancellationToken ct = default);
+
+    Task<ServiceResult<ContributionDetailsDto>> ConfirmParticipationAsync(
+        Guid contributionId,
+        Guid collaboratorId,
+        CancellationToken ct = default);
+
+    Task<ServiceResult<ContributionDetailsDto>> DisputeParticipationAsync(
+        Guid contributionId,
+        Guid collaboratorId,
+        DisputeContributionParticipationRequest request,
+        CancellationToken ct = default);
+
+    Task<ServiceResult<ContributionDetailsDto>> ResolveAttributionAsync(
+        Guid contributionId,
+        Guid collaboratorId,
+        ResolveContributionAttributionRequest request,
+        Guid studentId,
+        CancellationToken ct = default);
 }

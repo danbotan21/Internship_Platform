@@ -11,5 +11,11 @@ public enum ContributionStatus
     Submitted = 2,
 
     [JsonStringEnumMemberName("Changes requested")]
-    ChangesRequested = 3
+    ChangesRequested = 3,
+
+    [JsonStringEnumMemberName("Validated")]
+    Validated = 4,
+
+    [JsonStringEnumMemberName("Rejected")]
+    Rejected = 5
 }

@@ -184,6 +184,124 @@ public sealed class ContributionsController : ControllerBase
         return ToActionResult(result);
     }
 
+    [HttpPost("mentor/{contributionId:guid}/validate")]
+    public async Task<IActionResult> Validate(
+        Guid contributionId,
+        [FromBody] ValidateContributionRequest request,
+        CancellationToken ct)
+    {
+        var result = await _contributionAction.ValidateAsync(
+            contributionId,
+            request,
+            GetActorId("X-Mentor-Id", DefaultMentorId),
+            ct);
+        return ToActionResult(result);
+    }
+
+    [HttpPost("mentor/{contributionId:guid}/reject")]
+    public async Task<IActionResult> Reject(
+        Guid contributionId,
+        [FromBody] RejectContributionRequest request,
+        CancellationToken ct)
+    {
+        var result = await _contributionAction.RejectAsync(
+            contributionId,
+            request,
+            GetActorId("X-Mentor-Id", DefaultMentorId),
+            ct);
+        return ToActionResult(result);
+    }
+
+    [HttpPost("{contributionId:guid}/collaborators")]
+    public async Task<IActionResult> AddCollaborator(
+        Guid contributionId,
+        [FromBody] AddContributionCollaboratorRequest request,
+        CancellationToken ct)
+    {
+        var result = await _contributionAction.AddCollaboratorAsync(
+            contributionId,
+            request,
+            GetActorId("X-Student-Id", DefaultStudentId),
+            ct);
+        return ToActionResult(result);
+    }
+
+    [HttpPut("{contributionId:guid}/collaborators/{collaboratorId:guid}")]
+    public async Task<IActionResult> UpdateCollaboratorRole(
+        Guid contributionId,
+        Guid collaboratorId,
+        [FromBody] UpdateContributionCollaboratorRoleRequest request,
+        CancellationToken ct)
+    {
+        var result = await _contributionAction.UpdateCollaboratorRoleAsync(
+            contributionId,
+            collaboratorId,
+            request,
+            GetActorId("X-Student-Id", DefaultStudentId),
+            ct);
+        return ToActionResult(result);
+    }
+
+    [HttpPost("{contributionId:guid}/collaborators/{collaboratorId:guid}/confirm")]
+    public async Task<IActionResult> ConfirmParticipation(
+        Guid contributionId,
+        Guid collaboratorId,
+        CancellationToken ct)
+    {
+        var actorId = GetActorId("X-Collaborator-Id", Guid.Empty);
+        if (actorId != collaboratorId)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new { message = "The collaborator identity does not match the attribution being confirmed." });
+        }
+
+        var result = await _contributionAction.ConfirmParticipationAsync(
+            contributionId,
+            collaboratorId,
+            ct);
+        return ToActionResult(result);
+    }
+
+    [HttpPost("{contributionId:guid}/collaborators/{collaboratorId:guid}/dispute")]
+    public async Task<IActionResult> DisputeParticipation(
+        Guid contributionId,
+        Guid collaboratorId,
+        [FromBody] DisputeContributionParticipationRequest request,
+        CancellationToken ct)
+    {
+        var actorId = GetActorId("X-Collaborator-Id", Guid.Empty);
+        if (actorId != collaboratorId)
+        {
+            return StatusCode(
+                StatusCodes.Status403Forbidden,
+                new { message = "The collaborator identity does not match the attribution being disputed." });
+        }
+
+        var result = await _contributionAction.DisputeParticipationAsync(
+            contributionId,
+            collaboratorId,
+            request,
+            ct);
+        return ToActionResult(result);
+    }
+
+    [HttpPost("{contributionId:guid}/collaborators/{collaboratorId:guid}/resolve")]
+    public async Task<IActionResult> ResolveAttribution(
+        Guid contributionId,
+        Guid collaboratorId,
+        [FromBody] ResolveContributionAttributionRequest request,
+        CancellationToken ct)
+    {
+        var result = await _contributionAction.ResolveAttributionAsync(
+            contributionId,
+            collaboratorId,
+            request,
+            GetActorId("X-Student-Id", DefaultStudentId),
+            ct);
+        return ToActionResult(result);
+    }
+
     private Guid GetActorId(string headerName, Guid fallback)
     {
         var value = Request.Headers[headerName].FirstOrDefault();

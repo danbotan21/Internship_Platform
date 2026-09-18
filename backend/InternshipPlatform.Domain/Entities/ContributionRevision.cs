@@ -39,4 +39,7 @@ public class ContributionRevision
 
     public ICollection<ContributionReview> Reviews { get; set; } =
         new List<ContributionReview>();
+
+    public ICollection<ContributionDecision> Decisions { get; set; } =
+        new List<ContributionDecision>();
 }

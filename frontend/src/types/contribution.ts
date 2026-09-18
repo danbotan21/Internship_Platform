@@ -1,5 +1,10 @@
 export type Role = 'student' | 'mentor'
-export type Status = 'Draft' | 'Submitted' | 'Changes requested'
+export type Status =
+  | 'Draft'
+  | 'Submitted'
+  | 'Changes requested'
+  | 'Validated'
+  | 'Rejected'
 export type Category =
   | 'Development'
   | 'UI / UX design'
@@ -14,12 +19,43 @@ export type Evidence = {
   url: string
 }
 
+export type CollaboratorParticipationStatus =
+  | 'Pending confirmation'
+  | 'Confirmed'
+  | 'Disputed'
+  | 'Resolved'
+
+export type Collaborator = {
+  id: string
+  name: string
+  email: string
+  role: string
+  status: CollaboratorParticipationStatus
+  disputeReason?: string
+  resolutionNote?: string
+  addedAt: string
+  updatedAt: string
+}
+
 export type ContributionEvent = {
   id: string
-  kind: 'submitted' | 'changes-requested' | 'resubmitted'
+  kind:
+    | 'submitted'
+    | 'changes-requested'
+    | 'resubmitted'
+    | 'validated'
+    | 'rejected'
   at: string
   revision: number
   note?: string
+}
+
+export type ContributionDecision = {
+  type: 'validated' | 'rejected'
+  mentorId?: string
+  note?: string
+  reason?: string
+  at?: string
 }
 
 export type Contribution = {
@@ -32,8 +68,10 @@ export type Contribution = {
   ownRole: string
   status: Status
   evidence: Evidence[]
+  collaborators: Collaborator[]
   evidenceNote: string
   mentorFeedback?: string
+  reviewDecision?: ContributionDecision
   revisionNote?: string
   history?: ContributionEvent[]
   revision: number

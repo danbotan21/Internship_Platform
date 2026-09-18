@@ -10,6 +10,7 @@ export const makeContribution = (): Contribution => ({
   ownRole: '',
   status: 'Draft',
   evidence: [],
+  collaborators: [],
   evidenceNote: '',
   revisionNote: '',
   history: [],
