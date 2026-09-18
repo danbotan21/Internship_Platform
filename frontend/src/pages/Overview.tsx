@@ -1,4 +1,4 @@
-import PagePlaceholder from '../components/PagePlaceholder'
+import PagePlaceholder from '../components/ui/PagePlaceholder'
 
 export default function Overview() {
   return (
