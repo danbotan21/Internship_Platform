@@ -165,7 +165,7 @@ export default function MyApplications() {
             <div className="flex items-center gap-3 pt-3 md:pt-0 border-t md:border-t-0 border-gray-100 shrink-0">
               <Link
                 to={`/my-applications/application-details?id=${app.opportunityId}`}
-                className="px-4 py-2 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs font-semibold rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                className="bg-[#ff5500] hover:bg-[#e64d00] text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow-xs"
               >
                 <Eye className="w-3.5 h-3.5" />
                 <span>View Details</span>
