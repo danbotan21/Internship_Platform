@@ -8,6 +8,7 @@ import Reports from './pages/Reports'
 import Contributions from './pages/Contributions'
 import Evaluation from './pages/Evaluation'
 import Opportunities from './pages/Opportunities'
+import OpportunityApply from './pages/OpportunityApply'
 import Quizzes from './pages/Quizzes'
 import Messages from './pages/Messages'
 import Calendar from './pages/Calendar'
@@ -27,6 +28,7 @@ function App() {
         <Route path="/contributions" element={<Contributions />} />
         <Route path="/evaluation" element={<Evaluation />} />
         <Route path="/opportunities" element={<Opportunities />} />
+        <Route path="/opportunities-apply" element={<OpportunityApply />} />
         <Route path="/quizzes" element={<Quizzes />} />
         <Route path="/messages" element={<Messages />} />
         <Route path="/calendar" element={<Calendar />} />
