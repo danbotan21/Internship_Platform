@@ -177,6 +177,7 @@ public static class SeedData
             AcademicGroup = isCompanyMember ? null
                 : isAdmin ? "Programme Office"
                 : AcademicGroups[index % AcademicGroups.Length],
+            Programme = isCompanyMember ? null : "Software Engineering · Year 3",
             PlatformRole = isAdmin ? PlatformRole.Admin : PlatformRole.User,
             Status = isDeactivated ? UserStatus.Deactivated : UserStatus.Active,
             CreatedAt = Epoch.AddDays(-index),

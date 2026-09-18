@@ -12,7 +12,8 @@ public class User
 
     public required string FullName { get; set; }
     public string? University { get; set; }
-    public string? AcademicGroup { get; set; }    
+    public string? AcademicGroup { get; set; }
+    public string? Programme { get; set; }
     public PlatformRole PlatformRole { get; set; }
     public UserStatus Status { get; set; }
 

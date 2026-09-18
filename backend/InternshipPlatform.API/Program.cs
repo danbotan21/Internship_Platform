@@ -1,12 +1,18 @@
 using InternshipPlatform.DataAccess.Context;
 using Microsoft.EntityFrameworkCore;
 using InternshipPlatform.DataAccess.Seed;
+using System.Text.Json.Serialization;
+using InternshipPlatform.BusinessLayer.Admin.Users;
+using InternshipPlatform.DataAccess.Admin.Users;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options => 
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 builder.Services.AddCors(options =>
 {
@@ -26,6 +32,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+builder.Services.AddScoped<IUserDirectoryService, UserDirectoryService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -45,7 +52,6 @@ app.UseCors("AllowAll");
 app.UseAuthorization();
 
 app.MapControllers();
-
 
 if (app.Environment.IsDevelopment())
 {

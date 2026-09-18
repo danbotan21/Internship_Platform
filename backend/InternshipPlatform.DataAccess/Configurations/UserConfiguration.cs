@@ -15,6 +15,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.FullName).HasMaxLength(200);
         builder.Property(u => u.University).HasMaxLength(200);
         builder.Property(u => u.AcademicGroup).HasMaxLength(50);
+        builder.Property(u => u.Programme).HasMaxLength(100);
         
         builder.Property(u => u.PlatformRole)
             .HasConversion<string>()
