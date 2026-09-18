@@ -14,6 +14,7 @@ public sealed record UserDetailDto(
     bool EmailVerified,
     DateTimeOffset CreatedAt,
     DateTimeOffset? LastActiveAt,
+    DateTimeOffset? DeactivatedAt,
     CompanyPlacementDto? Company);
 
 public sealed record CompanyPlacementDto(

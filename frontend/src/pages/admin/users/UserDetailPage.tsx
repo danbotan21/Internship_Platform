@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import AdminHeader from '../../../components/admin/AdminHeader'
 import StatusBadge from '../../../components/admin/StatusBadge'
 import { ApiError } from '../../../api/http'
-import { fetchUserDetail } from '../../../api/adminUsers'
-import type { UserDetail } from '../../../types/adminUsers'
+import { changePlatformRole, deactivateUser, fetchUserDetail, reactivateUser } from '../../../api/adminUsers'
+import type { PlatformRole, UserDetail } from '../../../types/adminUsers'
 import { companyRoleLabels, directoryRoleLabels, formatLastActive, formatLongDate } from '../format'
+import { ChangeRoleDialog, DeactivateAccountDialog, ReactivateAccountDialog } from './AccountDialogs'
+
+type OpenDialog = 'deactivate' | 'reactivate' | 'role' | null
 
 type Response =
   | { id: string; user: UserDetail }
@@ -15,6 +18,7 @@ type Response =
 export default function UserDetailPage() {
   const { userId = '' } = useParams()
   const [response, setResponse] = useState<Response | null>(null)
+  const [dialog, setDialog] = useState<OpenDialog>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -29,6 +33,13 @@ export default function UserDetailPage() {
       })
     return () => controller.abort()
   }, [userId])
+
+  const reload = useCallback(async () => {
+    const user = await fetchUserDetail(userId)
+    setResponse({ id: userId, user })
+  }, [userId])
+
+  const closeDialog = useCallback(() => setDialog(null), [])
 
   const crumbs = [
     { label: 'Admin' },
@@ -63,17 +74,44 @@ export default function UserDetailPage() {
 
   const { user } = response
   const lastActive = formatLastActive(user.lastActiveAt)
+  const platformRole: PlatformRole = user.role === 'Admin' ? 'Admin' : 'User'
+
+  // Each action: call the API, close the dialog, show fresh data. Errors surface inside the dialog.
+  async function runAction(action: () => Promise<void>) {
+    await action()
+    setDialog(null)
+    await reload()
+  }
 
   return (
     <>
       <AdminHeader crumbs={crumbs} />
 
       <div className="flex flex-col gap-5 p-8">
-        <div className="flex flex-col gap-1.5">
-          <h1 className="text-[29px] leading-10.75 font-bold">{user.fullName} · User account</h1>
-          <p className="text-xs text-[#718078]">
-            {user.email} · {user.status} · Last active {lastActive === 'Never' ? 'never' : lastActive.toLowerCase()}
-          </p>
+        <div className="flex flex-wrap items-center gap-5">
+          <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+            <h1 className="text-[29px] leading-10.75 font-bold">{user.fullName} · User account</h1>
+            <p className="text-xs text-[#718078]">
+              {user.email} · {user.status} · Last active {lastActive === 'Never' ? 'never' : lastActive.toLowerCase()}
+            </p>
+          </div>
+
+          <div className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => setDialog('role')}
+              className="h-10.5 w-36 rounded-[9px] border border-[#e2e8e4] bg-white text-[13px] font-bold text-[#1b4332]"
+            >
+              Edit role
+            </button>
+            <button
+              type="button"
+              onClick={() => setDialog(user.status === 'Active' ? 'deactivate' : 'reactivate')}
+              className="h-10.5 w-47.5 rounded-[9px] bg-[#ff7a00] text-[13px] font-bold text-[#172c23]"
+            >
+              {user.status === 'Active' ? 'Deactivate account' : 'Reactivate account'}
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
@@ -107,9 +145,36 @@ export default function UserDetailPage() {
             </p>
             <p className="text-[11px] text-[#718078]">Last sign-in · {lastActive}</p>
             <p className="text-[11px] text-[#718078]">Created {formatLongDate(user.createdAt)}</p>
+            {user.deactivatedAt && (
+              <p className="text-[11px] text-[#a54a00]">Deactivated {formatLongDate(user.deactivatedAt)}</p>
+            )}
           </section>
         </div>
       </div>
+
+      {dialog === 'deactivate' && (
+        <DeactivateAccountDialog
+          userName={user.fullName}
+          onCancel={closeDialog}
+          onConfirm={(reason) => runAction(() => deactivateUser(user.id, reason))}
+        />
+      )}
+      {dialog === 'reactivate' && (
+        <ReactivateAccountDialog
+          userName={user.fullName}
+          deactivatedAt={user.deactivatedAt}
+          onCancel={closeDialog}
+          onConfirm={(reason) => runAction(() => reactivateUser(user.id, reason))}
+        />
+      )}
+      {dialog === 'role' && (
+        <ChangeRoleDialog
+          userName={user.fullName}
+          currentRole={platformRole}
+          onCancel={closeDialog}
+          onConfirm={(role, reason) => runAction(() => changePlatformRole(user.id, role, reason))}
+        />
+      )}
     </>
   )
 }

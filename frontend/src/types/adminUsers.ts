@@ -5,6 +5,8 @@ import type { PagedResult } from './common'
 
 export type UserStatus = 'Active' | 'Deactivated'
 
+export type PlatformRole = 'User' | 'Admin'
+
 export type DirectoryRole = 'User' | 'Admin' | 'Owner' | 'Recruiter' | 'Mentor'
 
 export type CompanyRole = 'Owner' | 'Recruiter' | 'Mentor'
@@ -63,5 +65,6 @@ export type UserDetail = {
   emailVerified: boolean
   createdAt: string
   lastActiveAt: string | null
+  deactivatedAt: string | null
   company: CompanyPlacement | null
 }

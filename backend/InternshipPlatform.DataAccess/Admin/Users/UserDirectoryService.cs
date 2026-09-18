@@ -86,6 +86,7 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
                 u.EmailVerified,
                 u.CreatedAt,
                 u.LastLoginAt,
+                u.DeactivatedAt,
                 CompanyId = u.Membership != null ? (Guid?)u.Membership.CompanyId : null,
                 CompanyName = u.Membership != null ? u.Membership.Company.LegalName : null,
                 CompanyRole = u.Membership != null ? (CompanyRole?)u.Membership.Role : null,
@@ -113,6 +114,7 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
             row.EmailVerified,
             row.CreatedAt,
             row.LastLoginAt,
+            row.DeactivatedAt,
             placement);
     }
 
