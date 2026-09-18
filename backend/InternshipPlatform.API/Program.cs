@@ -4,6 +4,8 @@ using InternshipPlatform.DataAccess.Seed;
 using System.Text.Json.Serialization;
 using InternshipPlatform.BusinessLayer.Admin.Users;
 using InternshipPlatform.DataAccess.Admin.Users;
+using InternshipPlatform.BusinessLayer.Admin.Verification;
+using InternshipPlatform.DataAccess.Admin.Verification;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,6 +35,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
 builder.Services.AddScoped<IUserDirectoryService, UserDirectoryService>();
+builder.Services.AddScoped<ICompanyVerificationService, CompanyVerificationService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
