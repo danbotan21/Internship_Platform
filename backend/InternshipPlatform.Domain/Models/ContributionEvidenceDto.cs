@@ -10,6 +10,9 @@ public sealed class ContributionEvidenceDto
 
     public string Name { get; set; } = string.Empty;
 
+    public string? Caption { get; set; }
+
+    // External page for links and GitHub evidence, protected download URL for files.
     public string Url { get; set; } = string.Empty;
 
     public string? OriginalFileName { get; set; }
@@ -17,4 +20,9 @@ public sealed class ContributionEvidenceDto
     public string? ContentType { get; set; }
 
     public long? FileSizeBytes { get; set; }
+
+    public GitHubEvidenceDto? GitHub { get; set; }
+
+    public IReadOnlyCollection<VerificationSignalDto> Signals { get; set; } =
+        Array.Empty<VerificationSignalDto>();
 }

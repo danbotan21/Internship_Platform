@@ -6,21 +6,25 @@ public class ContributionCollaborator
 
     public Guid ContributionId { get; set; }
 
-    // Scalar identity until the User/identity module is supplied by the team.
+    // Team member chosen from the internship directory. The User entity belongs
+    // to the Authentication module, so the id is kept as a scalar.
+    public Guid UserId { get; set; }
+
+    // Snapshot of the member's name and email when they were added.
     public string Name { get; set; } = string.Empty;
 
     public string Email { get; set; } = string.Empty;
 
-    // Stored separately so the database can enforce case-insensitive uniqueness.
-    public string NormalizedEmail { get; set; } = string.Empty;
+    public ContributionCategory Area { get; set; } = ContributionCategory.Development;
 
-    public string Role { get; set; } = string.Empty;
+    public string RoleDescription { get; set; } = string.Empty;
 
     public ContributionCollaboratorStatus Status { get; set; } =
         ContributionCollaboratorStatus.PendingConfirmation;
 
     public string? DisputeReason { get; set; }
 
+    // The author's answer to the latest dispute.
     public string? ResolutionNote { get; set; }
 
     public DateTimeOffset AddedAtUtc { get; set; }

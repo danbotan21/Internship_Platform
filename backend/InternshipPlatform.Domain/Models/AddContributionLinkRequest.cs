@@ -9,7 +9,10 @@ public sealed class AddContributionLinkRequest
     public string Name { get; set; } = string.Empty;
 
     [Required]
-    [Url]
     [MaxLength(2048)]
     public string Url { get; set; } = string.Empty;
+
+    [Required]
+    [MaxLength(500)]
+    public string Caption { get; set; } = string.Empty;
 }

@@ -1,5 +1,6 @@
 namespace InternshipPlatform.Domain.Entities;
 
+// One mentor review per submitted revision: changes requested, validated or rejected.
 public class ContributionReview
 {
     public Guid Id { get; set; }
@@ -8,9 +9,19 @@ public class ContributionReview
 
     public Guid MentorId { get; set; }
 
-    public string Feedback { get; set; } = string.Empty;
+    public ContributionReviewOutcome Outcome { get; set; }
 
-    public DateTimeOffset ChangesRequestedAtUtc { get; set; }
+    public string Summary { get; set; } = string.Empty;
+
+    public ContributionRejectionReason? RejectionReason { get; set; }
+
+    public DateTimeOffset ReviewedAtUtc { get; set; }
 
     public ContributionRevision ContributionRevision { get; set; } = null!;
+
+    public ICollection<ContributionReviewCheck> Checks { get; set; } =
+        new List<ContributionReviewCheck>();
+
+    public ICollection<ContributionFeedbackItem> FeedbackItems { get; set; } =
+        new List<ContributionFeedbackItem>();
 }

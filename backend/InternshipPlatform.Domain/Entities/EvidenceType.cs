@@ -7,6 +7,15 @@ public enum EvidenceType
     [JsonStringEnumMemberName("link")]
     Link = 1,
 
-    [JsonStringEnumMemberName("file")]
-    File = 2
+    [JsonStringEnumMemberName("document")]
+    Document = 2,
+
+    [JsonStringEnumMemberName("image")]
+    Image = 3,
+
+    [JsonStringEnumMemberName("githubCommit")]
+    GitHubCommit = 4,
+
+    [JsonStringEnumMemberName("githubPullRequest")]
+    GitHubPullRequest = 5
 }

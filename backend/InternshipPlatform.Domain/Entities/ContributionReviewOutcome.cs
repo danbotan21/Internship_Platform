@@ -2,20 +2,14 @@ using System.Text.Json.Serialization;
 
 namespace InternshipPlatform.Domain.Entities;
 
-public enum ContributionStatus
+public enum ContributionReviewOutcome
 {
-    [JsonStringEnumMemberName("draft")]
-    Draft = 1,
-
-    [JsonStringEnumMemberName("submitted")]
-    Submitted = 2,
-
     [JsonStringEnumMemberName("changesRequested")]
-    ChangesRequested = 3,
+    ChangesRequested = 1,
 
     [JsonStringEnumMemberName("validated")]
-    Validated = 4,
+    Validated = 2,
 
     [JsonStringEnumMemberName("rejected")]
-    Rejected = 5
+    Rejected = 3
 }

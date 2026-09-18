@@ -6,7 +6,8 @@ public enum ServiceErrorType
     NotFound = 2,
     Forbidden = 3,
     Conflict = 4,
-    Unexpected = 5
+    Unexpected = 5,
+    ExternalService = 6
 }
 
 public sealed class ServiceResult<T>

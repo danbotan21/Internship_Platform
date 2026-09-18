@@ -4,21 +4,21 @@ namespace InternshipPlatform.Domain.Entities;
 
 public enum ContributionCategory
 {
-    [JsonStringEnumMemberName("Development")]
+    [JsonStringEnumMemberName("development")]
     Development = 1,
 
-    [JsonStringEnumMemberName("UI / UX design")]
+    [JsonStringEnumMemberName("uiUxDesign")]
     UiUxDesign = 2,
 
-    [JsonStringEnumMemberName("Testing")]
+    [JsonStringEnumMemberName("testing")]
     Testing = 3,
 
-    [JsonStringEnumMemberName("Documentation")]
+    [JsonStringEnumMemberName("documentation")]
     Documentation = 4,
 
-    [JsonStringEnumMemberName("Research")]
+    [JsonStringEnumMemberName("research")]
     Research = 5,
 
-    [JsonStringEnumMemberName("Other")]
+    [JsonStringEnumMemberName("other")]
     Other = 6
 }

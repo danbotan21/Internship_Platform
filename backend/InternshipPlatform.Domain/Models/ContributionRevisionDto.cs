@@ -12,15 +12,15 @@ public sealed class ContributionRevisionDto
 
     public ContributionCategory Category { get; set; }
 
-    public string WorkPeriod { get; set; } = string.Empty;
+    public DateOnly? WorkStartDate { get; set; }
+
+    public DateOnly? WorkEndDate { get; set; }
 
     public string Description { get; set; } = string.Empty;
 
     public string OwnRole { get; set; } = string.Empty;
 
-    public string? LinkedTaskReference { get; set; }
-
-    public string? EvidenceNote { get; set; }
+    public LinkedIssueDto? LinkedIssue { get; set; }
 
     public string? RevisionNote { get; set; }
 
@@ -28,10 +28,17 @@ public sealed class ContributionRevisionDto
 
     public IReadOnlyCollection<ContributionEvidenceDto> Evidence { get; set; } =
         Array.Empty<ContributionEvidenceDto>();
+}
 
-    public IReadOnlyCollection<ContributionReviewDto> Reviews { get; set; } =
-        Array.Empty<ContributionReviewDto>();
+public sealed class LinkedIssueDto
+{
+    public string Repository { get; set; } = string.Empty;
 
-    public IReadOnlyCollection<ContributionDecisionDto> Decisions { get; set; } =
-        Array.Empty<ContributionDecisionDto>();
+    public int Number { get; set; }
+
+    public string? Title { get; set; }
+
+    public string? State { get; set; }
+
+    public string Url { get; set; } = string.Empty;
 }

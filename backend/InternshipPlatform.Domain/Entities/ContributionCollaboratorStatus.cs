@@ -4,15 +4,12 @@ namespace InternshipPlatform.Domain.Entities;
 
 public enum ContributionCollaboratorStatus
 {
-    [JsonStringEnumMemberName("Pending confirmation")]
+    [JsonStringEnumMemberName("pending")]
     PendingConfirmation = 1,
 
-    [JsonStringEnumMemberName("Confirmed")]
+    [JsonStringEnumMemberName("confirmed")]
     Confirmed = 2,
 
-    [JsonStringEnumMemberName("Disputed")]
-    Disputed = 3,
-
-    [JsonStringEnumMemberName("Resolved")]
-    Resolved = 4
+    [JsonStringEnumMemberName("disputed")]
+    Disputed = 3
 }

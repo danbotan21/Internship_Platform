@@ -13,16 +13,24 @@ public class ContributionRevision
     public ContributionCategory Category { get; set; } =
         ContributionCategory.Development;
 
-    public string WorkPeriod { get; set; } = string.Empty;
+    // Nullable while the revision is a draft; required before submission.
+    public DateOnly? WorkStartDate { get; set; }
+
+    public DateOnly? WorkEndDate { get; set; }
 
     public string Description { get; set; } = string.Empty;
 
     public string OwnRole { get; set; } = string.Empty;
 
-    // Kept as a reference because InternshipTask belongs to another module.
-    public string? LinkedTaskReference { get; set; }
+    // Internship tasks belong to another module; a GitHub issue of the team
+    // repository is used as the verifiable task reference until then.
+    public string? LinkedIssueRepository { get; set; }
 
-    public string? EvidenceNote { get; set; }
+    public int? LinkedIssueNumber { get; set; }
+
+    public string? LinkedIssueTitle { get; set; }
+
+    public string? LinkedIssueState { get; set; }
 
     public string? RevisionNote { get; set; }
 
@@ -39,7 +47,4 @@ public class ContributionRevision
 
     public ICollection<ContributionReview> Reviews { get; set; } =
         new List<ContributionReview>();
-
-    public ICollection<ContributionDecision> Decisions { get; set; } =
-        new List<ContributionDecision>();
 }
