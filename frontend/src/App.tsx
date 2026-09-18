@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Navigate, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import Overview from './pages/Overview'
 import InternshipProgress from './pages/InternshipProgress'
@@ -14,6 +14,10 @@ import Calendar from './pages/Calendar'
 import Resources from './pages/Resources'
 import Skills from './pages/Skills'
 import AuditLog from './pages/AuditLog'
+import PagePlaceholder from './components/PagePlaceholder'
+import AdminLayout from './components/admin/AdminLayout'
+import UserDirectoryPage from './pages/admin/users/UserDirectoryPage'
+import UserDetailPage from './pages/admin/users/UserDetailPage'
 
 function App() {
   return (
@@ -33,6 +37,20 @@ function App() {
         <Route path="/resources" element={<Resources />} />
         <Route path="/skills" element={<Skills />} />
         <Route path="/audit-log" element={<AuditLog />} />
+      </Route>
+
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="users" replace />} />
+        <Route path="users" element={<UserDirectoryPage />} />
+        <Route path="users/:userId" element={<UserDetailPage />} />
+        <Route
+          path="*"
+          element={
+            <div className="p-8">
+              <PagePlaceholder title="Coming soon" description="This admin section is not built yet." />
+            </div>
+          }
+        />
       </Route>
     </Routes>
   )
