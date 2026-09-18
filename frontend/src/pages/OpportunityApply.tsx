@@ -20,8 +20,10 @@ import {
   Info,
   Calendar as CalendarIcon,
   CheckCircle,
+  X,
 } from 'lucide-react'
 import { MOCK_OPPORTUNITIES } from '../types/opportunities'
+import { CustomSelect } from '../components/CustomSelect'
 
 export default function OpportunityApply() {
   const [searchParams] = useSearchParams()
@@ -67,12 +69,14 @@ export default function OpportunityApply() {
   const [isConfirmed, setIsConfirmed] = useState(true)
 
   const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
-    >
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+  }
+
+  const handleCustomSelectChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
   const handleFileUpload = (
@@ -87,6 +91,12 @@ export default function OpportunityApply() {
         [docType]: { name: selectedFile.name, size: sizeFormatted },
       }))
     }
+  }
+
+  const handleRemoveFile = (
+    docType: 'resume' | 'coverLetter' | 'transcript' | 'certificates'
+  ) => {
+    setFiles((prev) => ({ ...prev, [docType]: null }))
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -405,39 +415,33 @@ export default function OpportunityApply() {
                     <label className="text-xs font-semibold text-gray-700">
                       Education Level <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      name="educationLevel"
+                    <CustomSelect
                       value={formData.educationLevel}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-50/70 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15 transition-all cursor-pointer"
-                    >
-                      <option value="High School">High School</option>
-                      <option value="Bachelor's Degree">Bachelor's Degree</option>
-                      <option value="Master's Degree">Master's Degree</option>
-                      <option value="PhD">PhD</option>
-                    </select>
+                      onChange={(val) => handleCustomSelectChange('educationLevel', val)}
+                      options={[
+                        { value: 'High School', label: 'High School' },
+                        { value: "Bachelor's Degree", label: "Bachelor's Degree" },
+                        { value: "Master's Degree", label: "Master's Degree" },
+                        { value: 'PhD', label: 'PhD' },
+                      ]}
+                    />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-gray-700">
                       Field of Study <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      name="fieldOfStudy"
+                    <CustomSelect
                       value={formData.fieldOfStudy}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-50/70 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15 transition-all cursor-pointer"
-                    >
-                      <option value="Computer Science">Computer Science</option>
-                      <option value="Software Engineering">
-                        Software Engineering
-                      </option>
-                      <option value="Information Technology">
-                        Information Technology
-                      </option>
-                      <option value="Data Science">Data Science</option>
-                      <option value="Other">Other</option>
-                    </select>
+                      onChange={(val) => handleCustomSelectChange('fieldOfStudy', val)}
+                      options={[
+                        { value: 'Computer Science', label: 'Computer Science' },
+                        { value: 'Software Engineering', label: 'Software Engineering' },
+                        { value: 'Information Technology', label: 'Information Technology' },
+                        { value: 'Data Science', label: 'Data Science' },
+                        { value: 'Other', label: 'Other' },
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -463,16 +467,15 @@ export default function OpportunityApply() {
                     <label className="text-xs font-semibold text-gray-700">
                       Availability <span className="text-red-500">*</span>
                     </label>
-                    <select
-                      name="availability"
+                    <CustomSelect
                       value={formData.availability}
-                      onChange={handleInputChange}
-                      className="w-full bg-gray-50/70 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15 transition-all cursor-pointer"
-                    >
-                      <option value="Full-time">Full-time</option>
-                      <option value="Part-time">Part-time</option>
-                      <option value="Flexible">Flexible</option>
-                    </select>
+                      onChange={(val) => handleCustomSelectChange('availability', val)}
+                      options={[
+                        { value: 'Full-time', label: 'Full-time' },
+                        { value: 'Part-time', label: 'Part-time' },
+                        { value: 'Flexible', label: 'Flexible' },
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -542,9 +545,19 @@ export default function OpportunityApply() {
                         Upload your latest resume (PDF, DOC, or DOCX).
                       </p>
                       {files.resume && (
-                        <p className="text-xs text-emerald-700 font-medium pt-1">
-                          Uploaded: {files.resume.name} ({files.resume.size})
-                        </p>
+                        <div className="flex items-center gap-1.5 group pt-1">
+                          <p className="text-xs text-emerald-700 font-medium">
+                            Uploaded: {files.resume.name} ({files.resume.size})
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile('resume')}
+                            title="Remove file"
+                            className="p-0.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer ml-1"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -583,9 +596,19 @@ export default function OpportunityApply() {
                         Tell us why you're a good fit (optional).
                       </p>
                       {files.coverLetter && (
-                        <p className="text-xs text-emerald-700 font-medium pt-1">
-                          Uploaded: {files.coverLetter.name} ({files.coverLetter.size})
-                        </p>
+                        <div className="flex items-center gap-1.5 group pt-1">
+                          <p className="text-xs text-emerald-700 font-medium">
+                            Uploaded: {files.coverLetter.name} ({files.coverLetter.size})
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile('coverLetter')}
+                            title="Remove file"
+                            className="p-0.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer ml-1"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -624,9 +647,19 @@ export default function OpportunityApply() {
                         Upload your academic transcript (optional).
                       </p>
                       {files.transcript && (
-                        <p className="text-xs text-emerald-700 font-medium pt-1">
-                          Uploaded: {files.transcript.name} ({files.transcript.size})
-                        </p>
+                        <div className="flex items-center gap-1.5 group pt-1">
+                          <p className="text-xs text-emerald-700 font-medium">
+                            Uploaded: {files.transcript.name} ({files.transcript.size})
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile('transcript')}
+                            title="Remove file"
+                            className="p-0.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer ml-1"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -665,9 +698,19 @@ export default function OpportunityApply() {
                         Upload relevant certificates (optional).
                       </p>
                       {files.certificates && (
-                        <p className="text-xs text-emerald-700 font-medium pt-1">
-                          Uploaded: {files.certificates.name} ({files.certificates.size})
-                        </p>
+                        <div className="flex items-center gap-1.5 group pt-1">
+                          <p className="text-xs text-emerald-700 font-medium">
+                            Uploaded: {files.certificates.name} ({files.certificates.size})
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveFile('certificates')}
+                            title="Remove file"
+                            className="p-0.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-colors cursor-pointer ml-1"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       )}
                     </div>
                   </div>
@@ -715,8 +758,13 @@ export default function OpportunityApply() {
 
                 <button
                   type="button"
+                  disabled={!files.resume}
                   onClick={() => setCurrentStep(3)}
-                  className="bg-[#ff5500] hover:bg-[#e64d00] text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors cursor-pointer flex items-center gap-2 shadow-xs"
+                  className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${
+                    files.resume
+                      ? 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
+                      : 'bg-gray-300 cursor-not-allowed'
+                  }`}
                 >
                   <span>Continue to Review</span>
                   <ArrowRight className="w-4 h-4" />

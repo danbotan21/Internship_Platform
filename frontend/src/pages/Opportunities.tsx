@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search,
@@ -14,91 +14,10 @@ import {
   RotateCcw,
   BarChart3,
   CheckCircle2,
-  Check,
 } from 'lucide-react'
+import { CustomSelect } from '../components/CustomSelect'
 import { MOCK_OPPORTUNITIES } from '../types/opportunities'
 import type { Opportunity } from '../types/opportunities'
-
-interface CustomSelectOption {
-  value: string
-  label: string
-}
-
-interface CustomSelectProps {
-  value: string
-  onChange: (val: string) => void
-  options: CustomSelectOption[]
-}
-
-function CustomSelect({ value, onChange, options }: CustomSelectProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const containerRef = useRef<HTMLDivElement>(null)
-
-  const selectedOption =
-    options.find((opt) => opt.value === value) || options[0]
-
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        containerRef.current &&
-        !containerRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
-  return (
-    <div className="relative w-full" ref={containerRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full bg-gray-50/90 hover:bg-gray-100/80 border text-xs font-medium text-gray-800 rounded-xl px-3.5 py-2.5 flex items-center justify-between shadow-2xs transition-all cursor-pointer ${
-          isOpen
-            ? 'border-emerald-600 ring-2 ring-emerald-800/15 bg-white'
-            : 'border-gray-200'
-        }`}
-      >
-        <span className="truncate">{selectedOption.label}</span>
-        <ChevronDown
-          className={`w-4 h-4 text-gray-400 transition-transform ${
-            isOpen ? 'rotate-180 text-emerald-700' : ''
-          }`}
-        />
-      </button>
-
-      {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 z-40 bg-white border border-gray-200 rounded-2xl shadow-xl p-1.5 space-y-0.5 animate-in fade-in slide-in-from-top-1 duration-150 max-h-56 overflow-y-auto no-scrollbar">
-          {options.map((option) => {
-            const isSelected = option.value === value
-            return (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  onChange(option.value)
-                  setIsOpen(false)
-                }}
-                className={`w-full text-left px-3 py-2 text-xs rounded-xl font-medium transition-colors cursor-pointer flex items-center justify-between ${
-                  isSelected
-                    ? 'bg-emerald-50 text-emerald-900 font-semibold'
-                    : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
-                }`}
-              >
-                <span className="truncate">{option.label}</span>
-                {isSelected && (
-                  <Check className="w-3.5 h-3.5 text-emerald-700 shrink-0 ml-2" />
-                )}
-              </button>
-            )
-          })}
-        </div>
-      )}
-    </div>
-  )
-}
 
 export default function Opportunities() {
   const navigate = useNavigate()
@@ -546,7 +465,7 @@ export default function Opportunities() {
               <div className="flex flex-col gap-2 pt-1 sm:pt-0 shrink-0 min-w-[130px]">
                 <button
                   type="button"
-                  onClick={() => navigate(`/opportunities-apply?id=${selectedOpportunity.id}`)}
+                  onClick={() => navigate(`/opportunities/apply?id=${selectedOpportunity.id}`)}
                   className="bg-[#ff5500] hover:bg-[#e64d00] text-white font-medium text-sm px-6 py-2 sm:py-2.5 rounded-xl transition-colors cursor-pointer shadow-xs w-full text-center"
                 >
                   Apply Now
