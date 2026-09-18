@@ -1,7 +1,6 @@
 using InternshipPlatform.BusinessLayer.Core;
 using InternshipPlatform.BusinessLayer.Interfaces;
 using InternshipPlatform.DataAccess.Context;
-using InternshipPlatform.Domain.Entities;
 using InternshipPlatform.Domain.Models;
 
 namespace InternshipPlatform.BusinessLayer.Structure;
@@ -10,10 +9,24 @@ public sealed class ContributionActionExecution : ContributionActions, IContribu
 {
     public ContributionActionExecution(
         AppDbContext context,
-        IContributionFileStorageAction fileStorage)
-        : base(context, fileStorage)
+        IContributionFileStorageAction fileStorage,
+        IInternshipDirectoryAction directory,
+        IGitHubAction gitHub)
+        : base(context, fileStorage, directory, gitHub)
     {
     }
+
+    // ---- Student: contributions -------------------------------------------
+    public Task<ServiceResult<IReadOnlyList<ContributionListItemDto>>> GetStudentContributionsAsync(
+        Guid studentId,
+        CancellationToken ct = default) =>
+        GetStudentContributionsExecution(studentId, ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> GetStudentContributionAsync(
+        Guid contributionId,
+        Guid studentId,
+        CancellationToken ct = default) =>
+        GetStudentContributionExecution(contributionId, studentId, ct);
 
     public Task<ServiceResult<ContributionDetailsDto>> CreateDraftAsync(
         SaveContributionDraftRequest request,
@@ -28,20 +41,20 @@ public sealed class ContributionActionExecution : ContributionActions, IContribu
         CancellationToken ct = default) =>
         UpdateDraftExecution(contributionId, request, studentId, ct);
 
-    public Task<IReadOnlyList<ContributionListItemDto>> GetStudentContributionsAsync(
-        Guid studentId,
-        string? search,
-        ContributionStatus? status,
-        ContributionCategory? category,
-        CancellationToken ct = default) =>
-        GetStudentContributionsExecution(studentId, search, status, category, ct);
-
-    public Task<ServiceResult<ContributionDetailsDto>> GetStudentContributionAsync(
+    public Task<ServiceResult<bool>> DeleteDraftAsync(
         Guid contributionId,
         Guid studentId,
         CancellationToken ct = default) =>
-        GetStudentContributionExecution(contributionId, studentId, ct);
+        DeleteDraftExecution(contributionId, studentId, ct);
 
+    public Task<ServiceResult<ContributionDetailsDto>> SubmitAsync(
+        Guid contributionId,
+        SubmitContributionRequest request,
+        Guid studentId,
+        CancellationToken ct = default) =>
+        SubmitExecution(contributionId, request, studentId, ct);
+
+    // ---- Student: evidence ------------------------------------------------
     public Task<ServiceResult<ContributionDetailsDto>> AddLinkEvidenceAsync(
         Guid contributionId,
         AddContributionLinkRequest request,
@@ -52,21 +65,26 @@ public sealed class ContributionActionExecution : ContributionActions, IContribu
     public Task<ServiceResult<ContributionDetailsDto>> AddFileEvidenceAsync(
         Guid contributionId,
         Guid studentId,
-        string evidenceName,
+        string caption,
         string originalFileName,
-        string contentType,
         long fileSizeBytes,
         Stream content,
         CancellationToken ct = default) =>
         AddFileEvidenceExecution(
             contributionId,
             studentId,
-            evidenceName,
+            caption,
             originalFileName,
-            contentType,
             fileSizeBytes,
             content,
             ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> AddGitHubEvidenceAsync(
+        Guid contributionId,
+        AddGitHubEvidenceRequest request,
+        Guid studentId,
+        CancellationToken ct = default) =>
+        AddGitHubEvidenceExecution(contributionId, request, studentId, ct);
 
     public Task<ServiceResult<ContributionDetailsDto>> RemoveEvidenceAsync(
         Guid contributionId,
@@ -75,44 +93,42 @@ public sealed class ContributionActionExecution : ContributionActions, IContribu
         CancellationToken ct = default) =>
         RemoveEvidenceExecution(contributionId, evidenceId, studentId, ct);
 
-    public Task<ServiceResult<ContributionDetailsDto>> SubmitAsync(
+    public Task<ServiceResult<EvidenceFileContent>> OpenEvidenceFileAsync(
+        Guid evidenceId,
+        Guid actorId,
+        CancellationToken ct = default) =>
+        OpenEvidenceFileExecution(evidenceId, actorId, ct);
+
+    public Task<ServiceResult<IReadOnlyList<GitHubLiveStatusDto>>> GetLiveGitHubStatusAsync(
         Guid contributionId,
-        SubmitContributionRequest request,
+        Guid actorId,
+        CancellationToken ct = default) =>
+        GetLiveGitHubStatusExecution(contributionId, actorId, ct);
+
+    // ---- Student: GitHub picker -------------------------------------------
+    public Task<ServiceResult<IReadOnlyList<GitHubRepositoryOptionDto>>> GetGitHubRepositoriesAsync(
         Guid studentId,
         CancellationToken ct = default) =>
-        SubmitExecution(contributionId, request, studentId, ct);
+        GetGitHubRepositoriesExecution(studentId, ct);
 
-    public Task<IReadOnlyList<ContributionListItemDto>> GetReviewQueueAsync(
-        string? search,
-        ContributionCategory? category,
+    public Task<ServiceResult<IReadOnlyList<GitHubCommitOptionDto>>> GetGitHubCommitsAsync(
+        Guid studentId,
+        string repository,
+        string branch,
         CancellationToken ct = default) =>
-        GetReviewQueueExecution(search, category, ct);
+        GetGitHubCommitsExecution(studentId, repository, branch, ct);
 
-    public Task<ServiceResult<ContributionDetailsDto>> GetMentorContributionAsync(
-        Guid contributionId,
+    public Task<ServiceResult<IReadOnlyList<GitHubPullRequestOptionDto>>> GetGitHubPullRequestsAsync(
+        Guid studentId,
+        string repository,
         CancellationToken ct = default) =>
-        GetMentorContributionExecution(contributionId, ct);
+        GetGitHubPullRequestsExecution(studentId, repository, ct);
 
-    public Task<ServiceResult<ContributionDetailsDto>> RequestChangesAsync(
-        Guid contributionId,
-        RequestContributionChangesRequest request,
-        Guid mentorId,
+    // ---- Student: collaborators -------------------------------------------
+    public Task<ServiceResult<IReadOnlyList<InternshipMemberDto>>> GetTeamMembersAsync(
+        Guid studentId,
         CancellationToken ct = default) =>
-        RequestChangesExecution(contributionId, request, mentorId, ct);
-
-    public Task<ServiceResult<ContributionDetailsDto>> ValidateAsync(
-        Guid contributionId,
-        ValidateContributionRequest request,
-        Guid mentorId,
-        CancellationToken ct = default) =>
-        ValidateExecution(contributionId, request, mentorId, ct);
-
-    public Task<ServiceResult<ContributionDetailsDto>> RejectAsync(
-        Guid contributionId,
-        RejectContributionRequest request,
-        Guid mentorId,
-        CancellationToken ct = default) =>
-        RejectExecution(contributionId, request, mentorId, ct);
+        GetTeamMembersExecution(studentId, ct);
 
     public Task<ServiceResult<ContributionDetailsDto>> AddCollaboratorAsync(
         Guid contributionId,
@@ -121,42 +137,62 @@ public sealed class ContributionActionExecution : ContributionActions, IContribu
         CancellationToken ct = default) =>
         AddCollaboratorExecution(contributionId, request, studentId, ct);
 
-    public Task<ServiceResult<ContributionDetailsDto>> UpdateCollaboratorRoleAsync(
+    public Task<ServiceResult<ContributionDetailsDto>> UpdateCollaboratorAsync(
         Guid contributionId,
         Guid collaboratorId,
-        UpdateContributionCollaboratorRoleRequest request,
+        UpdateContributionCollaboratorRequest request,
         Guid studentId,
         CancellationToken ct = default) =>
-        UpdateCollaboratorRoleExecution(
-            contributionId,
-            collaboratorId,
-            request,
-            studentId,
-            ct);
+        UpdateCollaboratorExecution(contributionId, collaboratorId, request, studentId, ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> RemoveCollaboratorAsync(
+        Guid contributionId,
+        Guid collaboratorId,
+        Guid studentId,
+        CancellationToken ct = default) =>
+        RemoveCollaboratorExecution(contributionId, collaboratorId, studentId, ct);
+
+    // ---- Collaborator -----------------------------------------------------
+    public Task<ServiceResult<IReadOnlyList<ContributionListItemDto>>> GetAttributedContributionsAsync(
+        Guid userId,
+        CancellationToken ct = default) =>
+        GetAttributedContributionsExecution(userId, ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> GetAttributedContributionAsync(
+        Guid contributionId,
+        Guid userId,
+        CancellationToken ct = default) =>
+        GetAttributedContributionExecution(contributionId, userId, ct);
 
     public Task<ServiceResult<ContributionDetailsDto>> ConfirmParticipationAsync(
         Guid contributionId,
-        Guid collaboratorId,
+        Guid userId,
         CancellationToken ct = default) =>
-        ConfirmParticipationExecution(contributionId, collaboratorId, ct);
+        ConfirmParticipationExecution(contributionId, userId, ct);
 
     public Task<ServiceResult<ContributionDetailsDto>> DisputeParticipationAsync(
         Guid contributionId,
-        Guid collaboratorId,
+        Guid userId,
         DisputeContributionParticipationRequest request,
         CancellationToken ct = default) =>
-        DisputeParticipationExecution(contributionId, collaboratorId, request, ct);
+        DisputeParticipationExecution(contributionId, userId, request, ct);
 
-    public Task<ServiceResult<ContributionDetailsDto>> ResolveAttributionAsync(
-        Guid contributionId,
-        Guid collaboratorId,
-        ResolveContributionAttributionRequest request,
-        Guid studentId,
+    // ---- Mentor -----------------------------------------------------------
+    public Task<ServiceResult<IReadOnlyList<ContributionListItemDto>>> GetMentorContributionsAsync(
+        Guid mentorId,
         CancellationToken ct = default) =>
-        ResolveAttributionExecution(
-            contributionId,
-            collaboratorId,
-            request,
-            studentId,
-            ct);
+        GetMentorContributionsExecution(mentorId, ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> GetMentorContributionAsync(
+        Guid contributionId,
+        Guid mentorId,
+        CancellationToken ct = default) =>
+        GetMentorContributionExecution(contributionId, mentorId, ct);
+
+    public Task<ServiceResult<ContributionDetailsDto>> ReviewAsync(
+        Guid contributionId,
+        ReviewContributionRequest request,
+        Guid mentorId,
+        CancellationToken ct = default) =>
+        ReviewExecution(contributionId, request, mentorId, ct);
 }
