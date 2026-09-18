@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import Layout from '../components/Layout'
+import Layout from '../components/layout/Layout'
 import Attendance from '../pages/Attendance'
 import AuditLog from '../pages/AuditLog'
 import Calendar from '../pages/Calendar'
@@ -24,7 +24,7 @@ export default function AppRoutes() {
         <Route path='/tasks' element={<Tasks />} />
         <Route path='/attendance' element={<Attendance />} />
         <Route path='/reports' element={<Reports />} />
-        <Route path='/contributions' element={<Contributions />} />
+        <Route path='/contributions/*' element={<Contributions />} />
         <Route path='/evaluation' element={<Evaluation />} />
         <Route path='/opportunities' element={<Opportunities />} />
         <Route path='/quizzes' element={<Quizzes />} />
