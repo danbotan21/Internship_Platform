@@ -8,6 +8,8 @@ using InternshipPlatform.BusinessLayer.Admin.Verification;
 using InternshipPlatform.DataAccess.Admin.Verification;
 using InternshipPlatform.BusinessLayer.Admin.Companies;
 using InternshipPlatform.DataAccess.Admin.Companies;
+using InternshipPlatform.BusinessLayer.Admin.Dashboard;
+using InternshipPlatform.DataAccess.Admin.Dashboard;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -40,6 +42,7 @@ builder.Services.AddScoped<IUserDirectoryService, UserDirectoryService>();
 builder.Services.AddScoped<IUserLifecycleService, UserLifecycleService>();
 builder.Services.AddScoped<ICompanyVerificationService, CompanyVerificationService>();
 builder.Services.AddScoped<ICompanyAdminService, CompanyAdminService>();
+builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 

@@ -22,6 +22,7 @@ import VerificationQueuePage from './pages/admin/verification/VerificationQueueP
 import VerificationDetailPage from './pages/admin/verification/VerificationDetailPage'
 import CompanyListPage from './pages/admin/companies/CompanyListPage'
 import CompanyDetailPage from './pages/admin/companies/CompanyDetailPage'
+import AdminDashboardPage from './pages/admin/dashboard/AdminDashboardPage'
 
 function App() {
   return (
@@ -44,7 +45,8 @@ function App() {
       </Route>
 
       <Route path="/admin" element={<AdminLayout />}>
-        <Route index element={<Navigate to="users" replace />} />
+        <Route index element={<Navigate to="overview" replace />} />
+        <Route path="overview" element={<AdminDashboardPage />} />
         <Route path="users" element={<UserDirectoryPage />} />
         <Route path="users/:userId" element={<UserDetailPage />} />
         <Route path="verification" element={<VerificationQueuePage />} />
