@@ -20,6 +20,8 @@ import UserDirectoryPage from './pages/admin/users/UserDirectoryPage'
 import UserDetailPage from './pages/admin/users/UserDetailPage'
 import VerificationQueuePage from './pages/admin/verification/VerificationQueuePage'
 import VerificationDetailPage from './pages/admin/verification/VerificationDetailPage'
+import CompanyListPage from './pages/admin/companies/CompanyListPage'
+import CompanyDetailPage from './pages/admin/companies/CompanyDetailPage'
 
 function App() {
   return (
@@ -47,6 +49,8 @@ function App() {
         <Route path="users/:userId" element={<UserDetailPage />} />
         <Route path="verification" element={<VerificationQueuePage />} />
         <Route path="verification/:requestId" element={<VerificationDetailPage />} />
+        <Route path="companies" element={<CompanyListPage />} />
+        <Route path="companies/:companyId" element={<CompanyDetailPage />} />
         <Route
           path="*"
           element={

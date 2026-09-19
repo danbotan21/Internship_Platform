@@ -130,6 +130,14 @@ export default function UserDetailPage() {
                 <>
                   <Field label="Company" value={user.company.legalName} />
                   <Field label="Company role" value={companyRoleLabels[user.company.role]} />
+                  <div className="mt-1">
+                    <Link
+                      to={`/admin/companies/${user.company.id}`}
+                      className="text-xs font-bold text-[#1b4332] hover:underline"
+                    >
+                      Open company →
+                    </Link>
+                  </div>
                 </>
               ) : (
                 <p className="text-xs text-[#718078]">Not a member of any company.</p>

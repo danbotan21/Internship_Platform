@@ -199,6 +199,14 @@ export default function VerificationDetailPage() {
             <section className="flex flex-col gap-3 rounded-[14px] border border-[#e2e8e4] bg-white p-5.5">
               <h2 className="text-[17px] font-bold">Verification checks</h2>
               <DecisionBanner request={request} />
+              {request.companyId && (
+                <Link
+                  to={`/admin/companies/${request.companyId}`}
+                  className="text-xs font-bold text-[#1b4332] hover:underline"
+                >
+                  Open company →
+                </Link>
+              )}
               <CheckRow ok={request.checks.emailDomainMatchesWebsite} label="Email domain matches website · automatic" />
               <CheckRow
                 ok={request.checks.registrationNumberFormatValid}
