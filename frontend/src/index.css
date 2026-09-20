@@ -1,1 +1,162 @@
 @import 'tailwindcss';
+
+.article-editor:empty::before {
+	color: #82908b;
+	content: attr(data-placeholder);
+	pointer-events: none;
+.article-editor ul {
+	list-style: disc;
+	padding-left: 1.5rem;
+}
+
+.article-editor ol {
+	list-style: decimal;
+	padding-left: 1.5rem;
+}
+
+.resource-shader {
+	isolation: isolate;
+	background-color: #164c3a;
+}
+
+.resource-shader::before,
+.resource-shader::after {
+	position: absolute;
+	inset: -45%;
+	content: '';
+	pointer-events: none;
+}
+
+.resource-shader::before {
+	inset: -35%;
+	background:
+		radial-gradient(ellipse at 20% 25%, rgba(166, 255, 219, 0.75), transparent 34%),
+		radial-gradient(ellipse at 78% 18%, rgba(255, 255, 255, 0.48), transparent 28%),
+		radial-gradient(ellipse at 70% 82%, rgba(7, 67, 48, 0.8), transparent 38%),
+		linear-gradient(135deg, #164c3a, #2d8064 52%, #82b89b);
+	background-size: 135% 135%, 120% 120%, 145% 145%, 100% 100%;
+	opacity: 0.92;
+	filter: blur(14px) saturate(1.15);
+	animation: resource-shader-fluid 12s ease-in-out infinite alternate;
+}
+
+.resource-shader::after {
+	inset: -15%;
+	background:
+		radial-gradient(ellipse at 35% 65%, rgba(255, 255, 255, 0.3), transparent 22%),
+		radial-gradient(ellipse at 82% 45%, rgba(0, 48, 34, 0.45), transparent 30%);
+	filter: blur(28px);
+	opacity: 0.7;
+	mix-blend-mode: screen;
+	animation: resource-shader-fluid-glow 9s ease-in-out infinite alternate;
+}
+
+.resource-shader-guide {
+	background: linear-gradient(135deg, #164c3a, #2d8064 48%, #82b89b);
+}
+
+.resource-shader-template {
+	background: linear-gradient(135deg, #675b3d, #a38f61 48%, #d5c69b);
+}
+
+.resource-shader-fluid {
+	position: absolute;
+	inset: -35%;
+	z-index: 0;
+	border-radius: 45%;
+	background: conic-gradient(from 120deg at 50% 50%, #0c3d2d, #69c59b, #d9ffe9, #278663, #0c3d2d);
+	filter: blur(28px) saturate(1.35);
+	mix-blend-mode: screen;
+	opacity: 0.78;
+	animation: resource-shader-fluid-orbit 10s ease-in-out infinite alternate;
+}
+
+.resource-shader-template .resource-shader-fluid {
+	background: conic-gradient(from 120deg at 50% 50%, #4d3d22, #c9a95d, #fff1b8, #856b36, #4d3d22);
+}
+
+.group:hover .resource-shader-fluid,
+.group:focus-visible .resource-shader-fluid {
+	animation-duration: 4s;
+}
+
+.resource-shader-glow {
+	position: absolute;
+	border-radius: 999px;
+	filter: blur(10px);
+	opacity: 0.65;
+	mix-blend-mode: screen;
+}
+
+.resource-shader-glow-one {
+	top: -45px;
+	right: 8%;
+	width: 180px;
+	height: 180px;
+	background: rgba(255, 255, 255, 0.34);
+	animation: resource-shader-drift-one 9s ease-in-out infinite alternate;
+}
+
+.resource-shader-glow-two {
+	bottom: -80px;
+	left: 18%;
+	width: 220px;
+	height: 150px;
+	background: rgba(11, 67, 49, 0.5);
+	animation: resource-shader-drift-two 11s ease-in-out infinite alternate;
+}
+
+.group:hover .resource-shader::before,
+.group:focus-visible .resource-shader::before {
+	animation-duration: 5s;
+}
+
+@keyframes resource-shader-fluid {
+	0% {
+		background-position: 0% 20%, 100% 0%, 75% 100%, 0% 0%;
+		transform: scale(1) rotate(0deg);
+	}
+
+	50% {
+		background-position: 70% 80%, 20% 40%, 0% 25%, 0% 0%;
+		transform: scale(1.08) rotate(3deg);
+	}
+
+	100% {
+		background-position: 100% 10%, 0% 80%, 80% 0%, 0% 0%;
+		transform: scale(1.02) rotate(-3deg);
+	}
+}
+
+@keyframes resource-shader-fluid-glow {
+	to {
+		transform: translate(-24px, 16px) scale(1.2);
+		opacity: 0.48;
+	}
+}
+
+@keyframes resource-shader-fluid-orbit {
+	0% {
+		transform: rotate(-18deg) scale(0.9) translate(-6%, 4%);
+	}
+
+	50% {
+		transform: rotate(16deg) scale(1.1) translate(5%, -4%);
+	}
+
+	100% {
+		transform: rotate(42deg) scale(0.98) translate(-2%, 7%);
+	}
+}
+
+@keyframes resource-shader-drift-one {
+	to {
+		transform: translate(-35px, 24px) scale(1.2);
+	}
+}
+
+@keyframes resource-shader-drift-two {
+	to {
+		transform: translate(42px, -18px) scale(1.15);
+	}
+}

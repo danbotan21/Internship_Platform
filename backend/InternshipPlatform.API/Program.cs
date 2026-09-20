@@ -1,4 +1,6 @@
 using InternshipPlatform.DataAccess.Context;
+using InternshipPlatform.BusinessLayer.Resources;
+using InternshipPlatform.DataAccess.Resources;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,6 +26,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
+builder.Services.AddScoped<ResourceService>();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
