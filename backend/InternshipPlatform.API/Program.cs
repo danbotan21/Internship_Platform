@@ -26,7 +26,7 @@ builder.Services.AddCors(options =>
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? "Host=localhost;Port=5432;Database=internship_platform;Username=internship_user;Password=password";
+    ?? "Host=localhost;Port=5432;Database=internship_platform;Username=internship_user;Password=password1234";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
