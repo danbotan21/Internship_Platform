@@ -1,11 +1,14 @@
+using System.Security.Claims;
 using InternshipPlatform.BusinessLayer.Resources;
 using InternshipPlatform.Domain.Resources;
 using InternshipPlatform.Domain.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InternshipPlatform.API.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/resources")]
 public class ResourcesController(ResourceService resourceService) : ControllerBase
 {
@@ -35,17 +38,19 @@ public class ResourcesController(ResourceService resourceService) : ControllerBa
     }
 
     [HttpPost]
+    [Authorize(Roles = "Mentor,Admin,Administrator")]
     public async Task<ActionResult<ResourceResponse>> CreateResource(CreateResourceRequest request, CancellationToken cancellationToken)
     {
         try
         {
+            var userId = GetUserId();
             var resource = await resourceService.CreateAsync(
                 new CreateResourceCommand(request.Title, request.Description, request.ContentHtml, request.Type,
                     request.Format, request.Category, request.Owner, request.MentorName, request.Tags,
                     request.TargetGroup, request.IsDraft),
-                GetUserId(), GetUserRole(), cancellationToken);
+                userId, GetUserRole(), cancellationToken);
 
-            return CreatedAtAction(nameof(GetResource), new { slug = resource.Slug }, ToResponse(resource, GetUserId()));
+            return CreatedAtAction(nameof(GetResource), new { slug = resource.Slug }, ToResponse(resource, userId));
         }
         catch (ArgumentException exception)
         {
@@ -58,19 +63,21 @@ public class ResourcesController(ResourceService resourceService) : ControllerBa
     }
 
     [HttpPut("{id:guid}")]
+    [Authorize(Roles = "Mentor,Admin,Administrator")]
     public async Task<ActionResult<ResourceResponse>> UpdateResource(
         Guid id, UpdateResourceRequest request, CancellationToken cancellationToken)
     {
         try
         {
+            var userId = GetUserId();
             var resource = await resourceService.UpdateAsync(
                 id,
                 new UpdateResourceCommand(request.Title, request.Description, request.ContentHtml, request.Type,
                     request.Category, request.Owner, request.MentorName, request.Format, request.Tags,
                     request.TargetGroup, request.IsDraft),
-                GetUserId(), GetUserRole(), cancellationToken);
+                userId, GetUserRole(), cancellationToken);
 
-            return resource is null ? NotFound() : Ok(ToResponse(resource, GetUserId()));
+            return resource is null ? NotFound() : Ok(ToResponse(resource, userId));
         }
         catch (UnauthorizedAccessException exception)
         {
@@ -79,6 +86,7 @@ public class ResourcesController(ResourceService resourceService) : ControllerBa
     }
 
     [HttpDelete("{id:guid}")]
+    [Authorize(Roles = "Mentor,Admin,Administrator")]
     public async Task<IActionResult> DeleteResource(Guid id, CancellationToken cancellationToken)
     {
         try
@@ -113,10 +121,11 @@ public class ResourcesController(ResourceService resourceService) : ControllerBa
     public async Task<IActionResult> MarkNotificationAsRead(Guid id, CancellationToken cancellationToken) =>
         await resourceService.MarkNotificationAsReadAsync(id, GetUserId(), cancellationToken) ? NoContent() : NotFound();
 
-    private Guid GetUserId() =>
-        Guid.TryParse(Request.Headers["X-User-Id"].FirstOrDefault(), out var userId) ? userId : Guid.Empty;
+    private Guid GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) is { } value && Guid.TryParse(value, out var userId)
+        ? userId
+        : Guid.Empty;
 
-    private string GetUserRole() => Request.Headers["X-User-Role"].FirstOrDefault() ?? string.Empty;
+    private string GetUserRole() => User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
 
     private static ResourceResponse ToResponse(Resource resource, Guid userId) =>
         new(resource.Id, resource.CreatedByUserId, resource.Slug, resource.Type, resource.Format,

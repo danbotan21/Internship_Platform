@@ -1,6 +1,20 @@
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:5080'
 const sessionStorageKey = 'internflow.session'
 
+function getStoredSession() {
+  if (typeof window === 'undefined') return null
+
+  try {
+    return JSON.parse(window.localStorage.getItem(sessionStorageKey) ?? 'null') as {
+      accessToken?: string
+      userId?: string
+      role?: string
+    } | null
+  } catch {
+    return null
+  }
+}
+
 export type Resource = {
   id: string
   createdByUserId: string
@@ -59,12 +73,15 @@ export function getUserRole() {
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const session = getStoredSession()
+
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      'X-User-Id': getUserId(),
-      'X-User-Role': getUserRole(),
+      ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
+      ...(session?.userId ? { 'X-User-Id': session.userId } : {}),
+      ...(session?.role ? { 'X-User-Role': session.role } : {}),
       ...options?.headers,
     },
   })
