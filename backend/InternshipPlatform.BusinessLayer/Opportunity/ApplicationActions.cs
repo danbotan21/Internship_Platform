@@ -4,9 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InternshipPlatform.BusinessLayer.Opportunity;
 
-/// <summary>
-/// Data access actions for Application entity.
-/// </summary>
+// Data access actions for Application entity.
 public class ApplicationActions(AppDbContext db)
 {
     public async Task<Application?> GetByIdAsync(Guid id)

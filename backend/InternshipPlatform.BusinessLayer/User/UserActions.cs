@@ -4,9 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InternshipPlatform.BusinessLayer.Users;
 
-/// <summary>
-/// Data access actions for User entity.
-/// </summary>
+// Data access actions for User entity.
 public class UserActions(AppDbContext db)
 {
     public async Task<Domain.User?> GetByIdAsync(Guid userId)

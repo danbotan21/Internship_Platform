@@ -4,7 +4,7 @@ using InternshipPlatform.Domain.Models.Application;
 
 namespace InternshipPlatform.BusinessLayer.Opportunity;
 
-/// <summary>Lightweight file info passed from the controller to the business layer.</summary>
+// Lightweight file info passed from the controller to the business layer.
 public record UploadedFile(string Name, string FileName, Stream Stream);
 
 public interface IApplicationLogic

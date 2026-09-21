@@ -12,7 +12,7 @@ public class UserController(IUserLogic userLogic) : ControllerBase
 {
     private Guid CurrentUserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
-    /// <summary>GET /api/users/me — current user profile</summary>
+    //GET /api/users/me — current user profile
     [HttpGet("me")]
     public async Task<IActionResult> GetProfile()
     {
@@ -20,7 +20,7 @@ public class UserController(IUserLogic userLogic) : ControllerBase
         return result.Success ? Ok(result) : NotFound(result);
     }
 
-    /// <summary>GET /api/mentor/company-info — mentor's company name/info</summary>
+    //GET /api/mentor/company-info — mentor's company name/info
     [HttpGet("/api/mentor/company-info")]
     public async Task<IActionResult> GetCompanyInfo()
     {

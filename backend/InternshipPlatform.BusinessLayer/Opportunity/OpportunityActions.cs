@@ -4,9 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InternshipPlatform.BusinessLayer.Opportunity;
 
-/// <summary>
-/// Data access actions for Opportunity entity (raw DB operations, no business logic).
-/// </summary>
+// Data access actions for Opportunity entity (raw DB operations, no business logic).
 public class OpportunityActions(AppDbContext db)
 {
     public async Task<List<Domain.Entities.Opportunity>> GetOpenOpportunitiesAsync()

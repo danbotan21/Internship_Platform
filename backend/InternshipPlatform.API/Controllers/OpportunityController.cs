@@ -16,7 +16,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
 
     // ─── Public / Student ────────────────────────────────────────────────────
 
-    /// <summary>GET /api/opportunities — paginated list with filters</summary>
+    //GET /api/opportunities — paginated list with filters
     [HttpGet("api/opportunities")]
     [AllowAnonymous]
     public async Task<IActionResult> GetOpportunities([FromQuery] OpportunityQueryParams query)
@@ -25,7 +25,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return result.Success ? Ok(result) : NotFound(result);
     }
 
-    /// <summary>GET /api/opportunities/{id} — full detail</summary>
+    //GET /api/opportunities/{id} — full detail
     [HttpGet("api/opportunities/{id:guid}")]
     [AllowAnonymous]
     public async Task<IActionResult> GetOpportunityById(Guid id)
@@ -34,7 +34,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return result.Success ? Ok(result) : NotFound(result);
     }
 
-    /// <summary>POST /api/opportunities/{id}/save</summary>
+    //POST /api/opportunities/{id}/save
     [HttpPost("api/opportunities/{id:guid}/save")]
     [Authorize]
     public async Task<IActionResult> SaveOpportunity(Guid id)
@@ -43,7 +43,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
-    /// <summary>DELETE /api/opportunities/{id}/save</summary>
+    //DELETE /api/opportunities/{id}/save
     [HttpDelete("api/opportunities/{id:guid}/save")]
     [Authorize]
     public async Task<IActionResult> UnsaveOpportunity(Guid id)
@@ -52,7 +52,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
-    /// <summary>POST /api/opportunities/{id}/apply — multipart/form-data</summary>
+    //POST /api/opportunities/{id}/apply — multipart/form-data
     [HttpPost("api/opportunities/{id:guid}/apply")]
     [Authorize]
     public async Task<IActionResult> Apply(Guid id, [FromForm] SubmitApplicationDto dto)
@@ -67,7 +67,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
 
     // ─── Student workspace ───────────────────────────────────────────────────
 
-    /// <summary>GET /api/student/applications</summary>
+    //GET /api/student/applications
     [HttpGet("api/student/applications")]
     [Authorize]
     public async Task<IActionResult> GetMyApplications()
@@ -76,7 +76,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return Ok(result);
     }
 
-    /// <summary>GET /api/student/applications/{id}</summary>
+    //GET /api/student/applications/{id}
     [HttpGet("api/student/applications/{id:guid}")]
     [Authorize]
     public async Task<IActionResult> GetMyApplication(Guid id)
@@ -87,7 +87,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
 
     // ─── Mentor workspace ────────────────────────────────────────────────────
 
-    /// <summary>GET /api/mentor/opportunities</summary>
+    //GET /api/mentor/opportunities
     [HttpGet("api/mentor/opportunities")]
     [Authorize]
     public async Task<IActionResult> GetMentorOpportunities()
@@ -96,7 +96,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return Ok(result);
     }
 
-    /// <summary>POST /api/mentor/opportunities</summary>
+    //POST /api/mentor/opportunities
     [HttpPost("api/mentor/opportunities")]
     [Authorize]
     public async Task<IActionResult> CreateOpportunity([FromBody] CreateOpportunityDto dto)
@@ -105,7 +105,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return result.Success ? CreatedAtAction(nameof(GetOpportunityById), new { id = result.Data!.Id }, result) : BadRequest(result);
     }
 
-    /// <summary>PUT /api/mentor/opportunities/{id}</summary>
+    //PUT /api/mentor/opportunities/{id}
     [HttpPut("api/mentor/opportunities/{id:guid}")]
     [Authorize]
     public async Task<IActionResult> UpdateOpportunity(Guid id, [FromBody] CreateOpportunityDto dto)
@@ -114,7 +114,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
-    /// <summary>PATCH /api/mentor/opportunities/{id}/status</summary>
+    //PATCH /api/mentor/opportunities/{id}/status
     [HttpPatch("api/mentor/opportunities/{id:guid}/status")]
     [Authorize]
     public async Task<IActionResult> PatchStatus(Guid id, [FromBody] PatchOpportunityStatusDto dto)
@@ -123,7 +123,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
-    /// <summary>GET /api/mentor/opportunities/{id}/applications</summary>
+    //GET /api/mentor/opportunities/{id}/applications
     [HttpGet("api/mentor/opportunities/{id:guid}/applications")]
     [Authorize]
     public async Task<IActionResult> GetApplicationsByOpportunity(Guid id)
@@ -132,7 +132,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return Ok(result);
     }
 
-    /// <summary>GET /api/mentor/applications/{applicationId}/review</summary>
+    //GET /api/mentor/applications/{applicationId}/review
     [HttpGet("api/mentor/applications/{applicationId:guid}/review")]
     [Authorize]
     public async Task<IActionResult> GetApplicationForReview(Guid applicationId)
@@ -141,7 +141,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return result.Success ? Ok(result) : NotFound(result);
     }
 
-    /// <summary>POST /api/mentor/applications/{applicationId}/review</summary>
+    //POST /api/mentor/applications/{applicationId}/review
     [HttpPost("api/mentor/applications/{applicationId:guid}/review")]
     [Authorize]
     public async Task<IActionResult> ReviewApplication(Guid applicationId, [FromBody] ReviewApplicationDto dto)
@@ -150,7 +150,7 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
-    /// <summary>GET /api/documents/{documentId:guid}/download</summary>
+    //GET /api/documents/{documentId:guid}/download
     [HttpGet("api/documents/{documentId:guid}/download")]
     [Authorize]
     public async Task<IActionResult> DownloadDocument(Guid documentId)
