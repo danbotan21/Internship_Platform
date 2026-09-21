@@ -11,13 +11,19 @@ const STORAGE_KEY_DOCS = 'internflow_vault_documents'
 const STORAGE_KEY_COMPLIANCE = 'internflow_compliance_signed'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5080'
 
+const generateId = () => {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
 const INITIAL_DOCUMENTS: VaultDocument[] = [
   {
     id: '11111111-1111-1111-1111-111111111111',
     title: 'Spring Milestone 2 Report',
     fileName: 'Spring_Milestone_2_Report.pdf',
     category: 'Reports',
-    fileUrl: '/uploads/Spring_Milestone_2_Report.pdf',
+    fileUrl: '/dummy.pdf',
     fileType: 'pdf',
     size: 1468006, // 1.4 MB
     version: 3,
@@ -140,7 +146,7 @@ const INITIAL_DOCUMENTS: VaultDocument[] = [
     title: 'Health & Safety Compliance Form',
     fileName: 'Health_Safety_Compliance_Form.pdf',
     category: 'Agreements',
-    fileUrl: '/uploads/Health_Safety_Compliance_Form.pdf',
+    fileUrl: '/dummy.pdf',
     fileType: 'pdf',
     size: 317440, // 310 KB
     version: 1,
@@ -231,6 +237,7 @@ class DocumentationService {
     mandatoryOnly?: boolean
     userRole?: string
   }): Promise<VaultDocument[]> {
+    /*
     try {
       const query = new URLSearchParams()
       if (params?.category && params.category !== 'All Docs') query.append('category', params.category)
@@ -241,11 +248,13 @@ class DocumentationService {
 
       const res = await fetch(`${API_BASE_URL}/api/documents?${query.toString()}`)
       if (res.ok) {
-        return await res.json()
+        const data = await res.json()
+        return Array.isArray(data) ? data : (data?.data && Array.isArray(data.data) ? data.data : [])
       }
     } catch {
       // Backend not running locally in dev mode; fallback to storage
     }
+    */
 
     // Local filter fallback
     let docs = this.getLocalDocs()
@@ -285,6 +294,7 @@ class DocumentationService {
       uploadedBy?: string
     }
   ): Promise<VaultDocument> {
+    /*
     try {
       const formData = new FormData()
       formData.append('file', file)
@@ -305,11 +315,12 @@ class DocumentationService {
     } catch {
       // fallback
     }
+    */
 
     const docs = this.getLocalDocs()
     const ext = file.name.split('.').pop() || 'pdf'
     const newDoc: VaultDocument = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       title: metadata.title || file.name.replace(/\.[^/.]+$/, ''),
       fileName: file.name,
       category: metadata.category,
@@ -328,7 +339,7 @@ class DocumentationService {
       updatedAt: new Date().toISOString(),
       audits: [
         {
-          id: crypto.randomUUID(),
+          id: generateId(),
           documentId: '',
           action: 'Uploaded',
           performedBy: metadata.uploadedBy || 'Ana Popescu',
@@ -347,8 +358,11 @@ class DocumentationService {
     id: string,
     status: DocumentStatus,
     reason?: string,
-    performedBy = 'Ana Popescu'
+    performedBy = 'Ana Popescu',
+    currentDoc?: VaultDocument
   ): Promise<VaultDocument | null> {
+    let backendDoc: VaultDocument | null = null;
+    /*
     try {
       const res = await fetch(`${API_BASE_URL}/api/documents/${id}/status`, {
         method: 'PATCH',
@@ -356,14 +370,33 @@ class DocumentationService {
         body: JSON.stringify({ status, reason, performedBy }),
       })
       if (res.ok) {
-        return await res.json()
+        const data = await res.json()
+        if (data && data.status === status) {
+          return data; // Backend successfully updated and returned the correct document
+        } else {
+          backendDoc = data; // Backend returned something else or didn't update status
+        }
       }
     } catch {
       // fallback
     }
+    */
 
     const docs = this.getLocalDocs()
-    const doc = docs.find((d) => d.id === id)
+    let doc = docs.find((d) => d.id === id)
+    if (!doc) {
+      if (backendDoc) {
+        doc = backendDoc;
+        docs.unshift(doc);
+      } else if (currentDoc) {
+        // If it's not in local storage, and backend failed, use the one from UI state!
+        doc = JSON.parse(JSON.stringify(currentDoc));
+        if (doc) docs.unshift(doc);
+      } else {
+        return null
+      }
+    }
+
     if (!doc) return null
 
     doc.status = status
@@ -381,7 +414,7 @@ class DocumentationService {
     }
 
     doc.audits.unshift({
-      id: crypto.randomUUID(),
+      id: generateId(),
       documentId: doc.id,
       action: status === 'Approved' ? 'Approved' : 'Rejected',
       performedBy,
@@ -396,7 +429,8 @@ class DocumentationService {
   async signDocument(
     id: string,
     role = 'Student',
-    signedBy = 'Ana Popescu'
+    signedBy = 'Ana Popescu',
+    currentDoc?: VaultDocument
   ): Promise<VaultDocument | null> {
     try {
       const res = await fetch(`${API_BASE_URL}/api/documents/${id}/sign`, {
@@ -412,7 +446,16 @@ class DocumentationService {
     }
 
     const docs = this.getLocalDocs()
-    const doc = docs.find((d) => d.id === id)
+    let doc = docs.find((d) => d.id === id)
+    if (!doc) {
+      if (currentDoc) {
+        doc = JSON.parse(JSON.stringify(currentDoc))
+        if (doc) docs.unshift(doc)
+      } else {
+        return null
+      }
+    }
+
     if (!doc) return null
 
     if (doc.completedSignatures < doc.totalSignatures) {
@@ -430,7 +473,7 @@ class DocumentationService {
 
     doc.updatedAt = new Date().toISOString()
     doc.audits.unshift({
-      id: crypto.randomUUID(),
+      id: generateId(),
       documentId: doc.id,
       action: 'Signed',
       performedBy: signedBy,
@@ -512,7 +555,9 @@ class DocumentationService {
       })
       if (res.ok) {
         const data = await res.json()
-        return data.affectedCount
+        if (data && typeof data.affectedCount === 'number' && data.affectedCount > 0) {
+          return data.affectedCount
+        }
       }
     } catch {
       // fallback

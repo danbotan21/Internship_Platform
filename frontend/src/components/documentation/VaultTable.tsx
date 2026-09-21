@@ -1,8 +1,10 @@
-import { Download, Trash2, Eye, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Trash2, CheckCircle2, AlertCircle, Download } from 'lucide-react'
 import type {
   VaultDocument,
   DocumentCategory,
 } from '../../types/documentation'
+import DocumentThumbnail from './DocumentThumbnail'
+import { ErrorBoundary } from '../ErrorBoundary'
 
 interface VaultTableProps {
   documents: VaultDocument[]
@@ -26,6 +28,7 @@ const TABS: ('All Docs' | DocumentCategory)[] = [
   'Other',
 ]
 
+
 export default function VaultTable({
   documents,
   activeTab,
@@ -38,288 +41,205 @@ export default function VaultTable({
   onBulkDelete,
   onBulkApprove,
 }: VaultTableProps) {
-  const isAllSelected =
-    documents.length > 0 && selectedDocIds.length === documents.length
+  const isAllSelected = documents.length > 0 && selectedDocIds.length === documents.length
 
-  const formatFileSize = (bytes: number): string => {
-    if (bytes >= 1048576) {
-      return (bytes / 1048576).toFixed(1) + ' MB'
-    }
-    return Math.round(bytes / 1024) + ' KB'
-  }
-
-  const formatDate = (isoString: string): string => {
+  const formatDate = (isoString?: string): string => {
+    if (!isoString) return 'Unknown'
     const d = new Date(isoString)
-    return d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    })
+    if (isNaN(d.getTime())) return 'Unknown'
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   }
 
-  const getFileBadge = (fileType: string) => {
-    switch (fileType.toLowerCase()) {
-      case 'pdf':
-        return <span className="flex h-6 w-8 items-center justify-center rounded bg-[#E5484D] text-[10px] font-bold text-white uppercase tracking-tight">PDF</span>
-      case 'docx':
-      case 'doc':
-        return <span className="flex h-6 w-8 items-center justify-center rounded bg-[#2B579A] text-[10px] font-bold text-white uppercase tracking-tight">DOC</span>
-      case 'xlsx':
-      case 'xls':
-        return <span className="flex h-6 w-8 items-center justify-center rounded bg-[#217346] text-[10px] font-bold text-white uppercase tracking-tight">XLS</span>
-      default:
-        return <span className="flex h-6 w-8 items-center justify-center rounded bg-gray-500 text-[10px] font-bold text-white uppercase tracking-tight">FILE</span>
-    }
-  }
-
-  const renderSignatureDots = (completed: number, total = 3) => {
-    const dots = []
-    for (let i = 0; i < total; i++) {
-      const isFilled = i < completed
-      dots.push(
-        <span
-          key={i}
-          className={`h-2 w-2 rounded-full ${
-            isFilled ? 'bg-[#153327]' : 'border border-gray-300 bg-transparent'
-          }`}
-        />
-      )
-    }
-    return <div className="flex items-center gap-1">{dots}</div>
-  }
-
-  const renderStatusBadge = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'approved':
-      case 'complete':
-        return (
-          <span className="inline-flex items-center rounded-full bg-[#EAF7EE] px-2.5 py-0.5 text-xs font-medium text-[#1E7E34]">
-            Approved
-          </span>
-        )
-      case 'pending':
-      case 'submitted':
-        return (
-          <span className="inline-flex items-center rounded-full bg-[#FEF5E7] px-2.5 py-0.5 text-xs font-medium text-[#D97706]">
-            Pending
-          </span>
-        )
-      case 'rejected':
-        return (
-          <span className="inline-flex items-center rounded-full bg-[#FDF0EE] px-2.5 py-0.5 text-xs font-medium text-[#E5484D]">
-            Rejected
-          </span>
-        )
-      default:
-        return (
-          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
-            {status}
-          </span>
-        )
+  const handleDownload = (e: React.MouseEvent, doc: VaultDocument) => {
+    e.stopPropagation()
+    if (doc?.fileUrl) {
+      const a = document.createElement('a')
+      a.href = doc.fileUrl
+      a.download = doc.fileName || 'download'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
     }
   }
 
   return (
     <div>
-      {/* Category Tabs matching screenshot */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        {TABS.map((tab) => {
-          const isActive = activeTab === tab
-          return (
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+        {/* Tabs */}
+        <div className="flex flex-wrap gap-2">
+          {TABS.map((tab) => (
             <button
               key={tab}
-              type="button"
               onClick={() => onTabChange(tab)}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
-                isActive
-                  ? 'bg-[#153327] text-white shadow-xs'
-                  : 'border border-gray-200/80 bg-white text-gray-600 hover:bg-gray-50'
-              }`}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab
+                ? 'bg-[#1B4332] text-white shadow-xs'
+                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+                }`}
             >
               {tab}
             </button>
-          )
-        })}
+          ))}
+        </div>
+        {/* Select All Toggle */}
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-700 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-xs hover:bg-gray-50">
+            <input
+              type="checkbox"
+              checked={isAllSelected}
+              onChange={onSelectAll}
+              className="h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+            />
+            Select All
+          </label>
+        </div>
       </div>
 
-      {/* Bulk Action Toolbar */}
+      {/* Bulk Actions Menu */}
       {selectedDocIds.length > 0 && (
-        <div className="mb-3 flex items-center justify-between rounded-xl bg-orange-50 px-4 py-2 border border-orange-200 text-xs font-medium text-gray-800">
-          <span>
-            <strong className="text-[#FF7A00]">{selectedDocIds.length}</strong> document(s) selected
+        <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl bg-blue-50/50 p-3 border border-blue-100 shadow-xs animate-in fade-in slide-in-from-top-2">
+          <span className="text-sm font-medium text-blue-900">
+            {selectedDocIds.length} document{selectedDocIds.length > 1 ? 's' : ''} selected
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <button
-              type="button"
               onClick={onBulkApprove}
-              className="inline-flex items-center gap-1 rounded-md bg-emerald-600 px-2.5 py-1 text-white hover:bg-emerald-700 transition-colors shadow-xs"
+              className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-[#1E7E34] shadow-xs border border-green-200 hover:bg-green-50 transition-colors"
             >
-              <CheckCircle2 className="h-3 w-3" />
-              Bulk Approve
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              Approve Selected
             </button>
             <button
-              type="button"
               onClick={onBulkDelete}
-              className="inline-flex items-center gap-1 rounded-md bg-red-600 px-2.5 py-1 text-white hover:bg-red-700 transition-colors shadow-xs"
+              className="flex-1 sm:flex-none flex justify-center items-center gap-1.5 rounded-lg bg-white px-3 py-1.5 text-xs font-semibold text-red-600 shadow-xs border border-red-200 hover:bg-red-50 transition-colors"
             >
-              <Trash2 className="h-3 w-3" />
-              Bulk Delete
+              <Trash2 className="h-4 w-4 shrink-0" />
+              Delete Selected
             </button>
           </div>
         </div>
       )}
 
-      {/* Directory Table Card */}
-      <div className="overflow-hidden rounded-2xl border border-gray-200/80 bg-white shadow-xs">
-        <div className="border-b border-gray-100 px-5 py-4">
-          <h3 className="text-sm font-semibold text-gray-900">Vault Directory</h3>
+      {/* Google Drive Style Grid View */}
+      {documents.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-[16px] border border-dashed border-gray-300 bg-[#f8f9fa] py-16 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+            <AlertCircle className="h-6 w-6 text-gray-400" />
+          </div>
+          <h3 className="mt-4 text-sm font-semibold text-gray-900">No documents found</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Try adjusting your filters or upload a new document.
+          </p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          {documents.filter(Boolean).map((doc) => {
+            const isSelected = selectedDocIds.includes(doc?.id)
+            const isPdf = doc?.fileType?.toLowerCase() === 'pdf'
+            const isDocx = ['docx', 'doc'].includes(doc?.fileType?.toLowerCase() || '')
+            const isExcel = ['xlsx', 'xls', 'csv'].includes(doc?.fileType?.toLowerCase() || '')
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-gray-600">
-            <thead>
-              <tr className="border-b border-gray-100 bg-white text-xs font-medium text-gray-400">
-                <th className="w-10 px-4 py-3 text-center">
-                  <input
-                    type="checkbox"
-                    checked={isAllSelected}
-                    onChange={onSelectAll}
-                    aria-label="Select all documents"
-                    className="h-4 w-4 rounded-sm border-gray-300 text-[#FF7A00] focus:ring-[#FF7A00] accent-[#FF7A00]"
-                  />
-                </th>
-                <th className="px-3 py-3 font-medium text-gray-500">Filename</th>
-                <th className="px-3 py-3 font-medium text-gray-500">Upload Date</th>
-                <th className="px-3 py-3 font-medium text-gray-500">Size</th>
-                <th className="px-3 py-3 font-medium text-gray-500">Signatures</th>
-                <th className="px-3 py-3 font-medium text-gray-500">Version</th>
-                <th className="px-3 py-3 font-medium text-gray-500">Status</th>
-                <th className="px-4 py-3 text-right font-medium text-gray-500">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {documents.length === 0 ? (
-                <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-400">
-                    <AlertCircle className="mx-auto mb-2 h-6 w-6 text-gray-300" />
-                    No documents found matching the filter criteria.
-                  </td>
-                </tr>
-              ) : (
-                documents.map((doc) => {
-                  const isSelected = selectedDocIds.includes(doc.id)
-                  return (
-                    <tr
-                      key={doc.id}
-                      onClick={() => onRowClick(doc)}
-                      className={`group cursor-pointer transition-colors hover:bg-gray-50/80 ${
-                        isSelected ? 'bg-orange-50/30' : ''
-                      }`}
-                    >
-                      {/* Checkbox */}
-                      <td
-                        className="w-10 px-4 py-3 text-center"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isSelected}
-                          onChange={() => onToggleSelectRow(doc.id)}
-                          aria-label={`Select ${doc.fileName}`}
-                          className="h-4 w-4 rounded-sm border-gray-300 text-[#FF7A00] focus:ring-[#FF7A00] accent-[#FF7A00]"
-                        />
-                      </td>
+            return (
+              <div
+                key={doc?.id || Math.random().toString()}
+                onClick={() => doc && onRowClick(doc)}
+                className={`group relative flex flex-col rounded-[12px] bg-[#f0f4f9] hover:bg-[#e4e9f1] transition-colors cursor-pointer overflow-hidden ${isSelected ? 'ring-2 ring-blue-500 bg-[#e8f0fe]' : ''
+                  }`}
+              >
+                {/* Top Header: Icon, Title */}
+                <div className="flex items-center gap-2 p-3 pl-3 pr-2 z-10 bg-transparent relative">
+                  {/* Icon or Checkbox */}
+                  <div className="shrink-0 flex items-center justify-center w-5 h-5 relative" onClick={(e) => e.stopPropagation()}>
+                    {/* Checkbox (Hover or Selected) */}
+                    <div className={`absolute inset-0 flex items-center justify-center bg-[#f0f4f9] group-hover:bg-[#e4e9f1] ${isSelected ? 'opacity-100 bg-[#e8f0fe] group-hover:bg-[#e8f0fe] z-20' : 'opacity-0 group-hover:opacity-100 z-20'} transition-opacity`}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => onToggleSelectRow(doc.id)}
+                        className="h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer shadow-sm"
+                      />
+                    </div>
+                    
+                    {/* Icon (Hidden when hovered/selected) */}
+                    <div className={`${isSelected ? 'opacity-0' : 'group-hover:opacity-0'} transition-opacity flex items-center justify-center w-full h-full`}>
+                      {isPdf ? (
+                        <div className="w-5 h-5 rounded bg-red-500 flex items-center justify-center text-[8px] font-bold text-white uppercase tracking-tighter shadow-xs">PDF</div>
+                      ) : isDocx ? (
+                        <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-[8px] font-bold text-white uppercase tracking-tighter shadow-xs">DOC</div>
+                      ) : isExcel ? (
+                        <div className="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-[8px] font-bold text-white uppercase tracking-tighter shadow-xs">XLS</div>
+                      ) : (
+                        <div className="w-5 h-5 rounded bg-gray-500 flex items-center justify-center text-[8px] font-bold text-white uppercase tracking-tighter shadow-xs">FILE</div>
+                      )}
+                    </div>
+                  </div>
+                  {/* Title */}
+                  <div className="flex-1 min-w-0 pr-6">
+                    <h4 className="text-[13px] font-medium text-gray-800 truncate" title={doc?.fileName}>
+                      {doc?.fileName || 'Unknown Document'}
+                    </h4>
+                  </div>
+                </div>
 
-                      {/* Filename & Category Badge */}
-                      <td className="px-3 py-3 font-medium text-gray-900">
-                        <div className="flex items-center gap-2.5">
-                          {getFileBadge(doc.fileType)}
-                          <span
-                            className="max-w-[180px] sm:max-w-[240px] truncate text-sm font-medium text-gray-800 hover:text-[#FF7A00]"
-                            title={doc.fileName}
-                          >
-                            {doc.fileName}
-                          </span>
-                          <span className="shrink-0 rounded-full bg-[#EBF1FF] px-2 py-0.5 text-xs font-medium text-[#3366CC]">
-                            {doc.category === 'Agreements'
-                              ? 'Agreement'
-                              : doc.category === 'Reports'
-                              ? 'Report'
-                              : doc.category}
-                          </span>
-                        </div>
-                      </td>
+                {/* Status Dot (Absolute Top Right) */}
+                <div 
+                  className={`absolute top-4 right-3 z-20 shrink-0 w-2.5 h-2.5 rounded-full shadow-sm transition-opacity ${isSelected ? 'opacity-0' : 'group-hover:opacity-0'}`}
+                  style={{
+                    backgroundColor: 
+                      doc?.status?.toLowerCase().includes('approve') ? '#22c55e' : // bg-green-500
+                      doc?.status?.toLowerCase().includes('reject') ? '#ef4444' : // bg-red-500
+                      '#eab308' // bg-yellow-500
+                  }}
+                  title={doc?.status || 'Pending'}
+                />
 
-                      {/* Upload Date */}
-                      <td className="px-3 py-3 text-gray-600">
-                        {formatDate(doc.createdAt)}
-                      </td>
+                {/* Action buttons (Download & Delete) - Absolute Top Right on Hover */}
+                <div className="absolute top-2 right-2 z-30 shrink-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-[#e4e9f1] rounded-md shadow-sm p-0.5">
+                  <button
+                    onClick={(e) => doc && handleDownload(e, doc)}
+                    className="p-1 rounded hover:bg-white text-gray-600 transition-colors"
+                    title="Download document"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); doc && onDeleteDoc(doc.id); }}
+                    className="p-1 rounded hover:bg-white text-gray-600 transition-colors"
+                    title="Delete document"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
 
-                      {/* Size */}
-                      <td className="px-3 py-3 text-gray-600">
-                        {formatFileSize(doc.size)}
-                      </td>
+                {/* Preview Area (Middle) */}
+                <div className="mx-3 mt-1 mb-2 h-[160px] bg-white rounded-lg border border-gray-200/60 overflow-hidden flex items-center justify-center relative shadow-sm pointer-events-none group-hover:shadow transition-shadow">
+                  <ErrorBoundary fallback={
+                    <div className="flex flex-col items-center justify-center bg-gray-50 w-full h-full p-4">
+                      <div className="w-[70%] h-[90%] bg-white rounded shadow-sm border border-gray-200 flex flex-col items-center justify-center gap-2">
+                        <AlertCircle className="w-8 h-8 text-red-300" />
+                        <span className="text-[10px] font-medium uppercase text-red-400">Preview Error</span>
+                      </div>
+                    </div>
+                  }>
+                    <DocumentThumbnail document={doc} className="w-full h-full" />
+                  </ErrorBoundary>
+                </div>
 
-                      {/* Signatures multi-party indicator */}
-                      <td className="px-3 py-3" title={`${doc.completedSignatures} of ${doc.totalSignatures} signatures completed`}>
-                        {renderSignatureDots(doc.completedSignatures, doc.totalSignatures)}
-                      </td>
-
-                      {/* Version badge */}
-                      <td className="px-3 py-3 font-medium text-gray-700">
-                        v{doc.version}
-                      </td>
-
-                      {/* Status Pill Badge */}
-                      <td className="px-3 py-3">
-                        {renderStatusBadge(doc.status)}
-                      </td>
-
-                      {/* Action Icons matching screenshot */}
-                      <td
-                        className="px-4 py-3 text-right"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <div className="flex items-center justify-end gap-1.5 text-gray-400">
-                          {/* Quick Preview Eye */}
-                          <button
-                            type="button"
-                            onClick={() => onRowClick(doc)}
-                            title="Quick Preview"
-                            className="rounded p-1.5 transition-colors hover:bg-gray-100 hover:text-gray-700"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-
-                          {/* Download Button */}
-                          <a
-                            href={doc.fileUrl}
-                            download={doc.fileName}
-                            title="Download document"
-                            className="rounded p-1.5 transition-colors hover:bg-gray-100 hover:text-gray-700"
-                          >
-                            <Download className="h-4 w-4" />
-                          </a>
-
-                          {/* Delete Button */}
-                          <button
-                            type="button"
-                            onClick={() => onDeleteDoc(doc.id)}
-                            title="Delete document"
-                            className="rounded p-1.5 transition-colors hover:bg-red-50 hover:text-red-600"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  )
-                })
-              )}
-            </tbody>
-          </table>
+                {/* Footer (Avatar and Date) */}
+                <div className="flex items-center gap-2 px-3 pb-3">
+                  <div className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] font-medium flex items-center justify-center shrink-0">
+                    {doc?.uploadedBy ? doc.uploadedBy.charAt(0).toUpperCase() : 'V'}
+                  </div>
+                  <div className="flex flex-col flex-1 min-w-0 justify-center">
+                    <span className="text-[11px] text-gray-500 truncate">
+                      Deschis de tine • {formatDate(doc?.createdAt)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
         </div>
-      </div>
+      )}
     </div>
   )
 }

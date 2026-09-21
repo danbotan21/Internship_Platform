@@ -29,7 +29,7 @@ export default function FilterSidebar({
   onToggleMandatory,
 }: FilterSidebarProps) {
   return (
-    <aside className="w-64 shrink-0 rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs">
+    <aside className="w-full xl:w-64 shrink-0 rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs">
       {/* Category Section */}
       <div className="mb-6">
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">

@@ -26,7 +26,7 @@ export default function RightRailPanel({
   )
 
   return (
-    <aside className="w-72 shrink-0 space-y-5">
+    <aside className="w-full xl:w-72 shrink-0 space-y-5">
       {/* 1. Vault Storage Card */}
       <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs">
         <h3 className="mb-3 text-sm font-semibold text-gray-900">Vault Storage</h3>
@@ -75,7 +75,7 @@ export default function RightRailPanel({
       {/* 3. Recent Actions & Logs Card */}
       <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs">
         <h3 className="mb-3 text-sm font-semibold text-gray-900">Recent Actions & Logs</h3>
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-[280px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
           {activityLogs.map((log) => (
             <div key={log.id} className="text-sm">
               <p className="font-medium text-gray-800">{log.title}</p>

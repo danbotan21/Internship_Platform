@@ -18,7 +18,7 @@ export default function DocumentationPage() {
   const docState = useDocumentation(role, session?.fullName)
 
   return (
-    <div className="min-w-[960px] pb-12">
+    <div className="w-full pb-12 overflow-x-hidden bg-gray-50/30 min-h-screen">
       {/* Top Header Navigation matching screenshot */}
       <TopBar
         searchQuery={docState.searchQuery}
@@ -46,7 +46,7 @@ export default function DocumentationPage() {
       <MetricHeader stats={docState.stats} />
 
       {/* Main 3-Column Layout matching screenshot */}
-      <div className="flex items-start gap-8">
+      <div className="flex flex-col xl:flex-row items-start gap-8">
         {/* Column 1: Left Filter Bar */}
         <FilterSidebar
           categoryFilters={docState.categoryFilters}
@@ -58,14 +58,14 @@ export default function DocumentationPage() {
         />
 
         {/* Column 2: Central Vault Area */}
-        <div className="flex-1 min-w-0">
+        <div className="w-full xl:flex-1 min-w-0">
           {/* Drag-and-drop dropzone */}
           <UploadDropzone
             onUpload={docState.handleUploadFile}
             activeCategory={docState.activeTab}
           />
 
-          {/* Directory Table with category tabs */}
+          {/* Directory Grid with category tabs */}
           <VaultTable
             documents={docState.documents}
             activeTab={docState.activeTab}
@@ -89,14 +89,12 @@ export default function DocumentationPage() {
         />
       </div>
 
-      {/* Slide-over Quick Preview Drawer */}
+      {/* Right Side Quick Preview Drawer */}
       <QuickPreviewDrawer
         document={docState.selectedDoc}
         onClose={docState.handleClosePreview}
         onApprove={docState.handleApprove}
-        onOpenRejectModal={docState.handleOpenRejectModal}
-        onSign={docState.handleSignDocument}
-        capabilities={capabilities}
+        onReject={(id) => docState.handleOpenRejectModal(docState.selectedDoc!)}
       />
 
       {/* US 729: Rejection Reason Modal */}

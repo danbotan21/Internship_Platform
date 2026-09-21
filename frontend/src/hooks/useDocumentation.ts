@@ -13,6 +13,12 @@ import {
   INITIAL_ACTIVITY_LOGS,
 } from '../services/documentationService'
 
+const generateId = () => {
+  return typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+}
+
 export function useDocumentation(userRole = 'Student', userName?: string) {
   const currentActorName = userName || (userRole === 'Mentor' ? 'Mentor' : 'Student')
   const [documents, setDocuments] = useState<VaultDocument[]>([])
@@ -44,7 +50,7 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
   const [statusFilters, setStatusFilters] = useState<Record<DocumentStatus, boolean>>({
     Approved: true,
     Pending: true,
-    Rejected: false,
+    Rejected: true,
     Expiring: false,
     Complete: false,
   })
@@ -68,9 +74,9 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
       const docs = await documentationService.getDocuments({
         userRole,
       })
-      setDocuments(docs)
+      setDocuments(Array.isArray(docs) ? docs : [])
       const newStats = await documentationService.getStats()
-      setStats(newStats)
+      setStats(newStats || {})
     } finally {
       setIsLoading(false)
     }
@@ -166,7 +172,7 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
       setDocuments((prev) => [created, ...prev])
       setActivityLogs((prev) => [
         {
-          id: crypto.randomUUID(),
+          id: generateId(),
           title: 'New Document Uploaded',
           fileName: created.fileName,
           timeAgo: 'Just now',
@@ -182,28 +188,32 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
 
   const handleApprove = useCallback(
     async (id: string) => {
+      // Find the document currently being acted upon to use as a fallback
+      const currentDoc = documents.find((d) => d.id === id) || undefined;
       const updated = await documentationService.updateStatus(
         id,
         'Approved',
         undefined,
-        currentActorName
+        currentActorName,
+        currentDoc
       )
       if (updated) {
         setDocuments((prev) => prev.map((d) => (d.id === id ? updated : d)))
-        if (selectedDoc?.id === id) setSelectedDoc(updated)
+        setSelectedDoc((prev) => (prev?.id === id ? updated : prev))
         setActivityLogs((prev) => [
           {
-            id: crypto.randomUUID(),
-            title: 'File Approved',
+            id: generateId(),
+            title: 'Document Approved',
             fileName: updated.fileName,
             timeAgo: 'Just now',
             badgeColor: 'text-emerald-600',
           },
           ...prev,
         ])
+        await refreshData()
       }
     },
-    [currentActorName, selectedDoc?.id]
+    [currentActorName, documents, refreshData]
   )
 
   const handleOpenRejectModal = useCallback((doc: VaultDocument) => {
@@ -218,14 +228,15 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
         docToReject.id,
         'Rejected',
         reason,
-        currentActorName
+        currentActorName,
+        docToReject
       )
       if (updated) {
         setDocuments((prev) => prev.map((d) => (d.id === docToReject.id ? updated : d)))
-        if (selectedDoc?.id === docToReject.id) setSelectedDoc(updated)
+        setSelectedDoc((prev) => (prev?.id === docToReject.id ? updated : prev))
         setActivityLogs((prev) => [
           {
-            id: crypto.randomUUID(),
+            id: generateId(),
             title: 'File Rejected with Reason',
             fileName: updated.fileName,
             timeAgo: 'Just now',
@@ -237,22 +248,24 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
       setIsRejectModalOpen(false)
       setDocToReject(null)
     },
-    [docToReject, currentActorName, selectedDoc?.id]
+    [docToReject, currentActorName]
   )
 
   const handleSignDocument = useCallback(
     async (id: string) => {
+      const currentDoc = documents.find((d) => d.id === id) || undefined;
       const updated = await documentationService.signDocument(
         id,
         userRole === 'Mentor' ? 'Mentor' : 'Student',
-        currentActorName
+        currentActorName,
+        currentDoc
       )
       if (updated) {
         setDocuments((prev) => prev.map((d) => (d.id === id ? updated : d)))
-        if (selectedDoc?.id === id) setSelectedDoc(updated)
+        setSelectedDoc((prev) => (prev?.id === id ? updated : prev))
         setActivityLogs((prev) => [
           {
-            id: crypto.randomUUID(),
+            id: generateId(),
             title: 'Signature Confirmed',
             fileName: updated.fileName,
             timeAgo: 'Just now',
@@ -262,17 +275,17 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
         ])
       }
     },
-    [userRole, currentActorName, selectedDoc?.id]
+    [userRole, currentActorName, documents]
   )
 
   const handleDeleteDocument = useCallback(
     async (id: string) => {
       await documentationService.deleteDocument(id)
       setDocuments((prev) => prev.filter((d) => d.id !== id))
-      if (selectedDoc?.id === id) setSelectedDoc(null)
+      setSelectedDoc((prev) => (prev?.id === id ? null : prev))
       setSelectedDocIds((prev) => prev.filter((i) => i !== id))
     },
-    [selectedDoc?.id]
+    []
   )
 
   const handleBulkDelete = useCallback(async () => {
@@ -294,7 +307,7 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
     setIsComplianceSigned(true)
     setActivityLogs((prev) => [
       {
-        id: crypto.randomUUID(),
+        id: generateId(),
         title: 'Health & Safety Sign-Off Confirmed',
         fileName: 'Health_Safety_Compliance_Form.pdf',
         timeAgo: 'Just now',

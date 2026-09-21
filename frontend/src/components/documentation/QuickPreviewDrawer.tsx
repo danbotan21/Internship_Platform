@@ -1,426 +1,155 @@
-import { useEffect } from 'react'
-import { createPortal } from 'react-dom'
-import { X, Download, CheckCircle2, XCircle, FileText, Clock, PenTool, ShieldCheck } from 'lucide-react'
-import type { VaultDocument, UserRoleCapabilities } from '../../types/documentation'
+import { X, CheckCircle2 } from 'lucide-react'
+import type { VaultDocument } from '../../types/documentation'
 
 interface QuickPreviewDrawerProps {
   document: VaultDocument | null
   onClose: () => void
   onApprove: (id: string) => void
-  onOpenRejectModal: (doc: VaultDocument) => void
-  onSign: (id: string) => void
-  capabilities: UserRoleCapabilities
-}
-
-const formatFileSize = (bytes: number): string => {
-  if (bytes >= 1048576) {
-    return (bytes / 1048576).toFixed(1) + ' MB'
-  }
-  return Math.round(bytes / 1024) + ' KB'
-}
-
-const formatDate = (isoString: string): string => {
-  return new Date(isoString).toLocaleString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  onReject: (id: string) => void
 }
 
 export default function QuickPreviewDrawer({
   document,
   onClose,
   onApprove,
-  onOpenRejectModal,
-  onSign,
-  capabilities,
+  onReject,
 }: QuickPreviewDrawerProps) {
-  // Lock background scroll when drawer is open
-  useEffect(() => {
-    if (!document) return
-
-    const originalBodyOverflow = window.getComputedStyle(window.document.body).overflow
-    window.document.body.style.overflow = 'hidden'
-
-    const mainEl = window.document.querySelector('main')
-    const originalMainOverflow = mainEl ? window.getComputedStyle(mainEl).overflow : ''
-    if (mainEl) {
-      mainEl.style.overflow = 'hidden'
-    }
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-
-    return () => {
-      window.document.body.style.overflow = originalBodyOverflow === 'hidden' ? '' : originalBodyOverflow
-      if (mainEl) {
-        mainEl.style.overflow = originalMainOverflow === 'hidden' ? '' : originalMainOverflow
-      }
-      window.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [document, onClose])
-
   if (!document) return null
 
-  const isApproved = document.status.toLowerCase() === 'approved'
-  const isRejected = document.status.toLowerCase() === 'rejected'
-  const needsSignature = document.completedSignatures < document.totalSignatures
+  return (
+    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-white shadow-2xl border-l border-blue-500 overflow-y-auto flex flex-col transition-transform transform translate-x-0">
+      {/* Header */}
+      <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="pr-2">
+          <h2 className="text-sm font-bold text-gray-900 truncate max-w-[200px]" title={document.fileName}>
+            {document.fileName}
+          </h2>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Uploaded {document.createdAt ? new Date(document.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Unknown date'} by <span className="font-medium text-gray-700">{document.uploadedBy || 'Unknown'}</span>
+          </p>
+        </div>
+        <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded shrink-0">
+          <X className="w-5 h-5 text-gray-400" />
+        </button>
+      </div>
 
-  const drawerContent = (
-    <div className="fixed inset-0 z-50 overflow-hidden" role="dialog" aria-modal="true">
-      {/* Crisp dark backdrop without Gaussian blur to eliminate GPU rasterization bottlenecks */}
-      <div
-        className="fixed inset-0 bg-black/45 transition-opacity duration-200 animate-in fade-in-0"
-        onClick={onClose}
-        aria-hidden="true"
-      />
+      <div className="flex-1 p-5 overflow-y-auto">
+        {/* Fake Preview Box */}
+        <div className="w-full h-48 bg-[#EAF2EC] rounded-xl flex items-center justify-center mb-6">
+          <span className="text-xs text-gray-500">PDF preview</span>
+        </div>
 
-      <section className="fixed inset-y-0 right-0 flex max-w-full pl-6 sm:pl-10 pointer-events-none">
-        {/* Hardware-accelerated drawer sliding panel */}
-        <div
-          className="w-screen max-w-md h-full bg-white shadow-2xl flex flex-col pointer-events-auto animate-in slide-in-from-right duration-200 ease-out"
-          style={{
-            transform: 'translate3d(0, 0, 0)',
-            willChange: 'transform',
-          }}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4 shrink-0 bg-white">
-            <div className="flex items-center gap-2">
-              <span className="rounded-full bg-[#EBF1FF] px-2.5 py-0.5 text-xs font-semibold text-[#3366CC]">
-                {document.category}
-              </span>
-              <span className="text-xs font-bold text-gray-500">v{document.version}</span>
-              <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
-                Properties
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={onClose}
-              aria-label="Close properties window"
-              className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-            >
-              <X className="h-5 w-5" />
-            </button>
+        {/* Metadata List */}
+        <div className="space-y-4 mb-8">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">Category</span>
+            <span className="text-gray-900">{document.category || 'Report'}</span>
           </div>
-
-          {/* Drawer Body - hardware-accelerated scroll container */}
-          <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6 hardware-scroll overscroll-contain">
-            {/* Title & Status */}
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 leading-snug">
-                {document.title}
-              </h2>
-              <p className="mt-0.5 text-xs text-gray-500 font-mono break-all">
-                {document.fileName}
-              </p>
-
-              <div className="mt-3 flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    isApproved
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : isRejected
-                      ? 'bg-red-50 text-red-700 border border-red-200'
-                      : 'bg-amber-50 text-amber-700 border border-amber-200'
-                  }`}
-                >
-                  {document.status}
-                </span>
-
-                {document.isMandatory && (
-                  <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-semibold text-[#FF7A00] border border-orange-200">
-                    Mandatory Form
-                  </span>
-                )}
-              </div>
-
-              {/* Rejection alert banner if rejected */}
-              {document.rejectionReason && (
-                <div className="mt-3 rounded-xl border border-red-200 bg-red-50/60 p-3 text-xs text-red-800">
-                  <p className="font-semibold text-red-900">Rejection Reason:</p>
-                  <p className="mt-0.5">{document.rejectionReason}</p>
-                </div>
-              )}
-
-              {/* Read-only timestamp badge if approved */}
-              {document.approvedAt && (
-                <div className="mt-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 p-2.5 text-xs text-emerald-800">
-                  <ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600" />
-                  <div>
-                    <p className="font-semibold">Officially Verified & Approved</p>
-                    <p className="text-[11px] text-emerald-700">
-                      Approved by {document.approvedBy || 'Mentor'} on {formatDate(document.approvedAt)}
-                    </p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Document Preview Canvas */}
-            {(() => {
-              const fileType = document.fileType.toLowerCase()
-              const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(fileType)
-              const isPdf = fileType === 'pdf'
-              const isMockDoc = document.fileUrl.startsWith('/uploads/')
-
-              if (isMockDoc) {
-                // For mock documents (uploaded files), render a compact preview.
-                return (
-                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-[#F9FAFB] p-2 text-center">
-                    {isPdf ? (
-                      <iframe src={document.fileUrl} className="w-full h-[200px] rounded-lg border border-gray-200 bg-white shadow-xs" title={document.fileName} />
-                    ) : isImage ? (
-                      <img src={document.fileUrl} alt={document.fileName} className="max-w-full h-auto max-h-[200px] mx-auto rounded-lg object-contain shadow-xs bg-white" />
-                    ) : (
-                      <div className="p-4 text-sm text-gray-500">
-                        No preview available for this file type. Download to view.
-                      </div>
-                    )}
-                    <p className="mt-2 text-xs text-gray-500 font-medium">
-                      {document.fileType.toUpperCase()} ({formatFileSize(document.size)}) Preview
-                    </p>
-                  </div>
-                )
-              }
-
-              if (isImage) {
-                return (
-                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-[#F9FAFB] p-2 text-center">
-                    <img src={document.fileUrl} alt={document.fileName} className="max-w-full h-auto max-h-[380px] mx-auto rounded-lg object-contain shadow-xs bg-white" />
-                    <p className="mt-3 mb-1 text-xs text-gray-500 font-medium">
-                      {document.fileType.toUpperCase()} Image ({formatFileSize(document.size)})
-                    </p>
-                  </div>
-                )
-              }
-
-              if (isPdf) {
-                return (
-                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-[#F9FAFB] p-2 text-center">
-                    <iframe src={document.fileUrl} className="w-full h-[380px] rounded-lg border border-gray-200 bg-white shadow-xs" title={document.fileName} />
-                    <p className="mt-3 mb-1 text-xs text-gray-500 font-medium">
-                      {document.fileType.toUpperCase()} Document ({formatFileSize(document.size)})
-                    </p>
-                  </div>
-                )
-              }
-
-              // Default: simulated document preview
-              return (
-                <div className="overflow-hidden rounded-xl border border-gray-200 bg-[#F9FAFB] p-2 text-center">
-                  <div className="w-full h-[380px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xs p-6 text-left text-gray-800 relative">
-                    <div className="border-b border-gray-200 pb-4 mb-4 flex items-start justify-between">
-                      <div>
-                        <h1 className="text-lg font-serif font-bold text-gray-900 leading-snug">{document.title}</h1>
-                        <p className="text-[11px] text-gray-500 mt-1 uppercase tracking-wider font-mono">Ref: {document.id.split('-')[0]}</p>
-                      </div>
-                      <FileText className="h-6 w-6 text-gray-300 shrink-0" />
-                    </div>
-
-                    <div className="font-serif text-sm leading-relaxed space-y-4 text-gray-700">
-                      <p>
-                        <span className="font-bold text-gray-900">CONFIDENTIAL DOCUMENT</span><br/>
-                        This is a system-generated preview for the file <strong>{document.fileName}</strong>.
-                      </p>
-
-                      <p>
-                        In accordance with the internship program requirements, this document outlines the evaluation criteria, compliance standards, and progress milestones specific to the candidate. All information contained within is subject to continuous review and validation by the designated supervisors.
-                      </p>
-
-                      <p className="text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">
-                        <strong>Visibility Scope:</strong> {document.visibilityRole}<br/>
-                        <strong>Status:</strong> {document.status}
-                      </p>
-
-                      <div className="mt-8 pt-8 border-t border-gray-200">
-                        <h4 className="text-[10px] font-bold text-gray-900 uppercase tracking-wider mb-4 text-center">Official Signatories</h4>
-                        <div className="grid grid-cols-3 gap-2">
-                          <div className="text-center">
-                            <div className="border-b border-gray-400 w-full mb-1.5 pb-1.5 h-8 flex items-end justify-center">
-                              {document.completedSignatures >= 1 ? <span className="font-medium text-emerald-700 font-mono text-[10px]">{document.uploadedBy}</span> : ''}
-                            </div>
-                            <span className="text-[9px] text-gray-500 uppercase tracking-wider block truncate">Student</span>
-                          </div>
-                          <div className="text-center">
-                            <div className="border-b border-gray-400 w-full mb-1.5 pb-1.5 h-8 flex items-end justify-center">
-                              {document.completedSignatures >= 2 ? <span className="font-medium text-emerald-700 font-mono text-[10px]">SIGNED</span> : ''}
-                            </div>
-                            <span className="text-[9px] text-gray-500 uppercase tracking-wider block truncate">Mentor</span>
-                          </div>
-                          <div className="text-center">
-                            <div className="border-b border-gray-400 w-full mb-1.5 pb-1.5 h-8 flex items-end justify-center">
-                              {document.completedSignatures >= 3 ? <span className="font-medium text-emerald-700 font-mono text-[10px] truncate max-w-[80px]">{document.approvedBy}</span> : ''}
-                            </div>
-                            <span className="text-[9px] text-gray-500 uppercase tracking-wider block truncate">Coord.</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <p className="mt-3 mb-1 text-xs text-gray-500 font-medium">
-                    {document.fileType.toUpperCase()} Document ({formatFileSize(document.size)}) - Simulated Preview
-                  </p>
-                </div>
-              )
-            })()}
-
-            {/* Signatures Progress (US 446) */}
-            <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4">
-              <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-semibold text-gray-900">
-                  Multi-Party Signatures Status
-                </h4>
-                <span className="text-xs font-bold text-[#FF7A00]">
-                  {document.completedSignatures} of {document.totalSignatures} Signed
-                </span>
-              </div>
-              <div className="space-y-2.5">
-                {/* Party 1: Student */}
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">1. Student Intern ({document.uploadedBy})</span>
-                  <span className="flex items-center gap-1 font-medium text-emerald-600">
-                    <CheckCircle2 className="h-3.5 w-3.5" /> Signed
-                  </span>
-                </div>
-
-                {/* Party 2: Mentor */}
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">2. Corporate Mentor</span>
-                  {document.completedSignatures >= 2 ? (
-                    <span className="flex items-center gap-1 font-medium text-emerald-600">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Signed
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 font-medium text-amber-600">
-                      <Clock className="h-3.5 w-3.5" /> Pending
-                    </span>
-                  )}
-                </div>
-
-                {/* Party 3: University */}
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-gray-600">3. University Coordinator</span>
-                  {document.completedSignatures >= 3 ? (
-                    <span className="flex items-center gap-1 font-medium text-emerald-600">
-                      <CheckCircle2 className="h-3.5 w-3.5" /> Signed
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-1 font-medium text-gray-400">
-                      <Clock className="h-3.5 w-3.5" /> Pending
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Metadata Grid */}
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              <div className="rounded-lg bg-gray-50 p-2.5 border border-gray-100">
-                <span className="text-gray-400">Uploaded Date</span>
-                <p className="mt-0.5 font-medium text-gray-800">
-                  {formatDate(document.createdAt)}
-                </p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-2.5 border border-gray-100">
-                <span className="text-gray-400">Uploaded By</span>
-                <p className="mt-0.5 font-medium text-gray-800">{document.uploadedBy}</p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-2.5 border border-gray-100">
-                <span className="text-gray-400">Visibility Scope</span>
-                <p className="mt-0.5 font-medium text-gray-800">{document.visibilityRole}</p>
-              </div>
-              <div className="rounded-lg bg-gray-50 p-2.5 border border-gray-100">
-                <span className="text-gray-400">Document Size</span>
-                <p className="mt-0.5 font-medium text-gray-800">
-                  {formatFileSize(document.size)}
-                </p>
-              </div>
-            </div>
-
-            {/* Audit Log Timeline */}
-            <div>
-              <h4 className="mb-3 text-xs font-semibold text-gray-900">Audit Trail & Timeline</h4>
-              <div className="space-y-3 border-l-2 border-gray-100 pl-3.5">
-                {document.audits && document.audits.length > 0 ? (
-                  document.audits.map((audit) => (
-                    <div key={audit.id} className="relative text-xs">
-                      <div className="absolute -left-[19px] top-1 h-2.5 w-2.5 rounded-full bg-[#1B4332] ring-2 ring-white" />
-                      <p className="font-semibold text-gray-800">{audit.action}</p>
-                      <p className="text-gray-600">{audit.details}</p>
-                      <p className="mt-0.5 text-[10px] text-gray-400">
-                        {audit.performedBy} · {formatDate(audit.timestamp)}
-                      </p>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-gray-400">No previous audit records.</p>
-                )}
-              </div>
-            </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">Size</span>
+            <span className="text-gray-900">1.4 MB</span>
           </div>
-
-          {/* Action Buttons Footer */}
-          <div className="border-t border-gray-100 bg-gray-50/90 px-6 py-4 flex flex-col gap-2 shrink-0">
-            {/* Primary Digital Sign Button if needed */}
-            {needsSignature && (
-              <button
-                type="button"
-                onClick={() => onSign(document.id)}
-                className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-[#153327] py-2.5 text-xs font-semibold text-white shadow-xs hover:bg-[#1B4332] transition-colors active:scale-[0.99]"
-              >
-                <PenTool className="h-4 w-4 text-[#FF7A00]" />
-                Add Digital Signature
-              </button>
-            )}
-
-            <div className="flex items-center gap-2">
-              {/* Download */}
-              <a
-                href={document.fileUrl}
-                download={document.fileName}
-                className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-gray-200 bg-white py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-xs active:scale-[0.99]"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Download
-              </a>
-
-              {/* Reject */}
-              {capabilities.canReject && !isApproved && (
-                <button
-                  type="button"
-                  onClick={() => onOpenRejectModal(document)}
-                  className="inline-flex items-center justify-center gap-1 rounded-xl border border-red-200 bg-red-50/80 px-3.5 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors active:scale-[0.99]"
-                >
-                  <XCircle className="h-3.5 w-3.5" />
-                  Reject
-                </button>
-              )}
-
-              {/* Approve */}
-              {capabilities.canApprove && !isApproved && (
-                <button
-                  type="button"
-                  onClick={() => onApprove(document.id)}
-                  className="inline-flex items-center justify-center gap-1 rounded-xl bg-[#FF7A00] px-4 py-2 text-xs font-semibold text-white hover:bg-[#E86E00] transition-colors shadow-xs active:scale-[0.99]"
-                >
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                  Approve
-                </button>
-              )}
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">Version</span>
+            <span className="text-gray-900">v3 · <span className="font-semibold cursor-pointer text-gray-900">Compare versions</span></span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-500">Status</span>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+              document.status?.toLowerCase() === 'approved' 
+                ? 'bg-[#EAF7EE] text-[#1E7E34]' 
+                : document.status?.toLowerCase() === 'rejected'
+                ? 'bg-[#FDF0EE] text-[#E5484D]'
+                : 'bg-[#FEF5E7] text-[#D97706]'
+            }`}>
+              {document.status === 'Approved' ? 'Approved' : document.status === 'Rejected' ? 'Rejected' : 'Pending'}
+            </span>
+          </div>
+          
+          {/* Rejection Reason Block */}
+          {document.status?.toLowerCase() === 'rejected' && document.rejectionReason && (
+            <div className="flex flex-col pt-3 mt-3 border-t border-red-100 gap-1.5 animate-in fade-in slide-in-from-top-2">
+              <span className="text-[11px] font-semibold text-red-700 uppercase tracking-wider">Reason for Rejection</span>
+              <span className="text-xs text-red-600 italic bg-[#FDF0EE] p-2.5 rounded-md border border-red-200">
+                "{document.rejectionReason}"
+              </span>
             </div>
+          )}
+        </div>
+
+        {/* Timeline */}
+        <div className="relative pl-4 space-y-6 mb-8 border-l border-gray-200 ml-2">
+          {/* Step 1 */}
+          <div className="relative">
+            <div className="absolute -left-[22px] bg-white p-0.5">
+              <div className="w-4 h-4 rounded-full bg-[#1B4332] flex items-center justify-center">
+                <CheckCircle2 className="w-3 h-3 text-white" />
+              </div>
+            </div>
+            <h4 className="text-[11px] font-bold text-gray-900 leading-none">Approved by Mentor</h4>
+            <p className="text-[10px] text-gray-500 mt-1">Oct 26, 2025 - 10:14 AM</p>
+          </div>
+          {/* Step 2 */}
+          <div className="relative">
+            <div className="absolute -left-[22px] bg-white p-0.5">
+              <div className="w-4 h-4 rounded-full bg-[#1B4332] flex items-center justify-center">
+                <CheckCircle2 className="w-3 h-3 text-white" />
+              </div>
+            </div>
+            <h4 className="text-[11px] font-bold text-gray-900 leading-none">Viewed by Coordinator</h4>
+            <p className="text-[10px] text-gray-500 mt-1">Oct 25, 2025 - 4:02 PM</p>
+          </div>
+          {/* Step 3 */}
+          <div className="relative">
+            <div className="absolute -left-[22px] bg-white p-0.5">
+              <div className="w-4 h-4 rounded-full bg-[#1B4332] flex items-center justify-center">
+                <CheckCircle2 className="w-3 h-3 text-white" />
+              </div>
+            </div>
+            <h4 className="text-[11px] font-bold text-gray-900 leading-none">Submitted for review</h4>
+            <p className="text-[10px] text-gray-500 mt-1">Oct 24, 2025 - 9:41 AM</p>
+          </div>
+          {/* Step 4 */}
+          <div className="relative">
+            <div className="absolute -left-[21px] bg-white p-0.5">
+              <div className="w-3.5 h-3.5 rounded-full bg-gray-200"></div>
+            </div>
+            <h4 className="text-[11px] font-bold text-gray-500 leading-none">Archived</h4>
+            <p className="text-[10px] text-gray-400 mt-1">—</p>
           </div>
         </div>
-      </section>
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap items-center gap-2 mt-auto pb-4">
+          <button 
+            onClick={() => {
+              if (document?.fileUrl) {
+                const a = window.document.createElement('a')
+                a.href = document.fileUrl
+                a.download = document.fileName || 'download'
+                window.document.body.appendChild(a)
+                a.click()
+                window.document.body.removeChild(a)
+              }
+            }}
+            className="flex-[1_1_30%] min-w-[80px] py-1.5 px-3 rounded-lg border border-gray-200 text-xs font-semibold text-gray-800 hover:bg-gray-50 flex justify-center items-center"
+          >
+            Download
+          </button>
+          <button 
+            onClick={() => onReject(document.id)}
+            className="flex-[1_1_30%] min-w-[80px] py-1.5 px-3 rounded-lg border border-red-300 text-xs font-semibold text-red-600 hover:bg-red-50 flex justify-center items-center"
+          >
+            Reject
+          </button>
+          <button 
+            onClick={() => onApprove(document.id)}
+            className="flex-[1_1_30%] min-w-[80px] py-1.5 px-3 rounded-lg bg-[#FF7A00] text-xs font-semibold text-white hover:bg-[#E86E00] flex justify-center items-center"
+          >
+            Approve
+          </button>
+        </div>
+      </div>
     </div>
   )
-
-  return createPortal(drawerContent, window.document.body)
 }
-
-
