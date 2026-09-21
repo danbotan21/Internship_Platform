@@ -21,7 +21,7 @@ import {
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useUserRole } from '../context/UserRoleContext'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../hooks/authContext'
 
 type NavItem = {
   label: string

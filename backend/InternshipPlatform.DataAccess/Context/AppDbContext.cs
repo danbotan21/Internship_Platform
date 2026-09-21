@@ -4,37 +4,89 @@ using Microsoft.EntityFrameworkCore;
 
 namespace InternshipPlatform.DataAccess.Context;
 
-public class AppDbContext : DbContext
+// Each feature module keeps its DbSets and mappings in a partial context file.
+public partial class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options)
         : base(options)
     {
     }
 
+    public DbSet<Resource> Resources => Set<Resource>();
+    public DbSet<ResourceFavorite> ResourceFavorites => Set<ResourceFavorite>();
+    public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
     public DbSet<Application> Applications => Set<Application>();
+    public DbSet<Company> Companies => Set<Company>();
+    public DbSet<CompanyMembership> CompanyMemberships => Set<CompanyMembership>();
+    public DbSet<CompanyVerificationRequest> CompanyVerificationRequests => Set<CompanyVerificationRequest>();
+    public DbSet<Milestone> Milestones => Set<Milestone>();
+    public DbSet<TaskLogEntry> TaskLogEntries => Set<TaskLogEntry>();
+    public DbSet<SupervisorFeedback> SupervisorFeedback => Set<SupervisorFeedback>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // ── User ──────────────────────────────────────────────────────────
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+
+        modelBuilder.Entity<Resource>(entity =>
+        {
+            entity.HasKey(resource => resource.Id);
+            entity.HasIndex(resource => resource.Slug).IsUnique();
+            entity.HasIndex(resource => resource.CreatedByUserId);
+            entity.Property(resource => resource.TargetGroup).HasMaxLength(100);
+            entity.Property(resource => resource.Slug).HasMaxLength(200).IsRequired();
+            entity.Property(resource => resource.Type).HasMaxLength(50).IsRequired();
+            entity.Property(resource => resource.Format).HasMaxLength(50).IsRequired();
+            entity.Property(resource => resource.Title).HasMaxLength(200).IsRequired();
+            entity.Property(resource => resource.Description).HasMaxLength(1000);
+            entity.Property(resource => resource.Owner).HasMaxLength(150).IsRequired();
+            entity.Property(resource => resource.Category).HasMaxLength(100).IsRequired();
+            entity.Property(resource => resource.MentorName).HasMaxLength(150).IsRequired();
+            entity.Property(resource => resource.Tags)
+                .HasColumnType("text[]")
+                .HasDefaultValue(Array.Empty<string>());
+            entity.Property(resource => resource.CreatedAt)
+                .HasColumnType("timestamp with time zone");
+            entity.Property(resource => resource.UpdatedAt)
+                .HasColumnType("timestamp with time zone");
+        });
+
+        modelBuilder.Entity<Notification>(entity =>
+        {
+            entity.HasKey(notification => notification.Id);
+            entity.HasIndex(notification => new { notification.RecipientUserId, notification.IsRead });
+            entity.Property(notification => notification.Title).HasMaxLength(200).IsRequired();
+            entity.Property(notification => notification.Message).HasMaxLength(500).IsRequired();
+            entity.Property(notification => notification.CreatedAt).HasColumnType("timestamp with time zone");
+        });
+
+        modelBuilder.Entity<ResourceFavorite>(entity =>
+        {
+            entity.HasKey(favorite => new { favorite.ResourceId, favorite.UserId });
+            entity.Property(favorite => favorite.CreatedAt).HasColumnType("timestamp with time zone");
+            entity.HasOne(favorite => favorite.Resource)
+                .WithMany(resource => resource.Favorites)
+                .HasForeignKey(favorite => favorite.ResourceId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasIndex(u => u.Email).IsUnique();
-            entity.Property(u => u.Email).IsRequired();
-            entity.Property(u => u.PasswordHash).IsRequired();
-            entity.Property(u => u.Role).HasConversion<string>();
+            entity.HasIndex(user => user.Email).IsUnique();
+            entity.Property(user => user.Email).IsRequired();
+            entity.Property(user => user.PasswordHash).IsRequired();
+            entity.Property(user => user.Role).HasConversion<string>();
         });
 
         // ── RefreshToken ─────────────────────────────────────────────────
         modelBuilder.Entity<RefreshToken>(entity =>
         {
-            entity.HasIndex(rt => rt.Token).IsUnique();
-
-            entity.HasOne(rt => rt.User)
-                .WithMany(u => u.RefreshTokens)
-                .HasForeignKey(rt => rt.UserId)
+            entity.HasIndex(token => token.Token).IsUnique();
+            entity.HasOne(token => token.User)
+                .WithMany(user => user.RefreshTokens)
+                .HasForeignKey(token => token.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
@@ -85,5 +137,40 @@ public class AppDbContext : DbContext
             .HasMany(u => u.SavedOpportunities)
             .WithMany()
             .UsingEntity(j => j.ToTable("UserSavedOpportunities"));
+
+        modelBuilder.Entity<Milestone>(entity =>
+        {
+            entity.Property(milestone => milestone.Status).HasConversion<string>();
+            entity.HasOne(milestone => milestone.StudentUser)
+                .WithMany()
+                .HasForeignKey(milestone => milestone.StudentUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(milestone => milestone.ReviewedByUser)
+                .WithMany()
+                .HasForeignKey(milestone => milestone.ReviewedByUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<TaskLogEntry>(entity =>
+        {
+            entity.HasOne(task => task.StudentUser)
+                .WithMany()
+                .HasForeignKey(task => task.StudentUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SupervisorFeedback>(entity =>
+        {
+            entity.HasOne(feedback => feedback.StudentUser)
+                .WithMany()
+                .HasForeignKey(feedback => feedback.StudentUserId)
+                .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(feedback => feedback.SupervisorUser)
+                .WithMany()
+                .HasForeignKey(feedback => feedback.SupervisorUserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        ConfigureContributionModule(modelBuilder);
     }
 }

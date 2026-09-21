@@ -1,16 +1,9 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import * as authApi from '../api/auth'
 import type { AuthResult, LoginPayload, RegisterPayload } from '../types/auth'
-
-interface StoredSession {
-  userId: string
-  email: string
-  fullName: string
-  role: AuthResult['role']
-  accessToken: string
-  refreshToken: string
-}
+import { AuthContext } from './authContext'
+import type { AuthContextValue, StoredSession } from './authContext'
 
 const STORAGE_KEY = 'internflow.session'
 
@@ -34,16 +27,6 @@ function writeStoredSession(session: StoredSession | null) {
     return
   }
 }
-
-interface AuthContextValue {
-  session: StoredSession | null
-  isAuthenticated: boolean
-  login: (payload: LoginPayload) => Promise<void>
-  register: (payload: RegisterPayload) => Promise<void>
-  logout: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<StoredSession | null>(readStoredSession)
@@ -91,12 +74,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
 }
