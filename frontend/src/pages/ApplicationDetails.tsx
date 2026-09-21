@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   Leaf,
@@ -13,20 +14,25 @@ import {
   FileText,
   GraduationCap,
   Clock3,
+  XCircle,
+  MessageSquare,
+  Loader2,
 } from 'lucide-react'
 import { MOCK_OPPORTUNITIES } from '../types/opportunities'
+import type { Opportunity } from '../types/opportunities'
+import { getMyApplicationById, getOpportunityById } from '../api/opportunities'
 
 export default function ApplicationDetails() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const opportunityId = searchParams.get('id') || '1'
+  const appId = searchParams.get('id') || ''
+  const oppId = searchParams.get('oppId') || searchParams.get('id') || '1'
 
-  const opportunity =
-    MOCK_OPPORTUNITIES.find((opp) => opp.id === opportunityId) ||
-    MOCK_OPPORTUNITIES[0]
+  const [opportunity, setOpportunity] = useState<Opportunity>(() => {
+    return MOCK_OPPORTUNITIES.find((opp) => opp.id === oppId) || MOCK_OPPORTUNITIES[0]
+  })
 
-  // Mock submitted application data for review display
-  const applicationData = {
+  const [applicationData, setApplicationData] = useState({
     appliedDate: '18 Sep 2026',
     status: 'Under Review',
     step: 'Document Review',
@@ -41,11 +47,133 @@ export default function ApplicationDetails() {
     availability: 'Full-time',
     motivation:
       'I am passionate about software development and want to gain hands-on experience in a company that builds innovative and sustainable solutions.',
+    reviewFeedback: null as string | null,
     files: [
       { name: 'Resume_Daniel_Chitanu.pdf', size: '245 KB', type: 'PDF' },
       { name: 'Cover_Letter.pdf', size: '180 KB', type: 'PDF' },
       { name: 'Transcript.pdf', size: '350 KB', type: 'PDF' },
     ],
+  })
+
+  const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      setIsLoading(true)
+      try {
+        if (appId && appId.length > 10) {
+          const detail = await getMyApplicationById(appId).catch(() => null)
+          if (detail) {
+            const step =
+              detail.status === 'Accepted'
+                ? 'Offer Accepted'
+                : detail.status === 'Rejected'
+                ? 'Application Closed'
+                : 'Document Review'
+
+            const appliedDate = detail.appliedAt
+              ? new Date(detail.appliedAt).toLocaleDateString('en-GB', {
+                  day: '2-digit',
+                  month: 'short',
+                  year: 'numeric',
+                })
+              : 'Recent'
+
+            const docFiles = []
+            if (detail.resumePath) {
+              docFiles.push({
+                name: detail.resumePath.split(/[\/\\]/).pop() || 'Resume.pdf',
+                size: '250 KB',
+                type: 'PDF',
+              })
+            }
+            if (detail.coverLetterPath) {
+              docFiles.push({
+                name: detail.coverLetterPath.split(/[\/\\]/).pop() || 'Cover_Letter.pdf',
+                size: '180 KB',
+                type: 'PDF',
+              })
+            }
+            if (Array.isArray(detail.additionalFilePaths)) {
+              detail.additionalFilePaths.forEach((p) => {
+                docFiles.push({
+                  name: p.split(/[\/\\]/).pop() || 'Additional_File.pdf',
+                  size: '300 KB',
+                  type: 'PDF',
+                })
+              })
+            }
+
+            setApplicationData({
+              appliedDate,
+              status: detail.status,
+              step,
+              firstName: detail.firstName,
+              lastName: detail.lastName,
+              email: detail.email,
+              phoneCountryCode: detail.phoneCountryCode,
+              phoneNumber: detail.phoneNumber,
+              educationLevel: detail.educationLevel,
+              fieldOfStudy: detail.fieldOfStudy,
+              expectedGraduation: detail.expectedGraduation,
+              availability: detail.availability,
+              motivation: detail.motivation,
+              reviewFeedback: detail.reviewFeedback || null,
+              files: docFiles.length > 0 ? docFiles : applicationData.files,
+            })
+
+            // Also load opportunity
+            const targetOppId = detail.opportunityId || oppId
+            if (targetOppId) {
+              const oppDetail = await getOpportunityById(String(targetOppId)).catch(() => null)
+              if (oppDetail) setOpportunity(oppDetail)
+            }
+          }
+        } else if (oppId) {
+          const oppDetail = await getOpportunityById(oppId).catch(() => null)
+          if (oppDetail) setOpportunity(oppDetail)
+        }
+      } catch {
+        // Use fallback
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    load()
+  }, [appId, oppId])
+
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case 'Under Review':
+      case 'Pending':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs">
+            <Clock3 className="w-3.5 h-3.5" />
+            {status}
+          </span>
+        )
+      case 'Accepted':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            Accepted
+          </span>
+        )
+      case 'Rejected':
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200 shadow-2xs">
+            <XCircle className="w-3.5 h-3.5" />
+            Rejected
+          </span>
+        )
+      default:
+        return (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-gray-50 text-gray-700 border border-gray-200 shadow-2xs">
+            {status}
+          </span>
+        )
+    }
   }
 
   return (
@@ -63,12 +191,15 @@ export default function ApplicationDetails() {
 
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-500 font-medium">Status:</span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 shadow-2xs">
-            <Clock3 className="w-3.5 h-3.5" />
-            {applicationData.status}
-          </span>
+          {getStatusBadge(applicationData.status)}
         </div>
       </div>
+
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-8 h-8 text-[#ff5500] animate-spin" />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Opportunity Details Card */}
@@ -111,42 +242,30 @@ export default function ApplicationDetails() {
 
           <hr className="border-gray-100" />
 
-          {/* Details list */}
-          <div className="space-y-3.5 text-sm text-gray-600">
-            <div className="flex items-center gap-3">
+          {/* Quick specs */}
+          <div className="space-y-3 text-xs text-gray-600">
+            <div className="flex items-center gap-2.5">
               <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
-              <span>{opportunity.location}</span>
+              <span>
+                {opportunity.location} ({opportunity.locationType})
+              </span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <Briefcase className="w-4 h-4 text-gray-400 shrink-0" />
               <span>{opportunity.type}</span>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
               <Calendar className="w-4 h-4 text-gray-400 shrink-0" />
               <span>{opportunity.duration}</span>
-            </div>
-            <div className="flex items-center gap-3">
-              <Users className="w-4 h-4 text-gray-400 shrink-0" />
-              <span>Engineering Team</span>
             </div>
           </div>
 
           <hr className="border-gray-100" />
 
-          {/* About Company */}
+          {/* About description brief */}
           <div className="space-y-2">
-            <h3 className="text-sm font-bold text-[#0c382b]">
-              About the Company
-            </h3>
-            <p className="text-xs text-gray-600 leading-relaxed">
-              {opportunity.aboutCompany}
-            </p>
-          </div>
-
-          {/* About Internship */}
-          <div className="space-y-2">
-            <h3 className="text-sm font-bold text-[#0c382b]">
-              About the Internship
+            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+              Internship Overview
             </h3>
             <p className="text-xs text-gray-600 leading-relaxed">
               {opportunity.aboutInternship}
@@ -168,6 +287,19 @@ export default function ApplicationDetails() {
               </span>
             </p>
           </div>
+
+          {/* Mentor Feedback banner if reviewed */}
+          {applicationData.reviewFeedback && (
+            <div className="bg-emerald-50/60 border border-emerald-200 rounded-2xl p-4 sm:p-5 space-y-2">
+              <div className="flex items-center gap-2 text-emerald-800 font-bold text-sm">
+                <MessageSquare className="w-4 h-4 text-emerald-600" />
+                <span>Mentor Feedback & Notes</span>
+              </div>
+              <p className="text-xs sm:text-sm text-emerald-900 leading-relaxed pl-6">
+                "{applicationData.reviewFeedback}"
+              </p>
+            </div>
+          )}
 
           <hr className="border-gray-100" />
 

@@ -1,6 +1,8 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using InternshipPlatform.BusinessLayer.Auth;
+using InternshipPlatform.BusinessLayer.Opportunity;
+using InternshipPlatform.BusinessLayer.Users;
 using InternshipPlatform.DataAccess.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -35,6 +37,18 @@ var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Opportunity module
+builder.Services.AddScoped<OpportunityActions>();
+builder.Services.AddScoped<ApplicationActions>();
+builder.Services.AddScoped<IOpportunityLogic, OpportunityLogic>();
+builder.Services.AddScoped<IApplicationLogic, ApplicationLogic>();
+
+// User module
+builder.Services.AddScoped<UserActions>();
+builder.Services.AddScoped<IUserLogic, UserLogic>();
+
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

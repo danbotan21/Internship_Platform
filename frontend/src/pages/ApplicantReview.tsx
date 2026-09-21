@@ -1,10 +1,16 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSearchParams, useNavigate } from "react-router-dom"
 import {
   ArrowLeft, Users, Mail, Phone, GraduationCap, FileText,
   Download, CheckCircle, MessageSquare, Leaf, Code2, BarChart3,
-  CheckCircle2, MapPin, Briefcase, Calendar, X,
+  CheckCircle2, MapPin, Briefcase, Calendar, X, Loader2, AlertCircle,
 } from "lucide-react"
+import {
+  getOpportunityById,
+  getApplicationForReview,
+  reviewApplication,
+  downloadDocument,
+} from "../api/opportunities"
 
 interface ApplicantFile { name: string; size: string; type: string }
 interface Applicant {
@@ -57,14 +63,115 @@ export default function ApplicantReview() {
   const navigate = useNavigate()
   const oppId  = searchParams.get("oppId")  || "1"
   const userId = searchParams.get("userId") || "a1"
+  const appId  = searchParams.get("appId")  || searchParams.get("userId") || ""
 
-  const opp       = MOCK_OPPS[oppId]       ?? MOCK_OPPS["1"]
-  const applicant = MOCK_APPLICANTS[userId] ?? MOCK_APPLICANTS["a1"]
+  const [opp, setOpp] = useState<MentorOpp>(() => MOCK_OPPS[oppId] ?? MOCK_OPPS["1"])
+  const [applicant, setApplicant] = useState<Applicant>(() => MOCK_APPLICANTS[userId] ?? MOCK_APPLICANTS["a1"])
 
   const [feedback, setFeedback]             = useState("")
-  const [selectedStatus, setSelectedStatus] = useState<Applicant["status"]>(applicant.status === "Pending" ? "Under Review" : applicant.status)
+  const [selectedStatus, setSelectedStatus] = useState<Applicant["status"]>("Under Review")
   const [previewFile, setPreviewFile]       = useState<ApplicantFile | null>(null)
   const [isSubmitted, setIsSubmitted]       = useState(false)
+  const [isLoading, setIsLoading]           = useState(false)
+  const [isSubmitting, setIsSubmitting]     = useState(false)
+  const [submitError, setSubmitError]       = useState<string | null>(null)
+
+  useEffect(() => {
+    async function loadData() {
+      setIsLoading(true)
+      try {
+        if (oppId) {
+          const oppData = await getOpportunityById(oppId).catch(() => null)
+          if (oppData) {
+            setOpp({
+              id: oppData.id,
+              title: oppData.title,
+              company: oppData.company,
+              location: oppData.location,
+              type: oppData.type,
+              duration: oppData.duration,
+              logoBg: oppData.logoBg || 'bg-[#1b5e3a]',
+              logoType: (oppData.logoType as any) || 'leaf',
+            })
+          }
+        }
+
+        if (appId && appId.length > 10) {
+          const appData = await getApplicationForReview(appId).catch(() => null)
+          if (appData) {
+            const files: ApplicantFile[] = []
+            if (appData.resumePath) {
+              files.push({
+                name: appData.resumePath.split(/[\/\\]/).pop() || 'Resume.pdf',
+                size: '245 KB',
+                type: 'PDF',
+              })
+            }
+            if (appData.coverLetterPath) {
+              files.push({
+                name: appData.coverLetterPath.split(/[\/\\]/).pop() || 'Cover_Letter.pdf',
+                size: '180 KB',
+                type: 'PDF',
+              })
+            }
+
+            setApplicant({
+              id: appData.id,
+              firstName: appData.firstName,
+              lastName: appData.lastName,
+              email: appData.email,
+              phone: `${appData.phoneCountryCode} ${appData.phoneNumber}`,
+              educationLevel: appData.educationLevel,
+              fieldOfStudy: appData.fieldOfStudy,
+              expectedGraduation: appData.expectedGraduation,
+              availability: appData.availability,
+              motivation: appData.motivation,
+              appliedDate: appData.appliedAt
+                ? new Date(appData.appliedAt).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })
+                : 'Recent',
+              status: (appData.status as any) || 'Under Review',
+              avatar: 'bg-[#1b5e3a]',
+              files,
+            })
+
+            if (appData.reviewFeedback) {
+              setFeedback(appData.reviewFeedback)
+            }
+            if (appData.status && appData.status !== 'Pending') {
+              setSelectedStatus(appData.status as any)
+            }
+          }
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    loadData()
+  }, [oppId, appId, userId])
+
+  const handleSubmitReview = async () => {
+    setIsSubmitting(true)
+    setSubmitError(null)
+    try {
+      if (appId && appId.length > 10) {
+        const backendStatus = selectedStatus.replace(/\s+/g, '')
+        await reviewApplication(appId, { status: backendStatus, feedback })
+      }
+      setIsSubmitted(true)
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to submit review. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-[#ff5500] animate-spin" />
+      </div>
+    )
+  }
 
   if (isSubmitted) {
     const chosen = STATUS_OPTIONS.find((s) => s.value === selectedStatus)!
@@ -259,15 +366,37 @@ export default function ApplicantReview() {
             </div>
           </div>
 
+          {submitError && (
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs sm:text-sm flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+              <span>{submitError}</span>
+            </div>
+          )}
+
           <div className="bg-white border border-gray-200/80 rounded-2xl p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="text-xs text-gray-500 space-y-0.5">
               <p className="font-semibold text-gray-700">Ready to submit?</p>
               <p>This will notify the applicant with your feedback and decision.</p>
             </div>
-            <button type="button" onClick={() => setIsSubmitted(true)}
-              className="bg-[#ff5500] hover:bg-[#e64d00] text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors cursor-pointer flex items-center gap-2 shadow-xs shrink-0 w-full sm:w-auto justify-center">
-              <CheckCircle className="w-4 h-4" />
-              Submit Review
+            <button
+              type="button"
+              disabled={isSubmitting}
+              onClick={handleSubmitReview}
+              className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs shrink-0 w-full sm:w-auto justify-center ${
+                isSubmitting ? 'bg-orange-300 cursor-not-allowed' : 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
+              }`}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Submitting...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-4 h-4" />
+                  <span>Submit Review</span>
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -284,10 +413,17 @@ export default function ApplicantReview() {
               <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">{previewFile.type}</span>
               <div><p className="text-xs font-semibold text-gray-800">{previewFile.name}</p><p className="text-xs text-gray-400">{previewFile.size}</p></div>
             </div>
-            <p className="text-xs text-gray-500">In a real application this would trigger a secure download from the server.</p>
+            <p className="text-xs text-gray-500">Document ready to download from the application record.</p>
             <div className="flex gap-2 justify-end">
               <button type="button" onClick={() => setPreviewFile(null)} className="px-4 py-2 text-xs font-semibold text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">Cancel</button>
-              <button type="button" onClick={() => setPreviewFile(null)} className="px-4 py-2 text-xs font-semibold text-white bg-[#1b5e3a] hover:bg-[#154d2f] rounded-xl flex items-center gap-2 cursor-pointer">
+              <button
+                type="button"
+                onClick={() => {
+                  downloadDocument(appId || userId, previewFile.name).catch(() => {})
+                  setPreviewFile(null)
+                }}
+                className="px-4 py-2 text-xs font-semibold text-white bg-[#1b5e3a] hover:bg-[#154d2f] rounded-xl flex items-center gap-2 cursor-pointer"
+              >
                 <Download className="w-3.5 h-3.5" />Download
               </button>
             </div>

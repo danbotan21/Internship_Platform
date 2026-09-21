@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import {
   Plus,
@@ -15,8 +15,10 @@ import {
   CheckCircle2,
   Users,
   Pencil,
+  Loader2,
 } from 'lucide-react'
 import { CustomSelect } from '../components/CustomSelect'
+import { getMentorOpportunities, patchOpportunityStatus } from '../api/opportunities'
 
 interface MentorOpportunity {
   id: string
@@ -298,6 +300,8 @@ const MOCK_MENTOR_OPPORTUNITIES: MentorOpportunity[] = [
 
 export default function MyOpportunities() {
   const navigate = useNavigate()
+  const [opportunities, setOpportunities] = useState<MentorOpportunity[]>(MOCK_MENTOR_OPPORTUNITIES)
+  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('All')
   const [filterWorkType, setFilterWorkType] = useState('All')
@@ -307,21 +311,39 @@ export default function MyOpportunities() {
   // Local status overrides keyed by opportunity id
   const [statusOverrides, setStatusOverrides] = useState<Record<string, MentorOpportunity['status']>>({})
 
+  useEffect(() => {
+    setIsLoading(true)
+    getMentorOpportunities()
+      .then((res) => {
+        if (res && res.length > 0) {
+          setOpportunities(res as any)
+        } else {
+          setOpportunities(MOCK_MENTOR_OPPORTUNITIES)
+        }
+      })
+      .catch(() => {
+        setOpportunities(MOCK_MENTOR_OPPORTUNITIES)
+      })
+      .finally(() => {
+        setIsLoading(false)
+      })
+  }, [])
+
   const getEffectiveStatus = (opp: MentorOpportunity): MentorOpportunity['status'] =>
     statusOverrides[opp.id] ?? opp.status
 
-  const totalCount = MOCK_MENTOR_OPPORTUNITIES.length
-  const openCount = MOCK_MENTOR_OPPORTUNITIES.filter(
+  const totalCount = opportunities.length
+  const openCount = opportunities.filter(
     (o) => getEffectiveStatus(o) === 'Open'
   ).length
-  const closedCount = MOCK_MENTOR_OPPORTUNITIES.filter(
+  const closedCount = opportunities.filter(
     (o) => getEffectiveStatus(o) === 'Closed'
   ).length
-  const draftCount = MOCK_MENTOR_OPPORTUNITIES.filter(
+  const draftCount = opportunities.filter(
     (o) => getEffectiveStatus(o) === 'Draft'
   ).length
 
-  const filtered = MOCK_MENTOR_OPPORTUNITIES.filter((opp) => {
+  const filtered = opportunities.filter((opp) => {
     const q = searchQuery.toLowerCase()
     const matchesQuery =
       opp.title.toLowerCase().includes(q) ||
@@ -378,23 +400,27 @@ export default function MyOpportunities() {
   }
 
   // Handle Publish / Unpublish
-  const handlePublishToggle = (opp: MentorOpportunity) => {
+  const handlePublishToggle = async (opp: MentorOpportunity) => {
     const current = getEffectiveStatus(opp)
-    if (current === 'Draft') {
-      setStatusOverrides((prev) => ({ ...prev, [opp.id]: 'Open' }))
-    } else {
-      setStatusOverrides((prev) => ({ ...prev, [opp.id]: 'Draft' }))
+    const nextStatus: MentorOpportunity['status'] = current === 'Draft' ? 'Open' : 'Draft'
+    setStatusOverrides((prev) => ({ ...prev, [opp.id]: nextStatus }))
+    try {
+      await patchOpportunityStatus(opp.id, nextStatus)
+    } catch {
+      // Keep optimistic state
     }
     setSelectedOpportunity(null)
   }
 
   // Handle Open / Close
-  const handleOpenCloseToggle = (opp: MentorOpportunity) => {
+  const handleOpenCloseToggle = async (opp: MentorOpportunity) => {
     const current = getEffectiveStatus(opp)
-    if (current === 'Closed') {
-      setStatusOverrides((prev) => ({ ...prev, [opp.id]: 'Open' }))
-    } else {
-      setStatusOverrides((prev) => ({ ...prev, [opp.id]: 'Closed' }))
+    const nextStatus: MentorOpportunity['status'] = current === 'Closed' ? 'Open' : 'Closed'
+    setStatusOverrides((prev) => ({ ...prev, [opp.id]: nextStatus }))
+    try {
+      await patchOpportunityStatus(opp.id, nextStatus)
+    } catch {
+      // Keep optimistic state
     }
     setSelectedOpportunity(null)
   }
@@ -612,7 +638,19 @@ export default function MyOpportunities() {
                 </tr>
               ))}
 
-              {filtered.length === 0 && (
+              {isLoading && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-5 py-10 text-center text-gray-500 font-medium"
+                  >
+                    <Loader2 className="w-6 h-6 text-[#ff5500] animate-spin mx-auto mb-2" />
+                    Loading opportunities...
+                  </td>
+                </tr>
+              )}
+
+              {!isLoading && filtered.length === 0 && (
                 <tr>
                   <td
                     colSpan={6}

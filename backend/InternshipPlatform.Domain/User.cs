@@ -1,3 +1,5 @@
+using InternshipPlatform.Domain.Entities;
+
 namespace InternshipPlatform.Domain;
 
 public class User
@@ -9,5 +11,13 @@ public class User
     public UserRole Role { get; set; }
     public DateTime CreatedAt { get; set; }
 
+    // Navigation properties
     public List<RefreshToken> RefreshTokens { get; set; } = [];
+
+    public List<Opportunity> Opportunities { get; set; } = [];
+
+    public List<Application> Applications { get; set; } = [];
+
+    // Saved opportunities (many-to-many via join table)
+    public List<Opportunity> SavedOpportunities { get; set; } = [];
 }

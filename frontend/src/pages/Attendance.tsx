@@ -12,7 +12,6 @@ import {
   UserCheck,
   ClipboardList,
   Search,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Send,
@@ -230,11 +229,6 @@ function InternView() {
     setLeaveEnd('')
     setLeaveReason('')
   }
-
-  const presentCount = MOCK_ATTENDANCE_RECORDS.filter(r => r.status === 'Present').length
-  const lateCount = MOCK_ATTENDANCE_RECORDS.filter(r => r.status === 'Late').length
-  const absentCount = MOCK_ATTENDANCE_RECORDS.filter(r => r.status === 'Absent').length
-  const leaveCount = MOCK_ATTENDANCE_RECORDS.filter(r => r.status === 'Leave').length
 
   const weekRecords = MOCK_ATTENDANCE_RECORDS.slice(0, 5)
   const monthRecords = MOCK_ATTENDANCE_RECORDS

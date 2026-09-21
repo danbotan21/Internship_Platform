@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -19,7 +19,12 @@ import {
   Calendar,
   X,
   ClipboardCheck,
+  Loader2,
 } from 'lucide-react'
+import {
+  getApplicationsByOpportunity,
+  getOpportunityById,
+} from '../api/opportunities'
 
 interface ApplicantFile {
   name: string
@@ -159,16 +164,89 @@ export default function OpportunityApplications() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const oppId = searchParams.get('id') || '1'
-  const opp = MOCK_OPP_META[oppId] ?? MOCK_OPP_META['1']
+  const [opp, setOpp] = useState<MentorOpp>(() => MOCK_OPP_META[oppId] ?? MOCK_OPP_META['1'])
+  const [applicants, setApplicants] = useState<Applicant[]>(() => generateApplicants(oppId))
+  const [isLoading, setIsLoading] = useState(false)
 
-  const allApplicants = generateApplicants(oppId)
+  useEffect(() => {
+    if (!oppId) return
+    setIsLoading(true)
+
+    Promise.all([
+      getOpportunityById(oppId).catch(() => null),
+      getApplicationsByOpportunity(oppId).catch(() => null),
+    ])
+      .then(([oppData, appsData]) => {
+        if (oppData) {
+          setOpp({
+            id: oppData.id,
+            title: oppData.title,
+            company: oppData.company,
+            location: oppData.location,
+            locationType: oppData.locationType,
+            type: oppData.type,
+            duration: oppData.duration,
+            logoBg: oppData.logoBg || 'bg-[#1b5e3a]',
+            logoType: (oppData.logoType as any) || 'leaf',
+            applicantsCount: oppData.applicationsCount || (appsData?.length ?? 0),
+          })
+        }
+
+        if (appsData && appsData.length > 0) {
+          const avatars = ['bg-[#1b5e3a]', 'bg-[#2563eb]', 'bg-[#ea580c]', 'bg-[#0f172a]', 'bg-purple-600']
+          const mapped: Applicant[] = appsData.map((item, idx) => {
+            const files: ApplicantFile[] = []
+            if (item.resumePath) {
+              files.push({
+                name: item.resumePath.split(/[\/\\]/).pop() || 'Resume.pdf',
+                size: '245 KB',
+                type: 'PDF',
+              })
+            }
+            if (item.coverLetterPath) {
+              files.push({
+                name: item.coverLetterPath.split(/[\/\\]/).pop() || 'Cover_Letter.pdf',
+                size: '180 KB',
+                type: 'PDF',
+              })
+            }
+
+            return {
+              id: item.id,
+              firstName: item.firstName,
+              lastName: item.lastName,
+              email: item.email,
+              phone: `${item.phoneCountryCode} ${item.phoneNumber}`,
+              educationLevel: item.educationLevel,
+              fieldOfStudy: item.fieldOfStudy,
+              expectedGraduation: item.expectedGraduation,
+              availability: item.availability,
+              motivation: item.motivation,
+              appliedDate: item.appliedAt
+                ? new Date(item.appliedAt).toLocaleDateString('en-GB', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  })
+                : 'Recent',
+              status: (item.status as any) || 'Pending',
+              avatar: avatars[idx % avatars.length],
+              files,
+            }
+          })
+          setApplicants(mapped)
+        }
+      })
+      .finally(() => setIsLoading(false))
+  }, [oppId])
+
+  const allApplicants = applicants
 
   const [searchQuery, setSearchQuery]     = useState('')
   const [filterStatus, setFilterStatus]   = useState<string>('All')
   const [selectedApplicant, setSelectedApplicant] = useState<Applicant | null>(null)
   const [statusOverrides, setStatusOverrides] = useState<Record<string, Applicant['status']>>({})
   const [previewFile, setPreviewFile]     = useState<ApplicantFile | null>(null)
-  // Pending status change inside modal — committed on "Review" click
   const [pendingStatus, setPendingStatus] = useState<Applicant['status'] | null>(null)
 
   const getStatus = (a: Applicant): Applicant['status'] => statusOverrides[a.id] ?? a.status
@@ -302,13 +380,21 @@ export default function OpportunityApplications() {
 
       {/* Applicant card list */}
       <div className="space-y-3">
-        {filtered.length === 0 && (
+        {isLoading && (
+          <div className="bg-white border border-gray-200/80 rounded-2xl p-10 text-center text-gray-500 font-medium shadow-xs">
+            <Loader2 className="w-8 h-8 text-[#ff5500] animate-spin mx-auto mb-2" />
+            Loading applicants...
+          </div>
+        )}
+
+        {!isLoading && filtered.length === 0 && (
           <div className="bg-white border border-gray-200/80 rounded-2xl p-10 text-center text-gray-500 font-medium shadow-xs">
             No applicants match your search criteria.
           </div>
         )}
 
-        {filtered.map((applicant) => {
+        {!isLoading &&
+          filtered.map((applicant) => {
           const effectiveStatus = getStatus(applicant)
           const sc = STATUS_CONFIG[effectiveStatus]
 
@@ -498,8 +584,8 @@ export default function OpportunityApplications() {
                   <button
                     type="button"
                     onClick={() => {
-                      closeModal()
-                      navigate(`/my-opportunities/review?oppId=${oppId}&userId=${selectedApplicant.id}`)
+                      commitReview()
+                      navigate(`/my-opportunities/review?oppId=${oppId}&userId=${selectedApplicant.id}&appId=${selectedApplicant.id}`)
                     }}
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#ff5500] hover:bg-[#e64d00] text-white text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer shadow-xs"
                   >

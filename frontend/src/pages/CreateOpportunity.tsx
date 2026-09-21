@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
   Leaf,
@@ -16,21 +16,36 @@ import {
   CheckCircle,
   Plus,
   Trash2,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react'
 import { CustomSelect } from '../components/CustomSelect'
+import { createOpportunity, getCompanyInfo } from '../api/opportunities'
+import type { CreateOpportunityPayload } from '../types/opportunities'
 
 export default function CreateOpportunity() {
   const navigate = useNavigate()
   const [currentStep, setCurrentStep] = useState<1 | 2>(1)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [companyName, setCompanyName] = useState('GreenTech Solutions')
+
+  useEffect(() => {
+    getCompanyInfo()
+      .then((info) => {
+        if (info) setCompanyName(info)
+      })
+      .catch(() => {})
+  }, [])
 
   // Automatic company metadata based on mentor's organization
   const mentorCompany = {
-    name: 'GreenTech Solutions',
+    name: companyName,
     logoBg: 'bg-[#1b5e3a]',
     logoType: 'leaf',
     aboutCompany:
-      'GreenTech Solutions is a technology company focused on creating innovative solutions for a more sustainable future. We develop digital products that help businesses reduce their environmental footprint and operate more efficiently.',
+      `${companyName} is a technology company focused on creating innovative solutions. We develop digital products that help businesses operate more efficiently.`,
   }
 
   // Form state
@@ -132,9 +147,40 @@ export default function CreateOpportunity() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitted(true)
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    try {
+      const payload: CreateOpportunityPayload = {
+        title: formData.title,
+        description: formData.aboutInternship,
+        location: formData.location,
+        locationType: formData.locationType === 'On-site' ? 'OnSite' : formData.locationType,
+        type: formData.type === 'Full-time' ? 'FullTime' : 'PartTime',
+        field: formData.field,
+        durationCategory: formData.durationCategory,
+        company: mentorCompany.name,
+        logoBg: mentorCompany.logoBg,
+        logoType: mentorCompany.logoType,
+        aboutCompany: mentorCompany.aboutCompany,
+        aboutInternship: formData.aboutInternship,
+        responsibilities: formData.responsibilities,
+        requirements: formData.requirements,
+        technologies: formData.technologies,
+        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : new Date(Date.now() + 60 * 86400000).toISOString(),
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 90 * 86400000).toISOString(),
+      }
+
+      await createOpportunity(payload)
+      setIsSubmitted(true)
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to create opportunity. Please check all fields.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (isSubmitted) {
@@ -798,25 +844,46 @@ export default function CreateOpportunity() {
                 </div>
               </div>
 
-              {/* Step 2 Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(1)}
-                  className="px-6 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Back</span>
-                </button>
+                {submitError && (
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs sm:text-sm flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                    <span>{submitError}</span>
+                  </div>
+                )}
 
-                <button
-                  type="submit"
-                  className="bg-[#ff5500] hover:bg-[#e64d00] text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors cursor-pointer flex items-center gap-2 shadow-xs"
-                >
-                  <span>Publish Opportunity</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
+                {/* Step 2 Actions */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(1)}
+                    className="px-6 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center gap-2"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back</span>
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${
+                      isSubmitting
+                        ? 'bg-orange-300 cursor-not-allowed'
+                        : 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Publishing...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Publish Opportunity</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
             </form>
           )}
         </div>

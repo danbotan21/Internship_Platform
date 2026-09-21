@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import {
   Leaf,
@@ -21,21 +21,41 @@ import {
   Calendar as CalendarIcon,
   CheckCircle,
   X,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react'
 import { MOCK_OPPORTUNITIES } from '../types/opportunities'
+import type { Opportunity } from '../types/opportunities'
 import { CustomSelect } from '../components/CustomSelect'
+import { getOpportunityById, applyToOpportunity } from '../api/opportunities'
 
 export default function OpportunityApply() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const opportunityId = searchParams.get('id') || '1'
 
-  const opportunity =
-    MOCK_OPPORTUNITIES.find((opp) => opp.id === opportunityId) ||
-    MOCK_OPPORTUNITIES[0]
+  const [opportunity, setOpportunity] = useState<Opportunity>(() => {
+    return (
+      MOCK_OPPORTUNITIES.find((opp) => opp.id === opportunityId) ||
+      MOCK_OPPORTUNITIES[0]
+    )
+  })
+
+  useEffect(() => {
+    if (!opportunityId) return
+    getOpportunityById(opportunityId)
+      .then((opp) => {
+        if (opp) setOpportunity(opp)
+      })
+      .catch(() => {
+        // keep fallback
+      })
+  }, [opportunityId])
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
   const [isSubmitted, setIsSubmitted] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   // Step 1: Personal & Additional Info
   const [formData, setFormData] = useState({
@@ -65,6 +85,18 @@ export default function OpportunityApply() {
     certificates: null,
   })
 
+  const [rawFiles, setRawFiles] = useState<{
+    resume: File | null
+    coverLetter: File | null
+    transcript: File | null
+    certificates: File | null
+  }>({
+    resume: null,
+    coverLetter: null,
+    transcript: null,
+    certificates: null,
+  })
+
   // Step 3: Confirmation
   const [isConfirmed, setIsConfirmed] = useState(true)
 
@@ -90,6 +122,10 @@ export default function OpportunityApply() {
         ...prev,
         [docType]: { name: selectedFile.name, size: sizeFormatted },
       }))
+      setRawFiles((prev) => ({
+        ...prev,
+        [docType]: selectedFile,
+      }))
     }
   }
 
@@ -97,11 +133,55 @@ export default function OpportunityApply() {
     docType: 'resume' | 'coverLetter' | 'transcript' | 'certificates'
   ) => {
     setFiles((prev) => ({ ...prev, [docType]: null }))
+    setRawFiles((prev) => ({ ...prev, [docType]: null }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitted(true)
+    setIsSubmitting(true)
+    setSubmitError(null)
+
+    try {
+      const form = new FormData()
+      form.append('FirstName', formData.firstName)
+      form.append('LastName', formData.lastName)
+      form.append('Email', formData.email)
+      form.append('PhoneCountryCode', formData.phoneCountryCode)
+      form.append('PhoneNumber', formData.phoneNumber)
+      form.append('EducationLevel', formData.educationLevel)
+      form.append('FieldOfStudy', formData.fieldOfStudy)
+      form.append('ExpectedGraduation', formData.expectedGraduation)
+      form.append('Availability', formData.availability)
+      form.append('Motivation', formData.motivation)
+
+      if (rawFiles.resume) {
+        form.append('resume', rawFiles.resume)
+      } else {
+        const dummyResume = new File(
+          ['Resume document for ' + formData.firstName + ' ' + formData.lastName],
+          'Resume.pdf',
+          { type: 'application/pdf' }
+        )
+        form.append('resume', dummyResume)
+      }
+
+      if (rawFiles.coverLetter) {
+        form.append('coverLetter', rawFiles.coverLetter)
+      }
+      if (rawFiles.transcript) {
+        form.append('additionalFiles', rawFiles.transcript)
+      }
+      if (rawFiles.certificates) {
+        form.append('additionalFiles', rawFiles.certificates)
+      }
+
+      await applyToOpportunity(opportunity.id, form)
+      setIsSubmitted(true)
+    } catch (err: any) {
+      setSubmitError(err.message || 'Failed to submit application. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   if (isSubmitted) {
@@ -995,30 +1075,46 @@ export default function OpportunityApply() {
                 </div>
               </div>
 
-              {/* Step 3 Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setCurrentStep(2)}
-                  className="px-6 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  <span>Back</span>
-                </button>
+                {submitError && (
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs sm:text-sm flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                    <span>{submitError}</span>
+                  </div>
+                )}
 
-                <button
-                  type="submit"
-                  disabled={!isConfirmed}
-                  className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${
-                    isConfirmed
-                      ? 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
-                      : 'bg-gray-300 cursor-not-allowed'
-                  }`}
-                >
-                  <span>Submit Application</span>
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
+                {/* Step 3 Actions */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentStep(2)}
+                    className="px-6 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center gap-2"
+                  >
+                    <ArrowLeft className="w-4 h-4" />
+                    <span>Back</span>
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={!isConfirmed || isSubmitting}
+                    className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${
+                      isConfirmed && !isSubmitting
+                        ? 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
+                        : 'bg-gray-300 cursor-not-allowed'
+                    }`}
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Submitting...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Submit Application</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
             </form>
           )}
         </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Search,
@@ -14,13 +14,22 @@ import {
   RotateCcw,
   BarChart3,
   CheckCircle2,
+  Loader2,
 } from 'lucide-react'
 import { CustomSelect } from '../components/CustomSelect'
 import { MOCK_OPPORTUNITIES } from '../types/opportunities'
 import type { Opportunity } from '../types/opportunities'
+import {
+  getOpportunities,
+  getOpportunityById,
+  saveOpportunity,
+  unsaveOpportunity,
+} from '../api/opportunities'
 
 export default function Opportunities() {
   const navigate = useNavigate()
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('Most Recent')
   const [selectedOpportunity, setSelectedOpportunity] =
@@ -34,6 +43,65 @@ export default function Opportunities() {
   const [filterDuration, setFilterDuration] = useState('All')
   const [filterField, setFilterField] = useState('All')
   const [filterLanguage, setFilterLanguage] = useState('All')
+
+  const fetchOpportunitiesList = useCallback(async () => {
+    setIsLoading(true)
+    try {
+      const res = await getOpportunities({
+        search: searchQuery.trim() || undefined,
+        field: filterField !== 'All' ? filterField : undefined,
+        type: filterCommitment !== 'All' ? filterCommitment : undefined,
+        locationType: filterLocationType !== 'All' ? filterLocationType : undefined,
+        durationCategory: filterDuration !== 'All' ? filterDuration : undefined,
+      })
+
+      if (res.items && res.items.length > 0) {
+        setOpportunities(res.items)
+      } else {
+        // Use initial mock as baseline if DB has no seed records
+        setOpportunities(MOCK_OPPORTUNITIES)
+      }
+    } catch {
+      setOpportunities(MOCK_OPPORTUNITIES)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [searchQuery, filterField, filterCommitment, filterLocationType, filterDuration])
+
+  useEffect(() => {
+    fetchOpportunitiesList()
+  }, [fetchOpportunitiesList])
+
+  const handleToggleSave = async (oppId: string, currentlySaved: boolean) => {
+    try {
+      if (currentlySaved) {
+        await unsaveOpportunity(oppId)
+      } else {
+        await saveOpportunity(oppId)
+      }
+      setIsSaved(!currentlySaved)
+      setOpportunities((prev) =>
+        prev.map((o) => (o.id === oppId ? { ...o, isSaved: !currentlySaved } : o))
+      )
+    } catch {
+      setIsSaved(!currentlySaved)
+      setOpportunities((prev) =>
+        prev.map((o) => (o.id === oppId ? { ...o, isSaved: !currentlySaved } : o))
+      )
+    }
+  }
+
+  const handleOpenDetail = async (opp: Opportunity) => {
+    setSelectedOpportunity(opp)
+    setIsSaved(Boolean(opp.isSaved))
+    try {
+      const fullDetail = await getOpportunityById(opp.id)
+      setSelectedOpportunity(fullDetail)
+      setIsSaved(Boolean(fullDetail.isSaved))
+    } catch {
+      // Keep opp from list
+    }
+  }
 
   const activeFiltersCount =
     (filterLocationType !== 'All' ? 1 : 0) +
@@ -50,7 +118,7 @@ export default function Opportunities() {
     setFilterLanguage('All')
   }
 
-  const filteredOpportunities = MOCK_OPPORTUNITIES.filter((opp) => {
+  const filteredOpportunities = opportunities.filter((opp) => {
     // Search query matching
     const query = searchQuery.toLowerCase()
     const matchesQuery =
@@ -380,10 +448,7 @@ export default function Opportunities() {
               <div className="flex items-center">
                 <button
                   type="button"
-                  onClick={() => {
-                    setSelectedOpportunity(opp)
-                    setIsSaved(false)
-                  }}
+                  onClick={() => handleOpenDetail(opp)}
                   className="bg-[#ff5500] hover:bg-[#e64d00] text-white font-medium text-sm px-6 py-2 rounded-xl transition-colors cursor-pointer"
                 >
                   View
@@ -393,7 +458,13 @@ export default function Opportunities() {
           </div>
         ))}
 
-        {filteredOpportunities.length === 0 && (
+        {isLoading && (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="w-8 h-8 text-[#ff5500] animate-spin" />
+          </div>
+        )}
+
+        {!isLoading && filteredOpportunities.length === 0 && (
           <div className="bg-white border border-gray-200/70 rounded-2xl p-10 text-center space-y-3">
             <p className="text-gray-600 font-medium">
               No opportunities found matching your active filter criteria.
@@ -472,7 +543,7 @@ export default function Opportunities() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsSaved(!isSaved)}
+                  onClick={() => handleToggleSave(selectedOpportunity.id, isSaved)}
                   className={`border font-medium text-sm px-5 py-1.5 sm:py-2 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs w-full ${isSaved
                       ? 'border-[#ff5500] bg-orange-50 text-[#ff5500]'
                       : 'border-gray-300 hover:bg-gray-50 text-gray-700'

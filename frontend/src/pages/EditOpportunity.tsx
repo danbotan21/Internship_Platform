@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   Leaf,
@@ -17,8 +17,12 @@ import {
   Plus,
   Trash2,
   Pencil,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react'
 import { CustomSelect } from '../components/CustomSelect'
+import { getOpportunityById, updateOpportunity } from '../api/opportunities'
+import type { CreateOpportunityPayload } from '../types/opportunities'
 
 // Mirror of MOCK_MENTOR_OPPORTUNITIES data from MyOpportunities
 const INITIAL_DATA: Record<string, {
@@ -129,6 +133,37 @@ export default function EditOpportunity() {
   const [newResp, setNewResp] = useState('')
   const [newReq, setNewReq]   = useState('')
   const [newTech, setNewTech] = useState('')
+  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!id) return
+    setIsLoading(true)
+    getOpportunityById(id)
+      .then((opp) => {
+        if (opp) {
+          setFormData({
+            title: opp.title,
+            field: opp.field || 'Software Engineering',
+            location: opp.location,
+            locationType: opp.locationType,
+            type: opp.type,
+            duration: opp.duration,
+            deadline: opp.deadline || '2026-12-31',
+            company: opp.company,
+            logoBg: opp.logoBg || 'bg-[#1b5e3a]',
+            logoType: opp.logoType || 'leaf',
+            aboutInternship: opp.aboutInternship || '',
+            responsibilities: opp.responsibilities || [],
+            requirements: opp.requirements || [],
+            technologies: opp.technologies || [],
+          })
+        }
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false))
+  }, [id])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -147,12 +182,51 @@ export default function EditOpportunity() {
   const removeItem = (key: 'responsibilities' | 'requirements' | 'technologies', idx: number) =>
     setFormData((prev) => ({ ...prev, [key]: prev[key].filter((_, i) => i !== idx) }))
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSaved(true)
+    setIsSaving(true)
+    setSaveError(null)
+
+    try {
+      const payload: CreateOpportunityPayload = {
+        title: formData.title,
+        description: formData.aboutInternship,
+        location: formData.location,
+        locationType: formData.locationType === 'On-site' ? 'OnSite' : formData.locationType,
+        type: formData.type === 'Full-time' ? 'FullTime' : 'PartTime',
+        field: formData.field,
+        durationCategory: formData.duration || '3-6 months',
+        company: formData.company,
+        logoBg: formData.logoBg,
+        logoType: formData.logoType,
+        aboutCompany: `${formData.company} description`,
+        aboutInternship: formData.aboutInternship,
+        responsibilities: formData.responsibilities,
+        requirements: formData.requirements,
+        technologies: formData.technologies,
+        deadline: formData.deadline ? new Date(formData.deadline).toISOString() : new Date().toISOString(),
+        startDate: new Date().toISOString(),
+        endDate: new Date(Date.now() + 90 * 86400000).toISOString(),
+      }
+
+      await updateOpportunity(id, payload)
+      setIsSaved(true)
+    } catch (err: any) {
+      setSaveError(err.message || 'Failed to update opportunity. Please try again.')
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const inputClass = 'w-full bg-gray-50/70 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15 transition-all'
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-[#ff5500] animate-spin" />
+      </div>
+    )
+  }
 
   // ── Success screen ──
   if (isSaved) {
@@ -513,19 +587,40 @@ export default function EditOpportunity() {
                 </div>
               </div>
 
-              {/* Step 2 Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => setCurrentStep(1)}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer">
-                  <ArrowLeft className="w-4 h-4" />
-                  Back to Edit
-                </button>
-                <button type="submit"
-                  className="bg-[#ff5500] hover:bg-[#e64d00] text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors cursor-pointer flex items-center gap-2 shadow-xs">
-                  <CheckCircle className="w-4 h-4" />
-                  Save Changes
-                </button>
-              </div>
+                {saveError && (
+                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs sm:text-sm flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                    <span>{saveError}</span>
+                  </div>
+                )}
+
+                {/* Step 2 Actions */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <button type="button" onClick={() => setCurrentStep(1)}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer">
+                    <ArrowLeft className="w-4 h-4" />
+                    Back to Edit
+                  </button>
+                  <button type="submit"
+                    disabled={isSaving}
+                    className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${
+                      isSaving
+                        ? 'bg-orange-300 cursor-not-allowed'
+                        : 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
+                    }`}>
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Save Changes</span>
+                      </>
+                    )}
+                  </button>
+                </div>
             </form>
           )}
         </div>
