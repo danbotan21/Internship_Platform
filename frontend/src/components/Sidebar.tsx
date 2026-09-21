@@ -17,9 +17,11 @@ import {
   History,
   FolderKanban,
   UserCheck,
+  LogOut,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useUserRole } from '../context/UserRoleContext'
+import { useAuth } from '../hooks/useAuth'
 
 type NavItem = {
   label: string
@@ -32,8 +34,17 @@ type NavSection = {
   items: NavItem[]
 }
 
+function getInitials(fullName: string) {
+  const parts = fullName.trim().split(/\s+/)
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('')
+}
+
 export default function Sidebar() {
   const { role, setRole } = useUserRole()
+  const { session, logout } = useAuth()
 
   const sections: NavSection[] = [
     {
@@ -117,30 +128,40 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      {/* Profile and Role Toggle Switch Button */}
+      {/* Profile, Role Toggle & Logout */}
       <div className="border-t border-white/10 px-2 pt-4 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-medium text-white shrink-0">
-            IP
+            {session ? getInitials(session.fullName) : '??'}
           </div>
           <div className="truncate">
-            <p className="text-sm font-medium text-white truncate">Ion Popescu</p>
-            <p className="text-xs text-white/50 truncate">
-              {role} · Settings
-            </p>
+            <p className="text-sm font-medium text-white truncate">{session?.fullName}</p>
+            <p className="text-xs text-white/50 truncate">{role} · Settings</p>
           </div>
         </div>
 
-        {/* Toggle Role Button */}
-        <button
-          type="button"
-          onClick={() => setRole(role === 'Intern' ? 'Mentor' : 'Intern')}
-          title={`Switch to ${role === 'Intern' ? 'Mentor' : 'Intern'} view`}
-          className="bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer shrink-0 flex items-center gap-1 border border-white/10 shadow-2xs"
-        >
-          <UserCheck className="w-3.5 h-3.5" />
-          <span>{role === 'Intern' ? 'Mentor' : 'Intern'}</span>
-        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Toggle Role Button */}
+          <button
+            type="button"
+            onClick={() => setRole(role === 'Intern' ? 'Mentor' : 'Intern')}
+            title={`Switch to ${role === 'Intern' ? 'Mentor' : 'Intern'} view`}
+            className="bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 border border-white/10 shadow-2xs"
+          >
+            <UserCheck className="w-3.5 h-3.5" />
+            <span>{role === 'Intern' ? 'Mentor' : 'Intern'}</span>
+          </button>
+
+          {/* Logout Button */}
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/5 hover:text-white transition-colors"
+            aria-label="Log out"
+          >
+            <LogOut className="h-4 w-4" strokeWidth={1.75} />
+          </button>
+        </div>
       </div>
     </aside>
   )

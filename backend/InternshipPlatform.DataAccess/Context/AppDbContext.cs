@@ -1,6 +1,6 @@
+using InternshipPlatform.Domain;
 using Microsoft.EntityFrameworkCore;
 using InternshipPlatform.Domain.Entities.User;
-using Microsoft.Extensions.Configuration;
 using InternshipPlatform.Domain.Entities;
 
 namespace InternshipPlatform.DataAccess.Context;
@@ -12,23 +12,31 @@ public class AppDbContext : DbContext
     {
     }
 
+    // HEAD: existing DbSets
     public DbSet<UserEntity> Users { get; set; }
-
     public DbSet<Opportunity> Opportunities { get; set; }
 
-    //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    //{
-    //    if (!optionsBuilder.IsConfigured)
-    //    {
-    //        var configuration = new ConfigurationBuilder()
-    //            .AddJsonFile("appsettings.json", optional: true)
-    //            .AddEnvironmentVariables()
-    //            .Build();
+    // origin/main: auth DbSets
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
-    //        var connectionString =
-    //            configuration.GetConnectionString("DefaultConnection");
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<UserEntity>(entity =>
+        {
+            entity.HasIndex(u => u.Email).IsUnique();
+            entity.Property(u => u.Email).IsRequired();
+            entity.Property(u => u.PasswordHash).IsRequired();
+            entity.Property(u => u.Role).HasConversion<string>();
+        });
 
-    //        optionsBuilder.UseNpgsql(connectionString);
-    //    }
-    //}
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasIndex(rt => rt.Token).IsUnique();
+
+            entity.HasOne(rt => rt.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
 }
