@@ -14,6 +14,12 @@ import {
   saveSessionRecording,
   type SessionMetadata,
 } from '../../api/recordingService'
+import { useAuth } from '../../hooks/useAuth'
+import {
+  saveQuizAttempt,
+  type UserQuizAttempt,
+  formatDuration,
+} from '../../services/quizResultsDb'
 import fixWebmDuration from 'fix-webm-duration'
 
 interface QuizActiveProps {
@@ -33,6 +39,10 @@ export default function QuizActive({
   isReloadViolation = false,
   onFinish,
 }: QuizActiveProps) {
+  const { session } = useAuth()
+  const studentName = session?.fullName || 'Daniel Chigaianu'
+  const studentEmail = session?.email || 'dan.chigaianu@gmail.com'
+  const studentId = session?.userId || 'user-daniel-chigaianu'
   // Session start time (restored from sessionStorage only if reload occurred)
   const sessionStartTimeRef = useRef<Date>(
     (() => {
@@ -304,7 +314,14 @@ const getSupportedMimeTypeAndExt = (): { mimeType: string; ext: 'mp4' | 'webm' }
       stopHardwareResources()
       setIsRecording(false)
 
-      // Calculate score
+      // Calculate score and missed topics
+      const missedTopics: string[] = []
+      questions.forEach((q) => {
+        if (!q.correctOptionId || finalAnswers[q.id] !== q.correctOptionId) {
+          missedTopics.push(q.category || 'General')
+        }
+      })
+
       const correctCount = questions.filter(
         (q) => q.correctOptionId && finalAnswers[q.id] === q.correctOptionId
       ).length
@@ -312,20 +329,66 @@ const getSupportedMimeTypeAndExt = (): { mimeType: string; ext: 'mp4' | 'webm' }
       const percentage = total > 0 ? Math.round((correctCount / total) * 100) : 0
       const isPassed = !compromisedState && percentage >= quiz.passingScore
 
+      let status: 'PASSED' | 'BORDERLINE' | 'FAILED' = 'FAILED'
+      if (isPassed) {
+        status = 'PASSED'
+      } else if (!compromisedState && percentage >= Math.max(0, quiz.passingScore - 15)) {
+        status = 'BORDERLINE'
+      } else {
+        status = 'FAILED'
+      }
+
+      const durationSec = Math.max(
+        1,
+        Math.round((Date.now() - sessionStartTimeRef.current.getTime()) / 1000)
+      )
+
+      // Save to Quiz Results Database
+      const quizAttempt: UserQuizAttempt = {
+        id: `att_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+        userId: studentId,
+        userName: studentName,
+        userEmail: studentEmail,
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+        category: quiz.category || 'General',
+        difficulty: quiz.difficulty,
+        score: correctCount,
+        totalQuestions: total,
+        percentage,
+        passingScore: quiz.passingScore,
+        status,
+        timeSpentSeconds: durationSec,
+        timeSpentFormatted: formatDuration(durationSec),
+        isFlagged: compromisedState || finalViolations.length > 0,
+        flagReason: compromisedState
+          ? (finalViolations[0]?.description || 'Proctoring security incident flagged')
+          : undefined,
+        completedAt: new Date().toISOString(),
+        cohortWeek: 8,
+        missedTopics,
+        answersSummary: {
+          correctCount,
+          incorrectCount: total - correctCount,
+        },
+      }
+
+      try {
+        console.log('[QuizResultsDb] Recording quiz attempt to database:', quizAttempt)
+        await saveQuizAttempt(quizAttempt)
+      } catch (dbErr) {
+        console.warn('[QuizResultsDb] Failed to save quiz attempt:', dbErr)
+      }
+
       const metadata: SessionMetadata = {
         sessionId: `sess_${Date.now()}`,
-        studentId: 'ion-popescu',
-        studentName: 'Ion Popescu',
+        studentId,
+        studentName,
         quizId: quiz.id,
         quizTitle: quiz.title,
         startedAt: sessionStartTimeRef.current.toISOString(),
         finishedAt: new Date().toISOString(),
-        durationSeconds: Math.max(
-          1,
-          Math.round(
-            (Date.now() - sessionStartTimeRef.current.getTime()) / 1000
-          )
-        ),
+        durationSeconds: durationSec,
         score: correctCount,
         totalQuestions: total,
         percentage,
@@ -352,7 +415,7 @@ const getSupportedMimeTypeAndExt = (): { mimeType: string; ext: 'mp4' | 'webm' }
         console.error('[RecordingService] Failed to save recording:', saveResult.error)
       }
     },
-    [questions, quiz.id, quiz.passingScore, quiz.title, stopHardwareResources]
+    [questions, quiz.category, quiz.difficulty, quiz.id, quiz.passingScore, quiz.title, stopHardwareResources, studentEmail, studentId, studentName]
   )
 
   // Initialize MediaRecorder on the combined recordingStream

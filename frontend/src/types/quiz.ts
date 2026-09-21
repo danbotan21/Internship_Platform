@@ -20,6 +20,7 @@ export interface QuizCatalogItem {
   id: string
   title: string
   description: string
+  category?: string
   questionCount: number
   durationMinutes: number
   passingScore: number // percentage, e.g. 70

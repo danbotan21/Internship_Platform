@@ -132,8 +132,72 @@ function recordingsDevPlugin(): Plugin {
         })
       }
 
+      const handleQuizResults = async (req: any, res: any) => {
+        const resultsFilePath = path.resolve(__dirname, '../recorded-sessions/quiz_results.json')
+        const recordingsDir = path.dirname(resultsFilePath)
+        if (!fs.existsSync(recordingsDir)) {
+          fs.mkdirSync(recordingsDir, { recursive: true })
+        }
+
+        if (req.method === 'GET') {
+          res.setHeader('Content-Type', 'application/json')
+          if (fs.existsSync(resultsFilePath)) {
+            try {
+              const data = fs.readFileSync(resultsFilePath, 'utf-8')
+              res.statusCode = 200
+              res.end(data || '[]')
+              return
+            } catch (err) {
+              console.error('[DevServer] Error reading quiz_results.json:', err)
+            }
+          }
+          res.statusCode = 200
+          res.end('[]')
+          return
+        }
+
+        if (req.method === 'POST') {
+          const chunks: Buffer[] = []
+          req.on('data', (chunk: Buffer) => chunks.push(chunk))
+          req.on('end', () => {
+            try {
+              const rawBody = Buffer.concat(chunks).toString('utf-8')
+              const newAttempt = JSON.parse(rawBody)
+
+              let existing: any[] = []
+              if (fs.existsSync(resultsFilePath)) {
+                try {
+                  const data = fs.readFileSync(resultsFilePath, 'utf-8')
+                  if (data) existing = JSON.parse(data)
+                } catch {
+                  existing = []
+                }
+              }
+
+              const updated = [newAttempt, ...existing.filter((a: any) => a.id !== newAttempt.id)]
+              fs.writeFileSync(resultsFilePath, JSON.stringify(updated, null, 2))
+              console.log(`[DevServer] Saved user quiz attempt to database: ${newAttempt.userName} - ${newAttempt.quizTitle} (${newAttempt.percentage}%)`)
+
+              res.setHeader('Content-Type', 'application/json')
+              res.statusCode = 200
+              res.end(JSON.stringify({ success: true, count: updated.length, attempt: newAttempt }))
+            } catch (err: any) {
+              console.error('[DevServer] Error saving quiz result:', err)
+              res.statusCode = 500
+              res.setHeader('Content-Type', 'application/json')
+              res.end(JSON.stringify({ success: false, error: err.message }))
+            }
+          })
+          return
+        }
+
+        res.statusCode = 405
+        res.end('Method Not Allowed')
+      }
+
       server.middlewares.use('/api/recordings/upload', handleRecordingUpload)
       server.middlewares.use('/api/save-recording', handleRecordingUpload)
+      server.middlewares.use('/api/quiz-results', handleQuizResults)
     },
   }
 }
