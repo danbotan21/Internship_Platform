@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Bookmark, ChevronDown, Plus, Search } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Topbar from '../components/Topbar'
+import FluidBackground from '../components/FluidBackground'
 import {
   addResourceFavorite,
   getResources,
@@ -133,7 +134,7 @@ function ResourceLibrary() {
             </button>
             {isCategoryOpen && (
               <div className="absolute left-0 right-0 top-12 z-20 overflow-hidden rounded-lg border border-[#dfe6e2] bg-white p-1 shadow-lg" role="listbox" aria-label="Resource categories">
-                {['All', 'Guide', 'Template'].map((option) => (
+                {['All', 'Guide', 'Template', 'Policies'].map((option) => (
                   <button
                     key={option}
                     type="button"
@@ -227,26 +228,31 @@ function ResourceLibrary() {
         {!isLoading && activeTab === 'Drafts' ? (
           <div className="mt-8 grid grid-cols-1 gap-5">
             {filteredResources.map((draft) => (
-              <article key={draft.id} className="group mx-auto flex h-[360px] w-full max-w-4xl flex-col overflow-hidden rounded-xl border border-[#dfe6e2] bg-[#10201b] transition duration-300 hover:border-[#9bb9aa] hover:shadow-xl">
-                <div className="resource-shader resource-shader-guide relative flex min-h-0 flex-[7] items-end overflow-hidden p-5">
-                  <div className="resource-shader-fluid" />
-                  <div className="resource-shader-glow resource-shader-glow-one" />
-                  <div className="resource-shader-glow resource-shader-glow-two" />
-                  <img src="/logo.svg" alt="" className="absolute right-5 top-5 z-10 h-12 w-12 opacity-90" />
-                  <div className="relative z-10 max-w-[85%]">
-                    <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/75">Draft article</span>
-                    <h2 className="mt-2 text-xl font-semibold leading-tight text-white drop-shadow-sm">{draft.title}</h2>
+              <article key={draft.id} className="group relative isolate mx-auto flex h-[360px] w-full max-w-4xl overflow-hidden rounded-xl border border-white/20 bg-[#10201b] shadow-lg transition duration-300 hover:border-white/50 hover:shadow-2xl">
+                  <FluidBackground
+                    variant={
+                      draft.type.toLowerCase() === 'template'
+                        ? 'template'
+                        : draft.type.toLowerCase() === 'policies'
+                          ? 'policy'
+                          : 'guide'
+                    }
+                  />
+                <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/75 via-black/10 to-black/10" />
+                <img src="/logo.svg" alt="" className="absolute right-5 top-5 z-10 h-12 w-12 opacity-90" />
+                <div className="relative z-10 flex h-full w-full flex-col p-5">
+                  <span className="w-fit rounded-full border border-white/30 bg-black/20 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/85 backdrop-blur-sm">Draft article</span>
+                  <div className="mt-auto">
+                    <h2 className="max-w-[85%] text-2xl font-semibold leading-tight text-white drop-shadow-sm">{draft.title}</h2>
+                    <div className="mt-4 flex items-center justify-between gap-3">
+                      <span className="rounded-md bg-white/15 px-2.5 py-1 text-[10px] text-white backdrop-blur-sm">{draft.category}</span>
+                      <span className="rounded-full bg-[#fff4df]/90 px-2 py-1 text-[9px] font-medium text-[#9a6a18]">Draft</span>
+                    </div>
+                    <p className="mt-3 text-xs text-white/70">Last edited {new Date(draft.updatedAt).toLocaleDateString()}</p>
+                    <Link to={`/resources/create?draft=${encodeURIComponent(draft.id)}`} className="mt-4 flex h-9 items-center justify-center rounded-lg bg-white/90 text-xs font-medium text-[#164c3a] transition hover:bg-white">
+                      Continue editing
+                    </Link>
                   </div>
-                </div>
-                <div className="flex min-h-0 flex-[3] flex-col bg-white p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="rounded-md bg-[#e9f3ee] px-2.5 py-1 text-[10px] text-[#164c3a]">{draft.category}</span>
-                    <span className="rounded-full bg-[#fff4df] px-2 py-1 text-[9px] font-medium text-[#9a6a18]">Draft</span>
-                  </div>
-                  <p className="mt-3 text-sm text-[#52665d]">Last edited {new Date(draft.updatedAt).toLocaleDateString()}</p>
-                  <Link to={`/resources/create?draft=${encodeURIComponent(draft.id)}`} className="mt-auto flex h-9 items-center justify-center rounded-lg bg-[#e9f3ee] text-xs font-medium text-[#164c3a] hover:bg-[#dcebe3]">
-                    Continue editing
-                  </Link>
                 </div>
               </article>
             ))}
@@ -265,30 +271,22 @@ function ResourceLibrary() {
                   navigate(`/resources/${resource.slug}`)
                 }
               }}
-              className="group mx-auto flex h-[360px] w-full max-w-4xl cursor-pointer flex-col overflow-hidden rounded-xl border border-[#dfe6e2] bg-[#10201b] transition duration-300 hover:border-[#9bb9aa] hover:shadow-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#164c3a]"
+              className="group relative isolate mx-auto flex h-[360px] w-full max-w-4xl cursor-pointer overflow-hidden rounded-xl border border-white/20 bg-[#10201b] shadow-lg transition duration-300 hover:border-white/50 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#164c3a]"
             >
-              <div className={`resource-shader relative flex min-h-0 flex-[7] items-end overflow-hidden p-5 ${
-                resource.type === 'Guide' ? 'resource-shader-guide' : 'resource-shader-template'
-              }`}>
-                <div className="resource-shader-fluid" />
-                <div className="resource-shader-glow resource-shader-glow-one" />
-                <div className="resource-shader-glow resource-shader-glow-two" />
-                  <img src="/logo.svg" alt="" className="absolute right-5 top-5 z-10 h-12 w-12 opacity-90" />
-                <div className="relative z-10 max-w-[85%]">
-                  <span className="text-[9px] font-semibold uppercase tracking-[0.16em] text-white/75">{resource.type}</span>
-                  <h2 className="mt-2 text-xl font-semibold leading-tight text-white drop-shadow-sm">{resource.title}</h2>
-                </div>
-              </div>
-
-              <div className="flex min-h-0 flex-[3] flex-col bg-white p-4 text-[#18352a]">
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-wrap gap-2">
-                    {resource.tags.map((tag) => (
-                      <span key={tag} className="rounded-md bg-[#e9f3ee] px-2.5 py-1 text-[10px] text-[#164c3a]">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+              <FluidBackground
+                variant={
+                  resource.type.toLowerCase() === 'template'
+                    ? 'template'
+                    : resource.type.toLowerCase() === 'policies'
+                      ? 'policy'
+                      : 'guide'
+                }
+              />
+              <div className="pointer-events-none absolute inset-0 z-[1] bg-gradient-to-t from-black/80 via-black/20 to-black/10" />
+              <img src="/logo.svg" alt="" className="absolute right-5 top-5 z-10 h-12 w-12 opacity-90" />
+              <div className="relative z-10 flex h-full w-full flex-col p-5 text-white">
+                <div className="flex items-start justify-between gap-4">
+                  <span className="w-fit rounded-full border border-white/30 bg-black/20 px-2.5 py-1 text-[9px] font-semibold uppercase tracking-[0.16em] text-white/85 backdrop-blur-sm">{resource.type}</span>
                   <button
                     type="button"
                     onClick={(event) => {
@@ -300,26 +298,23 @@ function ResourceLibrary() {
                       resource.isFavorite ? 'from' : 'to'
                     } favorites`}
                     aria-pressed={resource.isFavorite}
-                    className="rounded p-1 text-[#18352a] transition-colors hover:bg-[#edf3ef] focus:outline-none focus:ring-0"
+                    className="absolute right-5 top-20 rounded-full border border-white/30 bg-black/20 p-2 text-white backdrop-blur-sm transition hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/70"
                   >
-                    <Bookmark
-                      className={`h-4 w-4 ${
-                        resource.isFavorite
-                          ? 'fill-[#18352a] text-[#18352a]'
-                          : 'text-[#18352a]'
-                      }`}
-                      strokeWidth={2.5}
-                    />
+                    <Bookmark className={`h-4 w-4 ${resource.isFavorite ? 'fill-white' : ''}`} strokeWidth={2.5} />
                   </button>
                 </div>
-                <p className="mt-3 text-sm leading-5 text-[#52665d]">{resource.description}</p>
-                <div className="mt-2 flex min-w-0 items-center justify-between gap-3 text-[10px] text-[#82908b]">
-                  <span className="min-w-0 truncate">
-                    {resource.owner} · Updated {new Date(resource.updatedAt).toLocaleDateString()}
-                  </span>
-                  <span className="max-w-[180px] shrink-0 truncate rounded-full bg-[#e9f3ee] px-3 py-2 text-xs text-[#164c3a]">
-                    {resource.mentorName}
-                  </span>
+                <div className="mt-auto">
+                  <h2 className="max-w-[85%] text-2xl font-semibold leading-tight text-white drop-shadow-sm">{resource.title}</h2>
+                  <p className="mt-3 max-w-2xl text-sm leading-5 text-white/75">{resource.description}</p>
+                  <div className="mt-4 flex min-w-0 flex-wrap items-center gap-2 text-[10px] text-white/75">
+                    {resource.tags.map((tag) => (
+                      <span key={tag} className="rounded-md border border-white/25 bg-white/10 px-2.5 py-1 backdrop-blur-sm">{tag}</span>
+                    ))}
+                  </div>
+                  <div className="mt-3 flex min-w-0 items-center justify-between gap-3 text-[10px] text-white/60">
+                    <span className="min-w-0 truncate">{resource.owner} · Updated {new Date(resource.updatedAt).toLocaleDateString()}</span>
+                    <span className="max-w-[180px] shrink-0 truncate rounded-full bg-white/15 px-3 py-2 text-xs text-white backdrop-blur-sm">{resource.mentorName}</span>
+                  </div>
                 </div>
               </div>
             </article>

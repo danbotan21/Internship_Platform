@@ -133,7 +133,7 @@ export default function CreateArticle() {
     title: title.trim() || 'Untitled draft',
     description: editorRef.current?.textContent?.trim().slice(0, 240) ?? '',
     contentHtml: editorRef.current?.innerHTML ?? '',
-    type: 'Guide',
+    type: category === 'Templates' ? 'Template' : category === 'Policies' ? 'Policies' : 'Guide',
     format: 'Article',
     category,
     owner: 'Programme team',

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ArrowLeft, Bookmark, Trash2 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import Topbar from '../components/Topbar'
+import FluidBackground from '../components/FluidBackground'
 import {
   addResourceFavorite,
   deleteResource,
@@ -68,7 +69,7 @@ export default function ResourceDetails() {
     <div className="-m-8">
       <Topbar />
       <section className="min-h-[calc(100vh-6rem)] bg-[#f7f9f8] px-6 py-8 sm:px-8">
-        <div className="mx-auto max-w-6xl">
+        <div className="mx-auto max-w-7xl">
           <Link to="/resources" className="inline-flex items-center gap-2 text-xs font-medium text-[#527467] hover:text-[#164c3a]">
             <ArrowLeft className="h-4 w-4" /> Back to resources
           </Link>
@@ -82,11 +83,17 @@ export default function ResourceDetails() {
 
           {resource && (
             <article className="mt-5 overflow-hidden rounded-xl border border-[#dfe6e2] bg-white shadow-sm">
-              <div className={`resource-shader relative flex min-h-56 items-end overflow-hidden p-6 ${
-                resource.type === 'Guide' ? 'resource-shader-guide' : 'resource-shader-template'
-              }`}>
-                <div className="resource-shader-glow resource-shader-glow-one" />
-                <div className="resource-shader-glow resource-shader-glow-two" />
+              <div className="resource-detail-shader flex items-end p-6">
+                <FluidBackground
+                  key={resource.id}
+                  variant={
+                    resource.type.toLowerCase() === 'template'
+                      ? 'template'
+                      : resource.type.toLowerCase() === 'policies'
+                        ? 'policy'
+                        : 'guide'
+                  }
+                />
                 <img src="/logo.svg" alt="" className="absolute right-6 top-6 z-10 h-16 w-16 opacity-90" />
                 <div className="relative z-10">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/75">
