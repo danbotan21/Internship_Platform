@@ -1,13 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import {
-  BadgeCheck,
-  Building2,
-  History,
-  LayoutGrid,
-  ShieldAlert,
-  UserCog,
-  Users,
-} from 'lucide-react'
+import { BadgeCheck, Building2, LayoutGrid, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 type NavItem = {
@@ -21,6 +13,8 @@ type NavSection = {
   items: NavItem[]
 }
 
+// Moderation, mentor assignment and the audit log are hidden until those
+// features exist; their nav entries led to an empty placeholder page.
 const sections: NavSection[] = [
   {
     title: 'Work',
@@ -29,13 +23,7 @@ const sections: NavSection[] = [
       { label: 'Users', to: '/admin/users', icon: Users },
       { label: 'Companies', to: '/admin/companies', icon: Building2 },
       { label: 'Verification', to: '/admin/verification', icon: BadgeCheck },
-      { label: 'Moderation', to: '/admin/moderation', icon: ShieldAlert },
-      { label: 'Mentor assignment', to: '/admin/mentor-assignment', icon: UserCog },
     ],
-  },
-  {
-    title: 'Oversight',
-    items: [{ label: 'Audit log', to: '/admin/audit-log', icon: History }],
   },
 ]
 

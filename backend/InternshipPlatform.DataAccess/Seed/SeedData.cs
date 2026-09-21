@@ -1,5 +1,6 @@
 using InternshipPlatform.DataAccess.Context;
 using InternshipPlatform.Domain.Entities;
+using InternshipPlatform.Domain;
 using InternshipPlatform.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -178,7 +179,9 @@ public static class SeedData
                 : isAdmin ? "Programme Office"
                 : AcademicGroups[index % AcademicGroups.Length],
             Programme = isCompanyMember ? null : "Software Engineering · Year 3",
-            PlatformRole = isAdmin ? PlatformRole.Admin : PlatformRole.User,
+                        Role = isAdmin ? UserRole.Admin
+                : isCompanyMember ? UserRole.Company
+                : UserRole.Student,
             Status = isDeactivated ? UserStatus.Deactivated : UserStatus.Active,
             CreatedAt = Epoch.AddDays(-index),
             LastLoginAt = Epoch.AddHours(-index),
@@ -191,9 +194,9 @@ public static class SeedData
         List<CompanyMembership> memberships,
         List<Company> companies)
     {
-        var admin = users.First(u => u.PlatformRole == PlatformRole.Admin);
+        var admin = users.First(u => u.Role == UserRole.Admin);
         var students = users
-            .Where(u => u.PlatformRole == PlatformRole.User && u.University is not null)
+            .Where(u => u.Role == UserRole.Student && u.University is not null)
             .ToList();
 
         var requests = new List<CompanyVerificationRequest>();

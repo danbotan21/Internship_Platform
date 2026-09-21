@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace InternshipPlatform.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260917121620_AddUserProgramme")]
-    partial class AddUserProgramme
+    [Migration("20260921143112_AdminPanel")]
+    partial class AdminPanel
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -196,7 +196,39 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.ToTable("CompanyVerificationRequests");
                 });
 
-            modelBuilder.Entity("InternshipPlatform.Domain.Entities.User", b =>
+            modelBuilder.Entity("InternshipPlatform.Domain.RefreshToken", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Token")
+                        .IsUnique();
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.User", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -233,14 +265,14 @@ namespace InternshipPlatform.DataAccess.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<string>("PlatformRole")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
                     b.Property<string>("Programme")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -267,7 +299,7 @@ namespace InternshipPlatform.DataAccess.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("InternshipPlatform.Domain.Entities.User", "User")
+                    b.HasOne("InternshipPlatform.Domain.User", "User")
                         .WithOne("Membership")
                         .HasForeignKey("InternshipPlatform.Domain.Entities.CompanyMembership", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -285,12 +317,12 @@ namespace InternshipPlatform.DataAccess.Migrations
                         .HasForeignKey("InternshipPlatform.Domain.Entities.CompanyVerificationRequest", "CompanyId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("InternshipPlatform.Domain.Entities.User", "DecidedBy")
+                    b.HasOne("InternshipPlatform.Domain.User", "DecidedBy")
                         .WithMany()
                         .HasForeignKey("DecidedByUserId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("InternshipPlatform.Domain.Entities.User", "Requester")
+                    b.HasOne("InternshipPlatform.Domain.User", "Requester")
                         .WithMany()
                         .HasForeignKey("RequesterUserId")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -303,14 +335,27 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.Navigation("Requester");
                 });
 
+            modelBuilder.Entity("InternshipPlatform.Domain.RefreshToken", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.User", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Company", b =>
                 {
                     b.Navigation("Memberships");
                 });
 
-            modelBuilder.Entity("InternshipPlatform.Domain.Entities.User", b =>
+            modelBuilder.Entity("InternshipPlatform.Domain.User", b =>
                 {
                     b.Navigation("Membership");
+
+                    b.Navigation("RefreshTokens");
                 });
 #pragma warning restore 612, 618
         }

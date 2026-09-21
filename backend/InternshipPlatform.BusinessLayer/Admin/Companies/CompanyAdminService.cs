@@ -1,4 +1,3 @@
-using InternshipPlatform.BusinessLayer.Admin.Companies;
 using InternshipPlatform.BusinessLayer.Common;
 using InternshipPlatform.DataAccess.Context;
 using InternshipPlatform.Domain.Entities;
@@ -6,7 +5,7 @@ using InternshipPlatform.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace InternshipPlatform.DataAccess.Admin.Companies;
+namespace InternshipPlatform.BusinessLayer.Admin.Companies;
 
 public class CompanyAdminService(AppDbContext context, ILogger<CompanyAdminService> logger)
     : ICompanyAdminService

@@ -1,11 +1,10 @@
-using InternshipPlatform.BusinessLayer.Admin.Users;
 using InternshipPlatform.DataAccess.Context;
-using InternshipPlatform.Domain.Entities;
+using InternshipPlatform.Domain;
 using InternshipPlatform.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-namespace InternshipPlatform.DataAccess.Admin.Users;
+namespace InternshipPlatform.BusinessLayer.Admin.Users;
 
 public class UserLifecycleService(AppDbContext context, ILogger<UserLifecycleService> logger)
     : IUserLifecycleService
@@ -27,7 +26,7 @@ public class UserLifecycleService(AppDbContext context, ILogger<UserLifecycleSer
             return UserLifecycleResult.Fail(UserLifecycleError.AlreadyDeactivated);
         }
 
-        if (user.PlatformRole == PlatformRole.Admin && await IsLastActiveAdminAsync(user.Id, cancellationToken))
+        if (user.Role == UserRole.Admin && await IsLastActiveAdminAsync(user.Id, cancellationToken))
         {
             return UserLifecycleResult.Fail(UserLifecycleError.LastActiveAdmin);
         }
@@ -67,7 +66,7 @@ public class UserLifecycleService(AppDbContext context, ILogger<UserLifecycleSer
 
     public async Task<UserLifecycleResult> ChangePlatformRoleAsync(
         Guid userId,
-        PlatformRole role,
+        UserRole role,
         string reason,
         Guid? actorUserId,
         CancellationToken cancellationToken = default)
@@ -78,20 +77,20 @@ public class UserLifecycleService(AppDbContext context, ILogger<UserLifecycleSer
             return error;
         }
 
-        if (user!.PlatformRole == role)
+        if (user!.Role == role)
         {
             return UserLifecycleResult.Fail(UserLifecycleError.RoleUnchanged);
         }
 
-        if (user.PlatformRole == PlatformRole.Admin
+        if (user.Role == UserRole.Admin
             && user.Status == UserStatus.Active
             && await IsLastActiveAdminAsync(user.Id, cancellationToken))
         {
             return UserLifecycleResult.Fail(UserLifecycleError.LastActiveAdmin);
         }
 
-        var previous = user.PlatformRole;
-        user.PlatformRole = role;
+        var previous = user.Role;
+        user.Role = role;
         await context.SaveChangesAsync(cancellationToken);
 
         LogAction($"Changed platform role {previous} -> {role}", user, reason, actorUserId);
@@ -121,7 +120,7 @@ public class UserLifecycleService(AppDbContext context, ILogger<UserLifecycleSer
     {
         var anotherActiveAdminExists = await context.Users.AnyAsync(
             u => u.Id != userId
-                && u.PlatformRole == PlatformRole.Admin
+                && u.Role == UserRole.Admin
                 && u.Status == UserStatus.Active,
             cancellationToken);
 

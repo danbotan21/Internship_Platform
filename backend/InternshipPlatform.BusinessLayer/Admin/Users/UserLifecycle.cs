@@ -1,5 +1,5 @@
 using System.ComponentModel.DataAnnotations;
-using InternshipPlatform.Domain.Enums;
+using InternshipPlatform.Domain;
 
 namespace InternshipPlatform.BusinessLayer.Admin.Users;
 
@@ -33,5 +33,5 @@ public sealed record ChangePlatformRoleRequestDto : AccountActionRequestDto
 {
     // Nullable so a missing value fails [Required] instead of silently binding to User.
     [Required]
-    public PlatformRole? Role { get; init; }
+    public UserRole? Role { get; init; }
 }

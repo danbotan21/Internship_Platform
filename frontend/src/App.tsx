@@ -1,5 +1,7 @@
 import { Navigate, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
+import AuthModal from './components/AuthModal'
+import { useAuth } from './hooks/useAuth'
 import Overview from './pages/Overview'
 import InternshipProgress from './pages/InternshipProgress'
 import Tasks from './pages/Tasks'
@@ -25,6 +27,12 @@ import CompanyDetailPage from './pages/admin/companies/CompanyDetailPage'
 import AdminDashboardPage from './pages/admin/dashboard/AdminDashboardPage'
 
 function App() {
+  const { isAuthenticated } = useAuth()
+
+  if (!isAuthenticated) {
+    return <AuthModal />
+  }
+
   return (
     <Routes>
       <Route element={<Layout />}>

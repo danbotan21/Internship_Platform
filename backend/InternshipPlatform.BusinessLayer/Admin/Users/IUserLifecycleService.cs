@@ -1,4 +1,4 @@
-using InternshipPlatform.Domain.Enums;
+using InternshipPlatform.Domain;
 
 namespace InternshipPlatform.BusinessLayer.Admin.Users;
 
@@ -21,7 +21,7 @@ public interface IUserLifecycleService
 
     Task<UserLifecycleResult> ChangePlatformRoleAsync(
         Guid userId,
-        PlatformRole role,
+        UserRole role,
         string reason,
         Guid? actorUserId,
         CancellationToken cancellationToken = default);

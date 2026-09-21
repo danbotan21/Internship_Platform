@@ -1,9 +1,8 @@
-using InternshipPlatform.BusinessLayer.Admin.Dashboard;
 using InternshipPlatform.DataAccess.Context;
 using InternshipPlatform.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
-namespace InternshipPlatform.DataAccess.Admin.Dashboard;
+namespace InternshipPlatform.BusinessLayer.Admin.Dashboard;
 
 public class AdminDashboardService(AppDbContext context) : IAdminDashboardService
 {

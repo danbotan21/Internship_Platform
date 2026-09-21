@@ -1,11 +1,10 @@
-using InternshipPlatform.BusinessLayer.Admin.Users;
 using InternshipPlatform.BusinessLayer.Common;
 using InternshipPlatform.DataAccess.Context;
-using InternshipPlatform.Domain.Entities;
+using InternshipPlatform.Domain;
 using InternshipPlatform.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
-namespace InternshipPlatform.DataAccess.Admin.Users;
+namespace InternshipPlatform.BusinessLayer.Admin.Users;
 
 public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
 {
@@ -23,7 +22,7 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
         var counts = new UserDirectoryCountsDto(
             All: await filtered.CountAsync(cancellationToken),
             CompanyMembers: await filtered.CountAsync(u => u.Membership != null, cancellationToken),
-            Admins: await filtered.CountAsync(u => u.PlatformRole == PlatformRole.Admin, cancellationToken));
+            Admins: await filtered.CountAsync(u => u.Role == UserRole.Admin, cancellationToken));
 
         var scoped = ApplyScope(filtered, query.Scope);
         var totalCount = await scoped.CountAsync(cancellationToken);
@@ -41,7 +40,7 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
                 u.FullName,
                 u.Email,
                 u.Status,
-                u.PlatformRole,
+                u.Role,
                 u.University,
                 u.AcademicGroup,
                 u.LastLoginAt,
@@ -56,7 +55,7 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
                 r.FullName,
                 r.Email,
                 r.Status,
-                ResolveRole(r.PlatformRole, r.CompanyRole),
+                ResolveRole(r.Role, r.CompanyRole),
                 r.CompanyName ?? ComposeOrganisation(r.University, r.AcademicGroup),
                 r.LastLoginAt))
             .ToList();
@@ -79,7 +78,7 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
                 u.FullName,
                 u.Email,
                 u.Status,
-                u.PlatformRole,
+                u.Role,
                 u.University,
                 u.Programme,
                 u.AcademicGroup,
@@ -107,7 +106,7 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
             row.FullName,
             row.Email,
             row.Status,
-            ResolveRole(row.PlatformRole, row.CompanyRole),
+            ResolveRole(row.Role, row.CompanyRole),
             row.University,
             row.Programme,
             row.AcademicGroup,
@@ -140,13 +139,13 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
 
         return query.Role switch
         {
-            DirectoryRole.Admin => users.Where(u => u.PlatformRole == PlatformRole.Admin),
-            DirectoryRole.User => users.Where(u => u.PlatformRole != PlatformRole.Admin && u.Membership == null),
-            DirectoryRole.Owner => users.Where(u => u.PlatformRole != PlatformRole.Admin
+            DirectoryRole.Admin => users.Where(u => u.Role == UserRole.Admin),
+            DirectoryRole.User => users.Where(u => u.Role != UserRole.Admin && u.Membership == null),
+            DirectoryRole.Owner => users.Where(u => u.Role != UserRole.Admin
                 && u.Membership != null && u.Membership.Role == CompanyRole.Owner),
-            DirectoryRole.Recruiter => users.Where(u => u.PlatformRole != PlatformRole.Admin
+            DirectoryRole.Recruiter => users.Where(u => u.Role != UserRole.Admin
                 && u.Membership != null && u.Membership.Role == CompanyRole.Recruiter),
-            DirectoryRole.Mentor => users.Where(u => u.PlatformRole != PlatformRole.Admin
+            DirectoryRole.Mentor => users.Where(u => u.Role != UserRole.Admin
                 && u.Membership != null && u.Membership.Role == CompanyRole.Mentor),
             _ => users,
         };
@@ -156,13 +155,13 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
         scope switch
         {
             UserDirectoryScope.CompanyMembers => users.Where(u => u.Membership != null),
-            UserDirectoryScope.Admins => users.Where(u => u.PlatformRole == PlatformRole.Admin),
+            UserDirectoryScope.Admins => users.Where(u => u.Role == UserRole.Admin),
             _ => users,
         };
 
-    private static DirectoryRole ResolveRole(PlatformRole platformRole, CompanyRole? companyRole)
+    private static DirectoryRole ResolveRole(UserRole platformRole, CompanyRole? companyRole)
     {
-        if (platformRole == PlatformRole.Admin)
+        if (platformRole == UserRole.Admin)
         {
             return DirectoryRole.Admin;
         }

@@ -1,4 +1,3 @@
-using InternshipPlatform.BusinessLayer.Admin.Verification;
 using InternshipPlatform.BusinessLayer.Common;
 using InternshipPlatform.DataAccess.Context;
 using InternshipPlatform.Domain.Entities;
@@ -6,7 +5,7 @@ using InternshipPlatform.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
-namespace InternshipPlatform.DataAccess.Admin.Verification;
+namespace InternshipPlatform.BusinessLayer.Admin.Verification;
 
 public class CompanyVerificationService(AppDbContext context) : ICompanyVerificationService
 {

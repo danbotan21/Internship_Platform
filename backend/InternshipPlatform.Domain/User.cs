@@ -1,7 +1,7 @@
+using InternshipPlatform.Domain.Entities;
 using InternshipPlatform.Domain.Enums;
 
-namespace InternshipPlatform.Domain.Entities;
-
+namespace InternshipPlatform.Domain;
 public class User
 {
     public Guid Id { get; set; }
@@ -14,7 +14,7 @@ public class User
     public string? University { get; set; }
     public string? AcademicGroup { get; set; }
     public string? Programme { get; set; }
-    public PlatformRole PlatformRole { get; set; }
+    public UserRole Role { get; set; }
     public UserStatus Status { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
@@ -22,4 +22,6 @@ public class User
     public DateTimeOffset? DeactivatedAt { get; set; }
 
     public CompanyMembership? Membership { get; set; }
+
+    public List<RefreshToken> RefreshTokens { get; set; } = [];
 }
