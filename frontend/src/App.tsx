@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Navigate, Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
 import AuthModal from './components/AuthModal'
 import { useAuth } from './hooks/useAuth'
@@ -18,6 +18,15 @@ import CreateArticle from './pages/CreateArticle'
 import ResourceDetails from './pages/ResourceDetails'
 import Skills from './pages/Skills'
 import AuditLog from './pages/AuditLog'
+import PagePlaceholder from './components/PagePlaceholder'
+import AdminLayout from './components/admin/AdminLayout'
+import UserDirectoryPage from './pages/admin/users/UserDirectoryPage'
+import UserDetailPage from './pages/admin/users/UserDetailPage'
+import VerificationQueuePage from './pages/admin/verification/VerificationQueuePage'
+import VerificationDetailPage from './pages/admin/verification/VerificationDetailPage'
+import CompanyListPage from './pages/admin/companies/CompanyListPage'
+import CompanyDetailPage from './pages/admin/companies/CompanyDetailPage'
+import AdminDashboardPage from './pages/admin/dashboard/AdminDashboardPage'
 
 function App() {
   const { isAuthenticated } = useAuth()
@@ -45,6 +54,25 @@ function App() {
         <Route path="/resources/:resourceSlug" element={<ResourceDetails />} />
         <Route path="/skills" element={<Skills />} />
         <Route path="/audit-log" element={<AuditLog />} />
+      </Route>
+
+      <Route path="/admin" element={<AdminLayout />}>
+        <Route index element={<Navigate to="overview" replace />} />
+        <Route path="overview" element={<AdminDashboardPage />} />
+        <Route path="users" element={<UserDirectoryPage />} />
+        <Route path="users/:userId" element={<UserDetailPage />} />
+        <Route path="verification" element={<VerificationQueuePage />} />
+        <Route path="verification/:requestId" element={<VerificationDetailPage />} />
+        <Route path="companies" element={<CompanyListPage />} />
+        <Route path="companies/:companyId" element={<CompanyDetailPage />} />
+        <Route
+          path="*"
+          element={
+            <div className="p-8">
+              <PagePlaceholder title="Coming soon" description="This admin section is not built yet." />
+            </div>
+          }
+        />
       </Route>
     </Routes>
   )

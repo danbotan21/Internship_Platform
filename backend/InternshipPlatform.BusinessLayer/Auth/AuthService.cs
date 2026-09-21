@@ -27,7 +27,7 @@ public class AuthService(AppDbContext db, ITokenService tokenService, JwtSetting
         };
 
         db.Users.Add(user);
-        db.Milestones.AddRange(MilestoneTemplates.CreateFor(user.Id, DateOnly.FromDateTime(user.CreatedAt)));
+                db.Milestones.AddRange(MilestoneTemplates.CreateFor(user.Id, DateOnly.FromDateTime(user.CreatedAt.UtcDateTime)));
 
         await db.SaveChangesAsync();
 

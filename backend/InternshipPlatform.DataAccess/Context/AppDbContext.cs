@@ -1,6 +1,6 @@
 using InternshipPlatform.Domain;
-using Microsoft.EntityFrameworkCore;
 using InternshipPlatform.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace InternshipPlatform.DataAccess.Context;
 
@@ -16,12 +16,21 @@ public class AppDbContext : DbContext
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+    public DbSet<Company> Companies => Set<Company>();
+    public DbSet<CompanyMembership> CompanyMemberships => Set<CompanyMembership>();
+
+    public DbSet<CompanyVerificationRequest> CompanyVerificationRequests
+        => Set<CompanyVerificationRequest>();
     public DbSet<Milestone> Milestones => Set<Milestone>();
     public DbSet<TaskLogEntry> TaskLogEntries => Set<TaskLogEntry>();
     public DbSet<SupervisorFeedback> SupervisorFeedback => Set<SupervisorFeedback>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        base.OnModelCreating(modelBuilder);
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
+        
+
         modelBuilder.Entity<Resource>(entity =>
         {
             entity.HasKey(resource => resource.Id);
@@ -67,13 +76,7 @@ public class AppDbContext : DbContext
                 .HasForeignKey(favorite => favorite.ResourceId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasIndex(u => u.Email).IsUnique();
-            entity.Property(u => u.Email).IsRequired();
-            entity.Property(u => u.PasswordHash).IsRequired();
-            entity.Property(u => u.Role).HasConversion<string>();
-        });
+    
 
         modelBuilder.Entity<RefreshToken>(entity =>
         {
@@ -121,4 +124,7 @@ public class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Restrict);
         });
     }
+
+    
 }
+
