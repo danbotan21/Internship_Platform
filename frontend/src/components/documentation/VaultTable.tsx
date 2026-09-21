@@ -60,15 +60,15 @@ export default function VaultTable({
   const getFileBadge = (fileType: string) => {
     switch (fileType.toLowerCase()) {
       case 'pdf':
-        return <span className="flex h-6 w-8 items-center justify-center rounded bg-[#E5484D] text-[9px] font-bold text-white uppercase tracking-tight">PDF</span>
+        return <span className="flex h-6 w-8 items-center justify-center rounded bg-[#E5484D] text-[10px] font-bold text-white uppercase tracking-tight">PDF</span>
       case 'docx':
       case 'doc':
-        return <span className="flex h-6 w-8 items-center justify-center rounded bg-[#2B579A] text-[9px] font-bold text-white uppercase tracking-tight">DOC</span>
+        return <span className="flex h-6 w-8 items-center justify-center rounded bg-[#2B579A] text-[10px] font-bold text-white uppercase tracking-tight">DOC</span>
       case 'xlsx':
       case 'xls':
-        return <span className="flex h-6 w-8 items-center justify-center rounded bg-[#217346] text-[9px] font-bold text-white uppercase tracking-tight">XLS</span>
+        return <span className="flex h-6 w-8 items-center justify-center rounded bg-[#217346] text-[10px] font-bold text-white uppercase tracking-tight">XLS</span>
       default:
-        return <span className="flex h-6 w-8 items-center justify-center rounded bg-gray-500 text-[9px] font-bold text-white uppercase tracking-tight">FILE</span>
+        return <span className="flex h-6 w-8 items-center justify-center rounded bg-gray-500 text-[10px] font-bold text-white uppercase tracking-tight">FILE</span>
     }
   }
 
@@ -93,26 +93,26 @@ export default function VaultTable({
       case 'approved':
       case 'complete':
         return (
-          <span className="inline-flex items-center rounded-full bg-[#EAF7EE] px-2.5 py-0.5 text-[11px] font-medium text-[#1E7E34]">
+          <span className="inline-flex items-center rounded-full bg-[#EAF7EE] px-2.5 py-0.5 text-xs font-medium text-[#1E7E34]">
             Approved
           </span>
         )
       case 'pending':
       case 'submitted':
         return (
-          <span className="inline-flex items-center rounded-full bg-[#FEF5E7] px-2.5 py-0.5 text-[11px] font-medium text-[#D97706]">
+          <span className="inline-flex items-center rounded-full bg-[#FEF5E7] px-2.5 py-0.5 text-xs font-medium text-[#D97706]">
             Pending
           </span>
         )
       case 'rejected':
         return (
-          <span className="inline-flex items-center rounded-full bg-[#FDF0EE] px-2.5 py-0.5 text-[11px] font-medium text-[#E5484D]">
+          <span className="inline-flex items-center rounded-full bg-[#FDF0EE] px-2.5 py-0.5 text-xs font-medium text-[#E5484D]">
             Rejected
           </span>
         )
       default:
         return (
-          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-medium text-gray-700">
+          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
             {status}
           </span>
         )
@@ -130,7 +130,7 @@ export default function VaultTable({
               key={tab}
               type="button"
               onClick={() => onTabChange(tab)}
-              className={`rounded-lg px-3.5 py-1.5 text-xs font-medium transition-colors ${
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-[#153327] text-white shadow-xs'
                   : 'border border-gray-200/80 bg-white text-gray-600 hover:bg-gray-50'
@@ -176,9 +176,9 @@ export default function VaultTable({
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-gray-600">
+          <table className="w-full text-left text-sm text-gray-600">
             <thead>
-              <tr className="border-b border-gray-100 bg-white text-[11px] font-medium text-gray-400">
+              <tr className="border-b border-gray-100 bg-white text-xs font-medium text-gray-400">
                 <th className="w-10 px-4 py-3 text-center">
                   <input
                     type="checkbox"
@@ -235,12 +235,12 @@ export default function VaultTable({
                         <div className="flex items-center gap-2.5">
                           {getFileBadge(doc.fileType)}
                           <span
-                            className="max-w-[180px] sm:max-w-[240px] truncate text-xs font-medium text-gray-800 hover:text-[#FF7A00]"
+                            className="max-w-[180px] sm:max-w-[240px] truncate text-sm font-medium text-gray-800 hover:text-[#FF7A00]"
                             title={doc.fileName}
                           >
                             {doc.fileName}
                           </span>
-                          <span className="shrink-0 rounded-full bg-[#EBF1FF] px-2 py-0.5 text-[10px] font-medium text-[#3366CC]">
+                          <span className="shrink-0 rounded-full bg-[#EBF1FF] px-2 py-0.5 text-xs font-medium text-[#3366CC]">
                             {doc.category === 'Agreements'
                               ? 'Agreement'
                               : doc.category === 'Reports'
@@ -286,9 +286,9 @@ export default function VaultTable({
                             type="button"
                             onClick={() => onRowClick(doc)}
                             title="Quick Preview"
-                            className="rounded p-1 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                            className="rounded p-1.5 transition-colors hover:bg-gray-100 hover:text-gray-700"
                           >
-                            <Eye className="h-3.5 w-3.5" />
+                            <Eye className="h-4 w-4" />
                           </button>
 
                           {/* Download Button */}
@@ -296,9 +296,9 @@ export default function VaultTable({
                             href={doc.fileUrl}
                             download={doc.fileName}
                             title="Download document"
-                            className="rounded p-1 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                            className="rounded p-1.5 transition-colors hover:bg-gray-100 hover:text-gray-700"
                           >
-                            <Download className="h-3.5 w-3.5" />
+                            <Download className="h-4 w-4" />
                           </a>
 
                           {/* Delete Button */}
@@ -306,9 +306,9 @@ export default function VaultTable({
                             type="button"
                             onClick={() => onDeleteDoc(doc.id)}
                             title="Delete document"
-                            className="rounded p-1 transition-colors hover:bg-red-50 hover:text-red-600"
+                            className="rounded p-1.5 transition-colors hover:bg-red-50 hover:text-red-600"
                           >
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       </td>

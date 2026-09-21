@@ -9,6 +9,7 @@ import type {
 
 const STORAGE_KEY_DOCS = 'internflow_vault_documents'
 const STORAGE_KEY_COMPLIANCE = 'internflow_compliance_signed'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5080'
 
 const INITIAL_DOCUMENTS: VaultDocument[] = [
   {
@@ -238,7 +239,7 @@ class DocumentationService {
       if (params?.mandatoryOnly) query.append('mandatoryOnly', 'true')
       if (params?.userRole) query.append('userRole', params.userRole)
 
-      const res = await fetch(`http://localhost:5000/api/documents?${query.toString()}`)
+      const res = await fetch(`${API_BASE_URL}/api/documents?${query.toString()}`)
       if (res.ok) {
         return await res.json()
       }
@@ -293,7 +294,7 @@ class DocumentationService {
       if (metadata.isMandatory) formData.append('isMandatory', 'true')
       if (metadata.uploadedBy) formData.append('uploadedBy', metadata.uploadedBy)
 
-      const res = await fetch('http://localhost:5000/api/documents/upload', {
+      const res = await fetch(`${API_BASE_URL}/api/documents/upload`, {
         method: 'POST',
         body: formData,
       })
@@ -349,7 +350,7 @@ class DocumentationService {
     performedBy = 'Ana Popescu'
   ): Promise<VaultDocument | null> {
     try {
-      const res = await fetch(`http://localhost:5000/api/documents/${id}/status`, {
+      const res = await fetch(`${API_BASE_URL}/api/documents/${id}/status`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status, reason, performedBy }),
@@ -398,7 +399,7 @@ class DocumentationService {
     signedBy = 'Ana Popescu'
   ): Promise<VaultDocument | null> {
     try {
-      const res = await fetch(`http://localhost:5000/api/documents/${id}/sign`, {
+      const res = await fetch(`${API_BASE_URL}/api/documents/${id}/sign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ role, signedBy }),
@@ -424,7 +425,7 @@ class DocumentationService {
       doc.approvedAt = new Date().toISOString()
       doc.approvedBy = signedBy
     } else {
-      doc.signingStatus = `SignedBy${role}` as any
+      doc.signingStatus = `SignedBy${role}` as VaultDocument['signingStatus']
     }
 
     doc.updatedAt = new Date().toISOString()
@@ -443,7 +444,7 @@ class DocumentationService {
 
   async deleteDocument(id: string, performedBy = 'Ana Popescu'): Promise<boolean> {
     try {
-      const res = await fetch(`http://localhost:5000/api/documents/${id}?performedBy=${performedBy}`, {
+      const res = await fetch(`${API_BASE_URL}/api/documents/${id}?performedBy=${performedBy}`, {
         method: 'DELETE',
       })
       if (res.ok) return true
@@ -459,7 +460,7 @@ class DocumentationService {
 
   async getStats(): Promise<VaultStats> {
     try {
-      const res = await fetch('http://localhost:5000/api/documents/stats')
+      const res = await fetch(`${API_BASE_URL}/api/documents/stats`)
       if (res.ok) {
         return await res.json()
       }
@@ -504,7 +505,7 @@ class DocumentationService {
     performedBy = 'Ana Popescu'
   ): Promise<number> {
     try {
-      const res = await fetch('http://localhost:5000/api/documents/batch', {
+      const res = await fetch(`${API_BASE_URL}/api/documents/batch`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ documentIds: ids, action, performedBy }),

@@ -162,19 +162,113 @@ export default function QuickPreviewDrawer({
               )}
             </div>
 
-            {/* Document Preview Canvas Mock */}
-            <div className="overflow-hidden rounded-xl border border-gray-200 bg-[#F9FAFB] p-4 text-center">
-              <div className="mx-auto flex h-40 w-32 flex-col items-center justify-center rounded-lg bg-white p-3 shadow-xs border border-gray-200/80">
-                <FileText className="h-12 w-12 text-[#FF7A00]/80 mb-2" />
-                <div className="h-2 w-16 bg-gray-200 rounded-sm mb-1" />
-                <div className="h-2 w-20 bg-gray-100 rounded-sm mb-1" />
-                <div className="h-2 w-12 bg-gray-100 rounded-sm" />
-                <span className="mt-3 text-[10px] font-mono text-gray-400">Page 1 of 3</span>
-              </div>
-              <p className="mt-3 text-xs text-gray-500 font-medium">
-                {document.fileType.toUpperCase()} Document ({formatFileSize(document.size)})
-              </p>
-            </div>
+            {/* Document Preview Canvas */}
+            {(() => {
+              const fileType = document.fileType.toLowerCase()
+              const isImage = ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(fileType)
+              const isPdf = fileType === 'pdf'
+              const isMockDoc = document.fileUrl.startsWith('/uploads/')
+
+              if (isMockDoc) {
+                // For mock documents (uploaded files), render a compact preview.
+                return (
+                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-[#F9FAFB] p-2 text-center">
+                    {isPdf ? (
+                      <iframe src={document.fileUrl} className="w-full h-[200px] rounded-lg border border-gray-200 bg-white shadow-xs" title={document.fileName} />
+                    ) : isImage ? (
+                      <img src={document.fileUrl} alt={document.fileName} className="max-w-full h-auto max-h-[200px] mx-auto rounded-lg object-contain shadow-xs bg-white" />
+                    ) : (
+                      <div className="p-4 text-sm text-gray-500">
+                        No preview available for this file type. Download to view.
+                      </div>
+                    )}
+                    <p className="mt-2 text-xs text-gray-500 font-medium">
+                      {document.fileType.toUpperCase()} ({formatFileSize(document.size)}) Preview
+                    </p>
+                  </div>
+                )
+              }
+
+              if (isImage) {
+                return (
+                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-[#F9FAFB] p-2 text-center">
+                    <img src={document.fileUrl} alt={document.fileName} className="max-w-full h-auto max-h-[380px] mx-auto rounded-lg object-contain shadow-xs bg-white" />
+                    <p className="mt-3 mb-1 text-xs text-gray-500 font-medium">
+                      {document.fileType.toUpperCase()} Image ({formatFileSize(document.size)})
+                    </p>
+                  </div>
+                )
+              }
+
+              if (isPdf) {
+                return (
+                  <div className="overflow-hidden rounded-xl border border-gray-200 bg-[#F9FAFB] p-2 text-center">
+                    <iframe src={document.fileUrl} className="w-full h-[380px] rounded-lg border border-gray-200 bg-white shadow-xs" title={document.fileName} />
+                    <p className="mt-3 mb-1 text-xs text-gray-500 font-medium">
+                      {document.fileType.toUpperCase()} Document ({formatFileSize(document.size)})
+                    </p>
+                  </div>
+                )
+              }
+
+              // Default: simulated document preview
+              return (
+                <div className="overflow-hidden rounded-xl border border-gray-200 bg-[#F9FAFB] p-2 text-center">
+                  <div className="w-full h-[380px] overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-xs p-6 text-left text-gray-800 relative">
+                    <div className="border-b border-gray-200 pb-4 mb-4 flex items-start justify-between">
+                      <div>
+                        <h1 className="text-lg font-serif font-bold text-gray-900 leading-snug">{document.title}</h1>
+                        <p className="text-[11px] text-gray-500 mt-1 uppercase tracking-wider font-mono">Ref: {document.id.split('-')[0]}</p>
+                      </div>
+                      <FileText className="h-6 w-6 text-gray-300 shrink-0" />
+                    </div>
+
+                    <div className="font-serif text-sm leading-relaxed space-y-4 text-gray-700">
+                      <p>
+                        <span className="font-bold text-gray-900">CONFIDENTIAL DOCUMENT</span><br/>
+                        This is a system-generated preview for the file <strong>{document.fileName}</strong>.
+                      </p>
+
+                      <p>
+                        In accordance with the internship program requirements, this document outlines the evaluation criteria, compliance standards, and progress milestones specific to the candidate. All information contained within is subject to continuous review and validation by the designated supervisors.
+                      </p>
+
+                      <p className="text-xs bg-gray-50 p-3 rounded-lg border border-gray-100">
+                        <strong>Visibility Scope:</strong> {document.visibilityRole}<br/>
+                        <strong>Status:</strong> {document.status}
+                      </p>
+
+                      <div className="mt-8 pt-8 border-t border-gray-200">
+                        <h4 className="text-[10px] font-bold text-gray-900 uppercase tracking-wider mb-4 text-center">Official Signatories</h4>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="text-center">
+                            <div className="border-b border-gray-400 w-full mb-1.5 pb-1.5 h-8 flex items-end justify-center">
+                              {document.completedSignatures >= 1 ? <span className="font-medium text-emerald-700 font-mono text-[10px]">{document.uploadedBy}</span> : ''}
+                            </div>
+                            <span className="text-[9px] text-gray-500 uppercase tracking-wider block truncate">Student</span>
+                          </div>
+                          <div className="text-center">
+                            <div className="border-b border-gray-400 w-full mb-1.5 pb-1.5 h-8 flex items-end justify-center">
+                              {document.completedSignatures >= 2 ? <span className="font-medium text-emerald-700 font-mono text-[10px]">SIGNED</span> : ''}
+                            </div>
+                            <span className="text-[9px] text-gray-500 uppercase tracking-wider block truncate">Mentor</span>
+                          </div>
+                          <div className="text-center">
+                            <div className="border-b border-gray-400 w-full mb-1.5 pb-1.5 h-8 flex items-end justify-center">
+                              {document.completedSignatures >= 3 ? <span className="font-medium text-emerald-700 font-mono text-[10px] truncate max-w-[80px]">{document.approvedBy}</span> : ''}
+                            </div>
+                            <span className="text-[9px] text-gray-500 uppercase tracking-wider block truncate">Coord.</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <p className="mt-3 mb-1 text-xs text-gray-500 font-medium">
+                    {document.fileType.toUpperCase()} Document ({formatFileSize(document.size)}) - Simulated Preview
+                  </p>
+                </div>
+              )
+            })()}
 
             {/* Signatures Progress (US 446) */}
             <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4">

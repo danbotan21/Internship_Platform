@@ -26,10 +26,10 @@ export default function RightRailPanel({
   )
 
   return (
-    <aside className="w-64 shrink-0 space-y-4">
+    <aside className="w-72 shrink-0 space-y-5">
       {/* 1. Vault Storage Card */}
-      <div className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-xs">
-        <h3 className="mb-3 text-xs font-semibold text-gray-900">Vault Storage</h3>
+      <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs">
+        <h3 className="mb-3 text-sm font-semibold text-gray-900">Vault Storage</h3>
         {/* Storage Bar */}
         <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
           <div
@@ -37,7 +37,7 @@ export default function RightRailPanel({
             style={{ width: `${percentage || 8}%` }}
           />
         </div>
-        <div className="mt-2.5 flex items-center justify-between text-[11px] text-gray-500">
+        <div className="mt-2.5 flex items-center justify-between text-xs text-gray-500">
           <span>
             {usedMB} MB of {totalMB} MB used
           </span>
@@ -46,22 +46,22 @@ export default function RightRailPanel({
       </div>
 
       {/* 2. Mandatory Checklists Card */}
-      <div className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-xs">
-        <h3 className="mb-3 text-xs font-semibold text-gray-900">Mandatory Checklists</h3>
-        <div className="space-y-3">
+      <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs">
+        <h3 className="mb-3 text-sm font-semibold text-gray-900">Mandatory Checklists</h3>
+        <div className="space-y-3.5">
           {checklists.map((item) => (
             <div
               key={item.id}
               onClick={() => onToggleChecklist(item.id)}
-              className="group flex cursor-pointer items-center gap-2.5 text-xs text-gray-700 hover:text-gray-900 transition-colors select-none"
+              className="group flex cursor-pointer items-center gap-3 text-sm text-gray-700 hover:text-gray-900 transition-colors select-none"
             >
               {item.completed ? (
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-[#1E7E34]" />
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-[#1E7E34]" />
               ) : (
-                <Circle className="h-4 w-4 shrink-0 text-gray-300 group-hover:text-gray-400" />
+                <Circle className="h-5 w-5 shrink-0 text-gray-300 group-hover:text-gray-400" />
               )}
               <span
-                className={`text-[12px] ${
+                className={`text-sm ${
                   item.completed ? 'font-medium text-gray-900' : 'text-gray-600'
                 }`}
               >
@@ -73,13 +73,13 @@ export default function RightRailPanel({
       </div>
 
       {/* 3. Recent Actions & Logs Card */}
-      <div className="rounded-2xl border border-gray-200/80 bg-white p-4 shadow-xs">
-        <h3 className="mb-3 text-xs font-semibold text-gray-900">Recent Actions & Logs</h3>
-        <div className="space-y-3.5">
+      <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs">
+        <h3 className="mb-3 text-sm font-semibold text-gray-900">Recent Actions & Logs</h3>
+        <div className="space-y-4">
           {activityLogs.map((log) => (
-            <div key={log.id} className="text-xs">
+            <div key={log.id} className="text-sm">
               <p className="font-medium text-gray-800">{log.title}</p>
-              <p className="mt-0.5 truncate text-[11px] text-gray-400">
+              <p className="mt-0.5 truncate text-xs text-gray-400">
                 {log.fileName} · {log.timeAgo}
               </p>
             </div>

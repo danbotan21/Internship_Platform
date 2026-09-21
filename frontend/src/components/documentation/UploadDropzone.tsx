@@ -68,14 +68,14 @@ export default function UploadDropzone({ onUpload, activeCategory }: UploadDropz
       />
 
       {/* Upload Icon inside soft circle/square */}
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-[#FFEAD6] text-[#FF7A00] shadow-xs">
-        <Upload className="h-5 w-5" strokeWidth={2.2} />
+      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#FFEAD6] text-[#FF7A00] shadow-xs">
+        <Upload className="h-6 w-6" strokeWidth={2.2} />
       </div>
 
-      <h4 className="text-sm font-semibold text-gray-800">
+      <h4 className="text-base font-semibold text-gray-800">
         {isUploading ? 'Uploading document...' : 'Drag and drop your document here'}
       </h4>
-      <p className="mt-1 text-xs text-gray-500">
+      <p className="mt-1 text-sm text-gray-500">
         Supports PDF, DOCX, or XLSX up to 10MB.
       </p>
 
@@ -83,7 +83,7 @@ export default function UploadDropzone({ onUpload, activeCategory }: UploadDropz
         type="button"
         disabled={isUploading}
         onClick={() => fileInputRef.current?.click()}
-        className="mt-4 inline-flex items-center justify-center rounded-lg bg-[#FF7A00] px-6 py-2 text-xs font-semibold text-white shadow-xs transition-all hover:bg-[#E86E00] hover:shadow-md active:scale-95 disabled:opacity-50"
+        className="mt-5 inline-flex items-center justify-center rounded-lg bg-[#FF7A00] px-6 py-2.5 text-sm font-semibold text-white shadow-xs transition-all hover:bg-[#E86E00] hover:shadow-md active:scale-95 disabled:opacity-50"
       >
         {isUploading ? 'Processing...' : 'Browse Files'}
       </button>

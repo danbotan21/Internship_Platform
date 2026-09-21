@@ -9,7 +9,19 @@ import {
   FileText,
   Clock,
   X,
+  LogOut,
 } from 'lucide-react'
+import { useAuth } from '../../hooks/useAuth'
+import ConfirmLogoutModal from '../ConfirmLogoutModal'
+
+function getInitials(name: string): string {
+  return name
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('')
+}
 
 interface TopBarProps {
   searchQuery: string
@@ -69,17 +81,25 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
 ]
 
 export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
+  const { session, logout } = useAuth()
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS)
   const [isOpen, setIsOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
 
   const unreadCount = notifications.filter((n) => !n.read).length
+  const initials = session?.fullName ? getInitials(session.fullName) : 'U'
 
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false)
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -91,6 +111,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         setIsOpen(false)
+        setIsUserMenuOpen(false)
       }
     }
     document.addEventListener('keydown', handleKeyDown)
@@ -125,38 +146,42 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   }
 
   return (
-    <header className="mb-6 flex items-center justify-between gap-6 border-b border-gray-200 pb-5">
+    <header className="relative flex items-center justify-between gap-6 bg-gradient-to-r from-[#eff4f1] via-[#e5ede9] to-[#d4e2dc] px-10 py-5">
+      {/* Abstract Background Waves (SVG) */}
+      <svg className="absolute right-0 top-0 h-full w-[60%] pointer-events-none" preserveAspectRatio="none" viewBox="0 0 800 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path opacity="0.5" d="M800 0H200C350 20 450 100 800 100V0Z" fill="#B4CFC3" />
+        <path opacity="0.3" d="M800 0H400C550 40 650 100 800 100V0Z" fill="#7FA995" />
+      </svg>
+      
       {/* Search Bar - extended to get closer to notification icon */}
-      <div className="relative flex-1">
-        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-400">
-          <Search className="h-4 w-4" />
+      <div className="relative z-10 flex-1">
+        <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
+          <Search className="h-5 w-5" />
         </div>
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search documents, templates, requirements..."
-          className="w-full rounded-full border border-gray-200 bg-[#EEF2EF]/60 py-2.5 pl-10 pr-4 text-sm text-gray-800 placeholder-gray-400 transition-colors focus:border-[#1e3a2c] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#1e3a2c]"
+          className="w-full rounded-full border border-white bg-white py-3 pl-12 pr-4 text-base text-gray-800 placeholder-gray-400 shadow-sm transition-colors focus:border-[#1e3a2c] focus:outline-none focus:ring-1 focus:ring-[#1e3a2c]"
         />
       </div>
 
       {/* Right Controls: Notification bell & User avatar initials without photo */}
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="relative z-10 flex items-center gap-4 shrink-0">
         {/* Interactive Notification Bell with Dropdown */}
         <div className="relative" ref={containerRef}>
           <button
             type="button"
             aria-label="Notifications"
             onClick={() => setIsOpen((prev) => !prev)}
-            className={`relative flex h-9 w-9 items-center justify-center rounded-full border transition-colors ${
-              isOpen
-                ? 'border-[#1e3a2c] bg-gray-100 text-gray-900'
-                : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+            className={`relative flex h-11 w-11 items-center justify-center rounded-full bg-white shadow-sm transition-colors hover:bg-gray-50 ${
+              isOpen ? 'text-gray-900 ring-2 ring-[#1e3a2c]/20' : 'text-gray-600'
             }`}
           >
-            <Bell className="h-4 w-4" />
+            <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#FFB800] text-[10px] font-bold text-white shadow-xs animate-in zoom-in-50">
+              <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#FFB800] text-xs font-bold text-white shadow-sm animate-in zoom-in-50">
                 {unreadCount}
               </span>
             )}
@@ -256,16 +281,66 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
           )}
         </div>
 
-        {/* User Avatar: Initials IP without photo */}
-        <div className="flex items-center gap-2">
-          <div
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-[#1e3a2c] text-xs font-semibold text-white shadow-xs select-none"
-            title="Ion Popescu (Student)"
+        {/* User Avatar & Profile Dropdown: Connected to authenticated user session */}
+        <div className="relative" ref={userMenuRef}>
+          <button
+            type="button"
+            onClick={() => setIsUserMenuOpen((prev) => !prev)}
+            className="flex items-center gap-2 rounded-full p-0.5 transition-all hover:ring-2 hover:ring-[#1e3a2c]/30 focus:outline-none"
+            title={session ? `${session.fullName} (${session.role})` : 'User profile'}
+            aria-label="User profile menu"
           >
-            IP
-          </div>
+            <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#1e3a2c] text-sm font-semibold text-white shadow-sm select-none">
+              {initials}
+            </div>
+          </button>
+
+          {isUserMenuOpen && (
+            <div className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-gray-100 bg-white shadow-xl shadow-gray-200/50">
+              <div className="border-b border-gray-100 px-4 py-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1e3a2c] text-sm font-semibold text-white">
+                    {initials}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-900">
+                      {session?.fullName ?? 'User'}
+                    </p>
+                    <p className="truncate text-xs text-gray-500">
+                      {session?.email ?? ''}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-2.5">
+                  <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-600/20 ring-inset">
+                    {session?.role ?? 'Student'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUserMenuOpen(false)
+                    setIsLogoutModalOpen(true)
+                  }}
+                  className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      <ConfirmLogoutModal
+        isOpen={isLogoutModalOpen}
+        onClose={() => setIsLogoutModalOpen(false)}
+        onConfirm={logout}
+      />
     </header>
   )
 }

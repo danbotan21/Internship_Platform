@@ -1,3 +1,4 @@
+import { useAuth } from '../hooks/useAuth'
 import { useUserRole } from '../hooks/useUserRole'
 import { useDocumentation } from '../hooks/useDocumentation'
 import TopBar from '../components/documentation/TopBar'
@@ -12,23 +13,25 @@ import CertificateModal from '../components/documentation/CertificateModal'
 import ComplianceGateOverlay from '../components/documentation/ComplianceGateOverlay'
 
 export default function DocumentationPage() {
+  const { session } = useAuth()
   const { role, capabilities } = useUserRole()
-  const docState = useDocumentation(role)
+  const docState = useDocumentation(role, session?.fullName)
 
   return (
-    <div className="mx-auto max-w-[1400px] min-w-[960px] pb-12">
+    <div className="min-w-[960px] pb-12">
       {/* Top Header Navigation matching screenshot */}
       <TopBar
         searchQuery={docState.searchQuery}
         onSearchChange={docState.setSearchQuery}
       />
 
-      {/* Page Title & Subtitle */}
-      <div className="mb-5">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-          Documentation
-        </h1>
-        <p className="mt-1 text-xs text-gray-500">
+      <div className="mx-auto max-w-[1600px] px-10 pt-8">
+        {/* Page Title & Subtitle */}
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            Documentation
+          </h1>
+        <p className="mt-1.5 text-sm text-gray-500">
           Upload and manage institutional logs, evaluations, and certifications
         </p>
       </div>
@@ -43,7 +46,7 @@ export default function DocumentationPage() {
       <MetricHeader stats={docState.stats} />
 
       {/* Main 3-Column Layout matching screenshot */}
-      <div className="flex items-start gap-5">
+      <div className="flex items-start gap-8">
         {/* Column 1: Left Filter Bar */}
         <FilterSidebar
           categoryFilters={docState.categoryFilters}
@@ -104,12 +107,13 @@ export default function DocumentationPage() {
         onConfirm={docState.handleConfirmReject}
       />
 
-      {/* US 460 & 461: Certificate Modal */}
-      <CertificateModal
-        isOpen={docState.isCertificateModalOpen}
-        onClose={() => docState.setIsCertificateModalOpen(false)}
-        recipientName="Ion Popescu"
-      />
+        {/* US 460 & 461: Certificate Modal */}
+        <CertificateModal
+          isOpen={docState.isCertificateModalOpen}
+          onClose={() => docState.setIsCertificateModalOpen(false)}
+          recipientName={session?.fullName ?? 'Student'}
+        />
+      </div>
     </div>
   )
 }

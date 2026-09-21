@@ -12,16 +12,38 @@ public class AppDbContext : DbContext
     {
     }
 
-    public DbSet<Document> Documents => Set<Document>();
-    public DbSet<DocumentAudit> DocumentAudits => Set<DocumentAudit>();
+    // Auth entities
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
+
+    // Document entities
+    public DbSet<Document> Documents => Set<Document>();
+    public DbSet<DocumentAudit> DocumentAudits => Set<DocumentAudit>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
-        // ── Document ──
+        // ── User configuration ──
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(u => u.Email).IsUnique();
+            entity.Property(u => u.Email).IsRequired();
+            entity.Property(u => u.PasswordHash).IsRequired();
+            entity.Property(u => u.Role).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasIndex(rt => rt.Token).IsUnique();
+
+            entity.HasOne(rt => rt.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Document configuration ──
         modelBuilder.Entity<Document>(entity =>
         {
             entity.HasKey(d => d.Id);
@@ -142,24 +164,5 @@ public class AppDbContext : DbContext
                 UpdatedAt = new DateTime(2025, 10, 3, 8, 30, 0, DateTimeKind.Utc)
             }
         );
-
-        // ── User / Auth ──
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasIndex(u => u.Email).IsUnique();
-            entity.Property(u => u.Email).IsRequired();
-            entity.Property(u => u.PasswordHash).IsRequired();
-            entity.Property(u => u.Role).HasConversion<string>();
-        });
-
-        modelBuilder.Entity<RefreshToken>(entity =>
-        {
-            entity.HasIndex(rt => rt.Token).IsUnique();
-
-            entity.HasOne(rt => rt.User)
-                .WithMany(u => u.RefreshTokens)
-                .HasForeignKey(rt => rt.UserId)
-                .OnDelete(DeleteBehavior.Cascade);
-        });
     }
 }

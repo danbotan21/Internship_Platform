@@ -13,7 +13,8 @@ import {
   INITIAL_ACTIVITY_LOGS,
 } from '../services/documentationService'
 
-export function useDocumentation(userRole = 'Student') {
+export function useDocumentation(userRole = 'Student', userName?: string) {
+  const currentActorName = userName || (userRole === 'Mentor' ? 'Mentor' : 'Student')
   const [documents, setDocuments] = useState<VaultDocument[]>([])
   const [stats, setStats] = useState<VaultStats>({
     pendingSignOffsCount: 4,
@@ -76,6 +77,7 @@ export function useDocumentation(userRole = 'Student') {
   }, [userRole])
 
   useEffect(() => {
+    // eslint-disable-next-line
     refreshData()
   }, [refreshData])
 
@@ -157,7 +159,7 @@ export function useDocumentation(userRole = 'Student') {
     async (file: File, category: DocumentCategory = 'Other') => {
       const created = await documentationService.uploadDocument(file, {
         category,
-        uploadedBy: 'Ana Popescu',
+        uploadedBy: currentActorName,
         isMandatory: category === 'Agreements',
       })
 
@@ -175,7 +177,7 @@ export function useDocumentation(userRole = 'Student') {
       await refreshData()
       return created
     },
-    [refreshData]
+    [refreshData, currentActorName]
   )
 
   const handleApprove = useCallback(
@@ -184,7 +186,7 @@ export function useDocumentation(userRole = 'Student') {
         id,
         'Approved',
         undefined,
-        userRole === 'Mentor' ? 'Dr. Michael Chen (Mentor)' : 'Ana Popescu'
+        currentActorName
       )
       if (updated) {
         setDocuments((prev) => prev.map((d) => (d.id === id ? updated : d)))
@@ -192,7 +194,7 @@ export function useDocumentation(userRole = 'Student') {
         setActivityLogs((prev) => [
           {
             id: crypto.randomUUID(),
-            title: 'File Approved by Mentor',
+            title: 'File Approved',
             fileName: updated.fileName,
             timeAgo: 'Just now',
             badgeColor: 'text-emerald-600',
@@ -201,7 +203,7 @@ export function useDocumentation(userRole = 'Student') {
         ])
       }
     },
-    [userRole, selectedDoc?.id]
+    [currentActorName, selectedDoc?.id]
   )
 
   const handleOpenRejectModal = useCallback((doc: VaultDocument) => {
@@ -216,7 +218,7 @@ export function useDocumentation(userRole = 'Student') {
         docToReject.id,
         'Rejected',
         reason,
-        userRole === 'Mentor' ? 'Dr. Michael Chen (Mentor)' : 'Ana Popescu'
+        currentActorName
       )
       if (updated) {
         setDocuments((prev) => prev.map((d) => (d.id === docToReject.id ? updated : d)))
@@ -235,7 +237,7 @@ export function useDocumentation(userRole = 'Student') {
       setIsRejectModalOpen(false)
       setDocToReject(null)
     },
-    [docToReject, userRole, selectedDoc?.id]
+    [docToReject, currentActorName, selectedDoc?.id]
   )
 
   const handleSignDocument = useCallback(
@@ -243,7 +245,7 @@ export function useDocumentation(userRole = 'Student') {
       const updated = await documentationService.signDocument(
         id,
         userRole === 'Mentor' ? 'Mentor' : 'Student',
-        'Ana Popescu'
+        currentActorName
       )
       if (updated) {
         setDocuments((prev) => prev.map((d) => (d.id === id ? updated : d)))
@@ -260,7 +262,7 @@ export function useDocumentation(userRole = 'Student') {
         ])
       }
     },
-    [userRole, selectedDoc?.id]
+    [userRole, currentActorName, selectedDoc?.id]
   )
 
   const handleDeleteDocument = useCallback(
