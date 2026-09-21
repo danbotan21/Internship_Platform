@@ -1,6 +1,5 @@
 import type { AuthResult, LoginPayload, RegisterPayload } from '../types/auth'
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5080'
+import { API_BASE_URL } from './client'
 
 async function handleAuthResponse(response: Response): Promise<AuthResult> {
   if (!response.ok) {
@@ -10,26 +9,22 @@ async function handleAuthResponse(response: Response): Promise<AuthResult> {
   return response.json()
 }
 
-export function login(payload: LoginPayload): Promise<AuthResult> {
-  return fetch(`${API_BASE_URL}/api/auth/login`, {
+function post(path: string, body: unknown) {
+  return fetch(`${API_BASE_URL}${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  }).then(handleAuthResponse)
+    body: JSON.stringify(body),
+  })
+}
+
+export function login(payload: LoginPayload): Promise<AuthResult> {
+  return post('/api/auth/login', payload).then(handleAuthResponse)
 }
 
 export function register(payload: RegisterPayload): Promise<AuthResult> {
-  return fetch(`${API_BASE_URL}/api/auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  }).then(handleAuthResponse)
+  return post('/api/auth/register', payload).then(handleAuthResponse)
 }
 
 export function logout(refreshToken: string): Promise<void> {
-  return fetch(`${API_BASE_URL}/api/auth/logout`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken }),
-  }).then(() => undefined)
+  return post('/api/auth/logout', { refreshToken }).then(() => undefined)
 }
