@@ -150,52 +150,7 @@ export default function MyApplications() {
         </p>
       </div>
 
-      {/* Overview Stat Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total Applications */}
-        <div className="bg-white border border-gray-200/80 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center text-gray-800 shrink-0">
-            <Briefcase className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{totalCount}</p>
-            <p className="text-xs font-medium text-gray-500">Total Applications</p>
-          </div>
-        </div>
 
-        {/* Under Review */}
-        <div className="bg-white border border-gray-200/80 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600 shrink-0">
-            <Clock3 className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{reviewCount}</p>
-            <p className="text-xs font-medium text-gray-500">Under Review</p>
-          </div>
-        </div>
-
-        {/* Accepted */}
-        <div className="bg-white border border-gray-200/80 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-            <CheckCircle2 className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{acceptedCount}</p>
-            <p className="text-xs font-medium text-gray-500">Accepted</p>
-          </div>
-        </div>
-
-        {/* Rejected */}
-        <div className="bg-white border border-gray-200/80 rounded-2xl p-5 shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center text-red-600 shrink-0">
-            <XCircle className="w-6 h-6" />
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-gray-900">{rejectedCount}</p>
-            <p className="text-xs font-medium text-gray-500">Rejected</p>
-          </div>
-        </div>
-      </div>
 
       {/* Filter and Search Bar (matching My Opportunities) */}
       <div className="flex flex-col lg:flex-row items-center gap-3">
