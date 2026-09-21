@@ -14,8 +14,10 @@ import {
   FolderOpen,
   Box,
   History,
+  LogOut,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 
 type NavItem = {
   label: string
@@ -60,7 +62,17 @@ const sections: NavSection[] = [
   },
 ]
 
+function getInitials(fullName: string) {
+  const parts = fullName.trim().split(/\s+/)
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase())
+    .join('')
+}
+
 export default function Sidebar() {
+  const { session, logout } = useAuth()
+
   return (
     <aside className="flex h-screen w-64 flex-col justify-between bg-[#1e3a2c] px-3 py-5">
       <div>
@@ -108,12 +120,20 @@ export default function Sidebar() {
 
       <div className="flex items-center gap-2 border-t border-white/10 px-2 pt-4">
         <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-medium text-white">
-          IP
+          {session ? getInitials(session.fullName) : ''}
         </div>
-        <div>
-          <p className="text-sm text-white">Ion Popescu</p>
-          <p className="text-xs text-white/40">Student · Settings</p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm text-white">{session?.fullName}</p>
+          <p className="text-xs text-white/40">{session?.role}</p>
         </div>
+        <button
+          type="button"
+          onClick={() => logout()}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/5 hover:text-white"
+          aria-label="Log out"
+        >
+          <LogOut className="h-4 w-4" strokeWidth={1.75} />
+        </button>
       </div>
     </aside>
   )
