@@ -1,5 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { useCurrentUser } from '../components/CurrentUserContext'
+import { useAuth } from '../hooks/authContext'
 import AttributedContributionPage from './contributions/AttributedContributionPage'
 import ContributionEditorPage from './contributions/ContributionEditorPage'
 import MentorReviewPage from './contributions/MentorReviewPage'
@@ -9,9 +9,9 @@ import StudentContributionsPage from './contributions/StudentContributionsPage'
 
 // Contribution Management routes, chosen by the signed-in user's role.
 export default function Contributions() {
-  const { role } = useCurrentUser()
+  const { session } = useAuth()
 
-  if (role === 'mentor') {
+  if (session?.role === 'Mentor') {
     return (
       <Routes>
         <Route index element={<MentorReviewQueuePage />} />

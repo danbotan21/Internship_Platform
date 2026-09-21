@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowRight, Save } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { contributionApi } from '../../api/contributions'
-import { useCurrentUser } from '../../components/CurrentUserContext'
+import { useAuth } from '../../hooks/authContext'
 import ContributionStatusBadge from '../../components/contributions/ContributionStatusBadge'
 import SubmissionChecklist from '../../components/contributions/SubmissionChecklist'
 import AttributionPanel from '../../components/contributions/attribution/AttributionPanel'
@@ -26,7 +26,7 @@ function isStep(value: string | null): value is EditorStep {
 export default function ContributionEditorPage() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { user } = useCurrentUser()
+  const { session } = useAuth()
   const [params, setParams] = useSearchParams()
   const stepParam = params.get('step')
   const step: EditorStep = id && isStep(stepParam) ? stepParam : 'details'
@@ -213,7 +213,7 @@ export default function ContributionEditorPage() {
           ) : step === 'team' && contribution ? (
             <AttributionPanel
               contribution={contribution}
-              viewerId={user.userId}
+              viewerId={session?.userId ?? ''}
               canEdit
               canAnswerDisputes
               busy={busy}

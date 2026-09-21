@@ -2,7 +2,9 @@ import {
   Briefcase,
   Calendar,
   Clock,
+  FileCheck,
   FileText,
+  FolderKanban,
   FolderOpen,
   History,
   LayoutGrid,
@@ -15,7 +17,7 @@ import {
   Box,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import type { Role } from '../../types/user'
+import type { UserRole } from '../../types/auth'
 
 export type NavItem = {
   label: string
@@ -44,6 +46,7 @@ const studentSections: NavSection[] = [
       { label: 'Contributions', to: '/contributions', icon: Upload },
       { label: 'Evaluation', to: '/evaluation', icon: Star },
       { label: 'Opportunities', to: '/opportunities', icon: Briefcase },
+      { label: 'My Applications', to: '/my-applications', icon: FileCheck },
       { label: 'Quizzes', to: '/quizzes', icon: Timer },
     ],
   },
@@ -70,6 +73,8 @@ const mentorSections: NavSection[] = [
       { label: 'Review queue', to: '/contributions', icon: Upload },
       { label: 'Reports', to: '/reports', icon: FileText },
       { label: 'Evaluation', to: '/evaluation', icon: Star },
+      { label: 'Opportunities', to: '/opportunities', icon: Briefcase },
+      { label: 'My Opportunities', to: '/my-opportunities', icon: FolderKanban },
     ],
   },
   {
@@ -86,8 +91,8 @@ const mentorSections: NavSection[] = [
   },
 ]
 
-export function navigationFor(role: Role) {
-  return role === 'student' ? studentSections : mentorSections
+export function navigationFor(role: UserRole) {
+  return role === 'Student' ? studentSections : mentorSections
 }
 
 const pageTitles: Record<string, string> = {
@@ -99,6 +104,8 @@ const pageTitles: Record<string, string> = {
   '/contributions': 'Contributions',
   '/evaluation': 'Evaluation',
   '/opportunities': 'Opportunities',
+  '/my-applications': 'My Applications',
+  '/my-opportunities': 'My Opportunities',
   '/quizzes': 'Quizzes',
   '/messages': 'Messages',
   '/calendar': 'Calendar',

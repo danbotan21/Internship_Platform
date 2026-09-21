@@ -1,7 +1,7 @@
 import { ArrowLeft } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
 import { contributionApi } from '../../api/contributions'
-import { useCurrentUser } from '../../components/CurrentUserContext'
+import { useAuth } from '../../hooks/authContext'
 import CategoryTag from '../../components/contributions/CategoryTag'
 import ContributionOverview from '../../components/contributions/ContributionOverview'
 import ContributionStatusBadge from '../../components/contributions/ContributionStatusBadge'
@@ -18,7 +18,7 @@ import { useAction, useLoadedData } from './contributionHooks'
 // A teammate's contribution where the current student is credited.
 export default function AttributedContributionPage() {
   const { id = '' } = useParams()
-  const { user } = useCurrentUser()
+  const { session } = useAuth()
   const { data: contribution, setData, error: loadError, loading } = useLoadedData(
     () => contributionApi.getAttributed(id),
     id,
@@ -32,7 +32,7 @@ export default function AttributedContributionPage() {
     return <Alert tone='danger' title='Contribution unavailable'>{loadError || 'Not found.'}</Alert>
   }
 
-  const mine = contribution.collaborators.find((item) => item.userId === user.userId)
+  const mine = contribution.collaborators.find((item) => item.userId === (session?.userId ?? ''))
   const apply = async (action: () => Promise<ContributionDetails>) => {
     const result = await run(action)
     if (result) setData(result)
@@ -80,7 +80,7 @@ export default function AttributedContributionPage() {
             <h2 className={`${sectionTitle} mb-4`}>Evidence</h2>
             <EvidenceList evidence={contribution.currentRevision.evidence} />
           </section>
-          <AttributionPanel contribution={contribution} viewerId={user.userId} />
+          <AttributionPanel contribution={contribution} viewerId={session?.userId ?? ''} />
         </div>
         <aside>
           <ContributionTimeline contribution={contribution} />

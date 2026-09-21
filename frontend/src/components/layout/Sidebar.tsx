@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom'
-import type { InternshipMember } from '../../types/user'
+import { LogOut } from 'lucide-react'
 import { navigationFor } from './navigation'
+import { useAuth } from '../../hooks/authContext'
 
 function initials(name: string) {
   return name
@@ -11,8 +12,9 @@ function initials(name: string) {
     .join('')
 }
 
-export default function Sidebar({ user }: { user: InternshipMember }) {
-  const role = user.role
+export default function Sidebar() {
+  const { session, logout } = useAuth()
+  const role = session?.role ?? 'Student'
   const sections = navigationFor(role)
 
   return (
@@ -32,7 +34,7 @@ export default function Sidebar({ user }: { user: InternshipMember }) {
         <div className="mb-5 rounded-xl bg-white/5 px-3 py-3">
           <p className="text-sm font-medium">practica</p>
           <p className="text-xs text-white/50">
-            {role === 'student' ? 'Student workspace' : 'Mentor workspace'}
+            {role === 'Student' ? 'Student workspace' : 'Mentor workspace'}
           </p>
         </div>
 
@@ -66,17 +68,27 @@ export default function Sidebar({ user }: { user: InternshipMember }) {
         </nav>
       </div>
 
-      <div className="flex items-center gap-2 border-t border-white/10 px-2 pt-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-medium">
-          {initials(user.fullName)}
+      <div className="flex items-center justify-between gap-2 border-t border-white/10 px-2 pt-4">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-medium shrink-0">
+            {session ? initials(session.fullName) : '??'}
+          </div>
+          <div className="min-w-0">
+            <p className="truncate text-sm">{session?.fullName ?? '—'}</p>
+            <p className="text-xs text-white/40">
+              {role === 'Student' ? 'Student' : 'Mentor'}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm">{user.fullName}</p>
-          <p className="text-xs text-white/40">
-            {role === 'student' ? 'Student' : 'Mentor'}
-            {user.gitHubUsername ? ` · @${user.gitHubUsername}` : ''}
-          </p>
-        </div>
+        <button
+          type="button"
+          onClick={() => logout()}
+          className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white transition-colors shrink-0"
+          aria-label="Log out"
+          title="Log out"
+        >
+          <LogOut className="h-4 w-4" strokeWidth={1.75} />
+        </button>
       </div>
     </aside>
   )

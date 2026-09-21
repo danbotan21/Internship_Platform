@@ -2,7 +2,7 @@ import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { contributionApi } from '../../api/contributions'
-import { useCurrentUser } from '../../components/CurrentUserContext'
+import { useAuth } from '../../hooks/authContext'
 import CategoryTag from '../../components/contributions/CategoryTag'
 import ContributionOverview from '../../components/contributions/ContributionOverview'
 import ContributionStatusBadge from '../../components/contributions/ContributionStatusBadge'
@@ -66,7 +66,7 @@ export default function StudentContributionPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
-  const { user } = useCurrentUser()
+  const { session } = useAuth()
   const [flash, setFlash] = useState(() => (location.state as { flash?: string } | null)?.flash ?? '')
   const { data: contribution, setData, error: loadError, loading } = useLoadedData(
     () => contributionApi.getMine(id),
@@ -164,7 +164,7 @@ export default function StudentContributionPage() {
           </section>
           <AttributionPanel
             contribution={contribution}
-            viewerId={user.userId}
+            viewerId={session?.userId ?? ''}
             canAnswerDisputes={contribution.status === 'submitted'}
             busy={busy}
             onUpdate={(collaborator, input) =>

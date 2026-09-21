@@ -1,7 +1,7 @@
 import { CircleCheckBig, CircleX, Hourglass, Inbox, MessageSquareWarning, Search } from 'lucide-react'
 import { useState } from 'react'
 import { contributionApi } from '../../api/contributions'
-import { useCurrentUser } from '../../components/CurrentUserContext'
+import { useAuth } from '../../hooks/authContext'
 import ContributionListCard from '../../components/contributions/ContributionListCard'
 import Alert from '../../components/ui/Alert'
 import EmptyState from '../../components/ui/EmptyState'
@@ -22,7 +22,7 @@ const emptyTexts: Record<QueueTab, string> = {
 }
 
 export default function MentorReviewQueuePage() {
-  const { user } = useCurrentUser()
+  const { session } = useAuth()
   const { data, error, loading } = useLoadedData(() => contributionApi.listForMentor(), 'mentor')
   const [tab, setTab] = useState<QueueTab>('submitted')
   const [search, setSearch] = useState('')
@@ -41,7 +41,7 @@ export default function MentorReviewQueuePage() {
       <PageHeading
         eyebrow='Contribution management · Mentor'
         title='Review queue'
-        description={`Contributions of the students you mentor, ${user.fullName}. Oldest submissions first.`}
+        description={`Contributions of the students you mentor, ${session?.fullName ?? ''}. Oldest submissions first.`}
       />
       {error ? <Alert tone='danger' className='mb-5'>{error}</Alert> : null}
 
