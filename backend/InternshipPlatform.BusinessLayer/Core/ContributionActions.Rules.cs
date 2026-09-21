@@ -76,6 +76,9 @@ public partial class ContributionActions
         var revision = GetCurrentRevision(contribution);
         var checks = new List<SubmissionCheckDto>
         {
+            Check("mentor", "A mentor is assigned to the internship",
+                student.MentorId is not null,
+                "Assign a mentor before submitting the contribution."),
             Check("title", "Title describes the delivered work",
                 revision.Title.Trim().Length >= MinimumTitleLength,
                 $"At least {MinimumTitleLength} characters."),

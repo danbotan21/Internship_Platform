@@ -5,6 +5,7 @@ using InternshipPlatform.BusinessLayer.Auth;
 using InternshipPlatform.BusinessLayer.Opportunity;
 using InternshipPlatform.BusinessLayer.Users;
 using InternshipPlatform.BusinessLayer.Interfaces;
+using InternshipPlatform.BusinessLayer.Internship;
 using InternshipPlatform.BusinessLayer.Progress;
 using InternshipPlatform.BusinessLayer.Structure;
 using InternshipPlatform.DataAccess.Context;
@@ -104,9 +105,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IContributionAction, ContributionActionExecution>();
 builder.Services.AddScoped<IContributionFileStorageAction, LocalContributionFileStorage>();
 
-// TEMPORARY: Contribution Management still uses its demo internship directory
-// until authenticated users are connected to mentor/student assignments.
-builder.Services.AddSingleton<IInternshipDirectoryAction, DemoInternshipDirectory>();
+builder.Services.AddScoped<IInternshipDirectoryAction, DatabaseInternshipDirectory>();
 
 builder.Services.AddMemoryCache();
 builder.Services.Configure<GitHubOptions>(builder.Configuration.GetSection("GitHub"));

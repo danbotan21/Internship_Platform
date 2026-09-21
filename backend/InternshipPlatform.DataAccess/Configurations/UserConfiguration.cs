@@ -16,6 +16,14 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.University).HasMaxLength(200);
         builder.Property(u => u.AcademicGroup).HasMaxLength(50);
         builder.Property(u => u.Programme).HasMaxLength(100);
+        builder.Property(u => u.GitHubUsername).HasMaxLength(100);
+
+        builder.HasIndex(u => u.MentorId);
+
+        builder.HasOne(u => u.Mentor)
+            .WithMany(u => u.Students)
+            .HasForeignKey(u => u.MentorId)
+            .OnDelete(DeleteBehavior.Restrict);
         
         builder.Property(u => u.Role)
             .HasConversion<string>()

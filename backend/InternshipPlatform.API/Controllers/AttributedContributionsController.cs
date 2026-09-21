@@ -1,11 +1,13 @@
 using InternshipPlatform.BusinessLayer.Interfaces;
 using InternshipPlatform.Domain.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InternshipPlatform.API.Controllers;
 
 // A collaborator's view: contributions they are listed on, confirm or dispute.
 [ApiController]
+[Authorize(Roles = "Student")]
 [Route("api/contributions/attributed")]
 public sealed class AttributedContributionsController : ContributionControllerBase
 {

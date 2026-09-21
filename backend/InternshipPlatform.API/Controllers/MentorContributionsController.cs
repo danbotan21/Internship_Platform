@@ -1,11 +1,13 @@
 using InternshipPlatform.BusinessLayer.Interfaces;
 using InternshipPlatform.Domain.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InternshipPlatform.API.Controllers;
 
 // Mentor endpoints: contributions of their students and the structured review.
 [ApiController]
+[Authorize(Roles = "Mentor,Company")]
 [Route("api/contributions/mentor")]
 public sealed class MentorContributionsController : ContributionControllerBase
 {

@@ -1074,8 +1074,15 @@ namespace InternshipPlatform.DataAccess.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("GitHubUsername")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<DateTimeOffset?>("LastLoginAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("MentorId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -1104,6 +1111,8 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("MentorId");
 
                     b.ToTable("Users");
                 });
@@ -1186,12 +1195,27 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.Navigation("Requester");
                 });
 
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.Contribution", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.ContributionCollaborator", b =>
                 {
                     b.HasOne("InternshipPlatform.Domain.Entities.Contribution", "Contribution")
                         .WithMany("Collaborators")
                         .HasForeignKey("ContributionId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("InternshipPlatform.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("Contribution");
@@ -1225,6 +1249,12 @@ namespace InternshipPlatform.DataAccess.Migrations
                         .WithMany("Reviews")
                         .HasForeignKey("ContributionRevisionId")
                         .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("InternshipPlatform.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("MentorId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("ContributionRevision");
@@ -1333,6 +1363,16 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.Navigation("StudentUser");
                 });
 
+            modelBuilder.Entity("InternshipPlatform.Domain.User", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.User", "Mentor")
+                        .WithMany("Students")
+                        .HasForeignKey("MentorId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Mentor");
+                });
+
             modelBuilder.Entity("OpportunityUser", b =>
                 {
                     b.HasOne("InternshipPlatform.Domain.Entities.Opportunity", null)
@@ -1393,6 +1433,8 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.Navigation("Opportunities");
 
                     b.Navigation("RefreshTokens");
+
+                    b.Navigation("Students");
                 });
 #pragma warning restore 612, 618
         }

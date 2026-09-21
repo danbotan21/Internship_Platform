@@ -4,7 +4,8 @@ public class Contribution
 {
     public Guid Id { get; set; }
 
-    // Scalar only until the User entity is supplied by its owning module.
+    // Resolved against the real Users table by Contribution Management.
+    // Kept scalar to preserve module ownership and avoid exposing User graphs.
     public Guid StudentId { get; set; }
 
     public ContributionStatus Status { get; set; } = ContributionStatus.Draft;

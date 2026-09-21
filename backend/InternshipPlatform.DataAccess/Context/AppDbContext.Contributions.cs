@@ -1,3 +1,4 @@
+using InternshipPlatform.Domain;
 using InternshipPlatform.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
@@ -58,6 +59,12 @@ public partial class AppDbContext
             .HasIndex(item => new { item.StudentId, item.Status });
         contribution
             .HasIndex(item => new { item.Status, item.UpdatedAtUtc });
+
+        contribution
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(item => item.StudentId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         contribution
             .HasMany(item => item.Revisions)
@@ -175,6 +182,12 @@ public partial class AppDbContext
         review.HasIndex(item => item.MentorId);
 
         review
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(item => item.MentorId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        review
             .HasMany(item => item.Checks)
             .WithOne(check => check.Review)
             .HasForeignKey(check => check.ContributionReviewId)
@@ -252,5 +265,11 @@ public partial class AppDbContext
             .HasIndex(item => new { item.ContributionId, item.UserId })
             .IsUnique();
         collaborator.HasIndex(item => new { item.UserId, item.Status });
+
+        collaborator
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(item => item.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

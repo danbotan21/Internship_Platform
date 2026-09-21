@@ -14,6 +14,14 @@ public class User
     public string? University { get; set; }
     public string? AcademicGroup { get; set; }
     public string? Programme { get; set; }
+
+    // Contribution Management integration fields.
+    // They remain nullable for users that are not assigned to an internship.
+    public Guid? MentorId { get; set; }
+    public User? Mentor { get; set; }
+    public List<User> Students { get; set; } = [];
+    public string? GitHubUsername { get; set; }
+
     public UserRole Role { get; set; }
     public UserStatus Status { get; set; }
 
