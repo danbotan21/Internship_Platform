@@ -14,6 +14,8 @@ import Quizzes from './pages/Quizzes'
 import Messages from './pages/Messages'
 import Calendar from './pages/Calendar'
 import Resources from './pages/Resources'
+import CreateArticle from './pages/CreateArticle'
+import ResourceDetails from './pages/ResourceDetails'
 import Skills from './pages/Skills'
 import AuditLog from './pages/AuditLog'
 
@@ -39,6 +41,8 @@ function App() {
         <Route path="/messages" element={<Messages />} />
         <Route path="/calendar" element={<Calendar />} />
         <Route path="/resources" element={<Resources />} />
+        <Route path="/resources/create" element={<CreateArticle />} />
+        <Route path="/resources/:resourceSlug" element={<ResourceDetails />} />
         <Route path="/skills" element={<Skills />} />
         <Route path="/audit-log" element={<AuditLog />} />
       </Route>

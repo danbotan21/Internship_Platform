@@ -3,8 +3,12 @@ using System.Text.Json.Serialization;
 using InternshipPlatform.BusinessLayer.Auth;
 using InternshipPlatform.BusinessLayer.Progress;
 using InternshipPlatform.DataAccess.Context;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using InternshipPlatform.BusinessLayer.Resources;
+using InternshipPlatform.DataAccess.Resources;
+using InternshipPlatform.Domain.Entities;
+using InternshipPlatform.Domain.Resources;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,6 +33,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
+builder.Services.AddScoped<ResourceService>();
 
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt configuration section was not found.");
@@ -78,4 +84,30 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+await SeedResourcesAsync(app.Services);
+
 app.Run();
+
+static async Task SeedResourcesAsync(IServiceProvider services)
+{
+    using var scope = services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    await db.Database.MigrateAsync();
+
+    var demoSlugs = new[]
+    {
+        "first-week-internship-guide",
+        "weekly-project-update-template",
+        "internship-working-agreements"
+    };
+
+    var demoResources = await db.Resources
+        .Where(resource => demoSlugs.Contains(resource.Slug))
+        .ToListAsync();
+
+    if (demoResources.Count > 0)
+        db.Resources.RemoveRange(demoResources);
+
+    await db.SaveChangesAsync();
+}
