@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-	<ProjectReference Include="..\InternshipPlatform.DataAccess\InternshipPlatform.DataAccess.csproj" />
     <ProjectReference Include="..\InternshipPlatform.Domain\InternshipPlatform.Domain.csproj" />
     <ProjectReference Include="..\InternshipPlatform.DataAccess\InternshipPlatform.DataAccess.csproj" />
   </ItemGroup>

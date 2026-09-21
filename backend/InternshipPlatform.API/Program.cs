@@ -1,8 +1,6 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using InternshipPlatform.BusinessLayer.Auth;
-using InternshipPlatform.BusinessLayer.Core;
-using InternshipPlatform.BusinessLayer.Interfaces;
 using InternshipPlatform.DataAccess.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -31,10 +29,6 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
-// HEAD: user business logic
-builder.Services.AddScoped<IUserLogic, UserLogic>();
-
-// origin/main: JWT auth services
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt configuration section was not found.");
 

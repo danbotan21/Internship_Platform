@@ -1,7 +1,5 @@
 using InternshipPlatform.Domain;
 using Microsoft.EntityFrameworkCore;
-using InternshipPlatform.Domain.Entities.User;
-using InternshipPlatform.Domain.Entities;
 
 namespace InternshipPlatform.DataAccess.Context;
 
@@ -12,16 +10,12 @@ public class AppDbContext : DbContext
     {
     }
 
-    // HEAD: existing DbSets
-    public DbSet<UserEntity> Users { get; set; }
-    public DbSet<Opportunity> Opportunities { get; set; }
-
-    // origin/main: auth DbSets
+    public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<UserEntity>(entity =>
+        modelBuilder.Entity<User>(entity =>
         {
             entity.HasIndex(u => u.Email).IsUnique();
             entity.Property(u => u.Email).IsRequired();
