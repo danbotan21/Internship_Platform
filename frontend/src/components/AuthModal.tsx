@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useAuth } from '../hooks/useAuth'
-import type { UserRole } from '../types/auth'
 
 type Mode = 'login' | 'register'
 
@@ -11,7 +10,6 @@ export default function AuthModal() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
-  const [role, setRole] = useState<UserRole>('Student')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -23,7 +21,7 @@ export default function AuthModal() {
       if (mode === 'login') {
         await login({ email, password })
       } else {
-        await register({ email, password, fullName, role })
+        await register({ email, password, fullName, role: 'Student' })
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
@@ -72,7 +70,7 @@ export default function AuthModal() {
           {mode === 'register' && (
             <div className="flex flex-col gap-1">
               <label htmlFor="fullName" className="text-xs font-medium text-gray-600">
-                {role === 'Company' ? 'Company name' : 'Full name'}
+                Full name
               </label>
               <input
                 id="fullName"
@@ -113,25 +111,6 @@ export default function AuthModal() {
               className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#1e3a2c]"
             />
           </div>
-
-          {mode === 'register' && (
-            <div className="flex flex-col gap-1">
-              <label htmlFor="role" className="text-xs font-medium text-gray-600">
-                Role
-              </label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value as UserRole)}
-                className="rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#1e3a2c]"
-              >
-                <option value="Student">Student</option>
-                <option value="Mentor">Mentor</option>
-                <option value="Company">Company</option>
-                <option value="Admin">Admin</option>
-              </select>
-            </div>
-          )}
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
