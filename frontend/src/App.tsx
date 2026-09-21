@@ -1,5 +1,7 @@
 import { Routes, Route } from 'react-router-dom'
 import Layout from './components/Layout'
+import AuthModal from './components/AuthModal'
+import { useAuth } from './hooks/useAuth'
 import Overview from './pages/Overview'
 import InternshipProgress from './pages/InternshipProgress'
 import Tasks from './pages/Tasks'
@@ -18,6 +20,12 @@ import AuditLog from './pages/AuditLog'
 import DocumentationPage from './pages/DocumentationPage'
 
 function App() {
+  const { isAuthenticated } = useAuth()
+
+  if (!isAuthenticated) {
+    return <AuthModal />
+  }
+
   return (
     <Routes>
       <Route element={<Layout />}>
