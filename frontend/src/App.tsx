@@ -1,12 +1,15 @@
-import { BrowserRouter } from 'react-router-dom'
+import AuthModal from './components/AuthModal'
+import { useAuth } from './hooks/authContext'
 import AppRoutes from './routes/AppRoutes'
 
 function App() {
-  return (
-    <BrowserRouter>
-      <AppRoutes />
-    </BrowserRouter>
-  )
+  const { isAuthenticated } = useAuth()
+
+  if (!isAuthenticated) {
+    return <AuthModal />
+  }
+
+  return <AppRoutes />
 }
 
 export default App

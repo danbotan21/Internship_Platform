@@ -1,13 +1,15 @@
+using System.Text;
+using System.Text.Json.Serialization;
 using InternshipPlatform.API.Infrastructure;
+using InternshipPlatform.BusinessLayer.Auth;
 using InternshipPlatform.BusinessLayer.Interfaces;
 using InternshipPlatform.BusinessLayer.Structure;
 using InternshipPlatform.DataAccess.Context;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json.Serialization;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -33,10 +35,36 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
 
+var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
+    ?? throw new InvalidOperationException("Jwt configuration section was not found.");
+
+builder.Services.AddSingleton(jwtSettings);
+builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = jwtSettings.Issuer,
+            ValidateAudience = true,
+            ValidAudience = jwtSettings.Audience,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SigningKey)),
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.FromSeconds(30),
+        };
+    });
+
+builder.Services.AddAuthorization();
+
 builder.Services.AddScoped<IContributionAction, ContributionActionExecution>();
 builder.Services.AddScoped<IContributionFileStorageAction, LocalContributionFileStorage>();
 
-// TEMPORARY: replaced by the Authentication / internship Epics' user directory.
+// TEMPORARY: Contribution Management still uses its demo internship directory
+// until authenticated users are connected to mentor/student assignments.
 builder.Services.AddSingleton<IInternshipDirectoryAction, DemoInternshipDirectory>();
 
 builder.Services.AddMemoryCache();
@@ -48,29 +76,22 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
-// Apply local schema changes at startup so a fresh Docker database receives
-// the contribution and attribution tables before the first API request.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 }
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// app.UseHttpsRedirection();
-
 app.UseCors("AllowAll");
-
 app.UseStaticFiles();
-
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
 app.Run();
