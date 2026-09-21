@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react'
 import { Trash2, CheckCircle2, AlertCircle, Download } from 'lucide-react'
 import type {
   VaultDocument,
@@ -41,6 +42,12 @@ export default function VaultTable({
   onBulkDelete,
   onBulkApprove,
 }: VaultTableProps) {
+  const [visibleCount, setVisibleCount] = useState(10)
+
+  useEffect(() => {
+    setVisibleCount(10)
+  }, [activeTab])
+
   const isAllSelected = documents.length > 0 && selectedDocIds.length === documents.length
 
   const formatDate = (isoString?: string): string => {
@@ -131,8 +138,9 @@ export default function VaultTable({
           </p>
         </div>
       ) : (
+        <>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {documents.filter(Boolean).map((doc) => {
+          {documents.filter(Boolean).slice(0, visibleCount).map((doc) => {
             const isSelected = selectedDocIds.includes(doc?.id)
             const isPdf = doc?.fileType?.toLowerCase() === 'pdf'
             const isDocx = ['docx', 'doc'].includes(doc?.fileType?.toLowerCase() || '')
@@ -239,6 +247,17 @@ export default function VaultTable({
             )
           })}
         </div>
+        {documents.filter(Boolean).length > visibleCount && (
+          <div className="mt-8 flex justify-center">
+            <button
+              onClick={() => setVisibleCount((prev) => prev + 10)}
+              className="text-sm font-semibold text-blue-600 hover:text-blue-800 hover:underline transition-all cursor-pointer"
+            >
+              afiseaza mai mult
+            </button>
+          </div>
+        )}
+        </>
       )}
     </div>
   )
