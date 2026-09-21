@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using InternshipPlatform.BusinessLayer.Auth;
+using InternshipPlatform.BusinessLayer.Progress;
 using InternshipPlatform.DataAccess.Context;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
@@ -52,9 +53,14 @@ builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+var programSettings = builder.Configuration.GetSection("Program").Get<ProgramSettings>() ?? new ProgramSettings();
+builder.Services.AddSingleton(programSettings);
+builder.Services.AddScoped<IProgressService, ProgressService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

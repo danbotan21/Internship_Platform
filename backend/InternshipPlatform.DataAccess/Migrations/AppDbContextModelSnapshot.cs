@@ -193,6 +193,51 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.ToTable("CompanyVerificationRequests");
                 });
 
+            modelBuilder.Entity("InternshipPlatform.Domain.Milestone", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly>("DueDate")
+                        .HasColumnType("date");
+
+                    b.Property<int>("Order")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("RequiresReview")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ReviewedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("StudentUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ReviewedByUserId");
+
+                    b.HasIndex("StudentUserId");
+
+                    b.ToTable("Milestones");
+                });
+
             modelBuilder.Entity("InternshipPlatform.Domain.RefreshToken", b =>
                 {
                     b.Property<Guid>("Id")
@@ -223,6 +268,71 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.SupervisorFeedback", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comments")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Initiative")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Punctuality")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SkillGrowth")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("StudentUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SupervisorUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentUserId");
+
+                    b.HasIndex("SupervisorUserId");
+
+                    b.ToTable("SupervisorFeedback");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.TaskLogEntry", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Hours")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid>("StudentUserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("StudentUserId");
+
+                    b.ToTable("TaskLogEntries");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.User", b =>
@@ -332,6 +442,24 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.Navigation("Requester");
                 });
 
+            modelBuilder.Entity("InternshipPlatform.Domain.Milestone", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.User", "ReviewedByUser")
+                        .WithMany()
+                        .HasForeignKey("ReviewedByUserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("InternshipPlatform.Domain.User", "StudentUser")
+                        .WithMany()
+                        .HasForeignKey("StudentUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ReviewedByUser");
+
+                    b.Navigation("StudentUser");
+                });
+
             modelBuilder.Entity("InternshipPlatform.Domain.RefreshToken", b =>
                 {
                     b.HasOne("InternshipPlatform.Domain.User", "User")
@@ -341,6 +469,36 @@ namespace InternshipPlatform.DataAccess.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.SupervisorFeedback", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.User", "StudentUser")
+                        .WithMany()
+                        .HasForeignKey("StudentUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("InternshipPlatform.Domain.User", "SupervisorUser")
+                        .WithMany()
+                        .HasForeignKey("SupervisorUserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("StudentUser");
+
+                    b.Navigation("SupervisorUser");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.TaskLogEntry", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.User", "StudentUser")
+                        .WithMany()
+                        .HasForeignKey("StudentUserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("StudentUser");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Company", b =>
