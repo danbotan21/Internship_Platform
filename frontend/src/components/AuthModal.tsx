@@ -21,7 +21,7 @@ export default function AuthModal() {
       if (mode === 'login') {
         await login({ email, password })
       } else {
-        await register({ email, password, fullName, role: 'Student' })
+        await register({ email, password, fullName })
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.')
