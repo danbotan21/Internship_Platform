@@ -89,72 +89,19 @@ static async Task SeedResourcesAsync(IServiceProvider services)
 
     await db.Database.MigrateAsync();
 
-    var existingSlugs = await db.Resources
-        .Select(resource => resource.Slug)
-        .ToHashSetAsync();
-
-    var creatorId = Guid.Parse("00000000-0000-0000-0000-000000000001");
-    var now = DateTime.UtcNow;
-
-    var seedResources = new[]
+    var demoSlugs = new[]
     {
-        new Resource
-        {
-            Id = Guid.NewGuid(),
-            CreatedByUserId = creatorId,
-            Slug = "first-week-internship-guide",
-            Type = "Guide",
-            Format = "Article",
-            Title = "Your First Week of Internship",
-            Description = "A practical guide for planning your first week, asking useful questions, and building a reliable working rhythm.",
-            Owner = "Programme team",
-            MentorName = "Ion Popescu",
-            Category = "Guides and learning",
-            Tags = ["Onboarding", "Planning", "Communication"],
-            ContentHtml = "<h2>Start with context</h2><p>Learn how the team works, where decisions are documented, and who can help you unblock a task.</p><h2>Plan a small first win</h2><p>Choose one clearly scoped task and agree on what done means before you start.</p><h2>Close the week well</h2><p>Share progress, open questions, and one thing you want to improve next week.</p>",
-            IsDraft = false,
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new Resource
-        {
-            Id = Guid.NewGuid(),
-            CreatedByUserId = creatorId,
-            Slug = "weekly-project-update-template",
-            Type = "Template",
-            Format = "Template",
-            Title = "Weekly Project Update Template",
-            Description = "A concise structure for reporting progress, risks, decisions, and the next steps to your mentor.",
-            Owner = "Programme team",
-            MentorName = "Ion Popescu",
-            Category = "Templates",
-            Tags = ["Status update", "Mentoring", "Planning"],
-            ContentHtml = "<h2>Progress</h2><p>List the work completed this week and link to the relevant deliverables.</p><h2>Challenges</h2><p>Describe blockers with enough context for someone else to help.</p><h2>Next steps</h2><p>Write the next actions, owners, and expected dates.</p>",
-            IsDraft = false,
-            CreatedAt = now,
-            UpdatedAt = now
-        },
-        new Resource
-        {
-            Id = Guid.NewGuid(),
-            CreatedByUserId = creatorId,
-            Slug = "internship-working-agreements",
-            Type = "Policies",
-            Format = "Article",
-            Title = "Internship Working Agreements",
-            Description = "The core expectations for communication, confidentiality, feedback, and responsible use of team systems.",
-            Owner = "Programme team",
-            MentorName = "Ion Popescu",
-            Category = "Policies",
-            Tags = ["Expectations", "Feedback", "Confidentiality"],
-            ContentHtml = "<h2>Communicate early</h2><p>Raise risks and blockers as soon as they become visible, with a proposed next step when possible.</p><h2>Protect information</h2><p>Keep company and client information inside approved tools and follow the team access rules.</p><h2>Use feedback</h2><p>Ask clarifying questions, agree on an action, and revisit the outcome with your mentor.</p>",
-            IsDraft = false,
-            CreatedAt = now,
-            UpdatedAt = now
-        }
+        "first-week-internship-guide",
+        "weekly-project-update-template",
+        "internship-working-agreements"
     };
 
-    db.Resources.AddRange(seedResources.Where(resource => !existingSlugs.Contains(resource.Slug)));
+    var demoResources = await db.Resources
+        .Where(resource => demoSlugs.Contains(resource.Slug))
+        .ToListAsync();
+
+    if (demoResources.Count > 0)
+        db.Resources.RemoveRange(demoResources);
 
     await db.SaveChangesAsync();
 }
