@@ -5,6 +5,15 @@ namespace InternshipPlatform.API;
 
 public static class ClaimsPrincipalExtensions
 {
+    public static Guid? TryGetUserId(this ClaimsPrincipal user)
+    {
+        var val = user.FindFirstValue(JwtRegisteredClaimNames.Sub)
+               ?? user.FindFirstValue(ClaimTypes.NameIdentifier)
+               ?? user.FindFirstValue("sub");
+
+        return Guid.TryParse(val, out var id) ? id : null;
+    }
+
     public static Guid GetUserId(this ClaimsPrincipal user) =>
-        Guid.Parse(user.FindFirstValue(JwtRegisteredClaimNames.Sub)!);
+        user.TryGetUserId() ?? throw new InvalidOperationException("User ID claim was not found in token.");
 }

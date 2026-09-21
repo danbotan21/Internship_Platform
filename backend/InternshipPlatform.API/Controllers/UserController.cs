@@ -10,13 +10,14 @@ namespace InternshipPlatform.API.Controllers;
 [Authorize]
 public class UserController(IUserLogic userLogic) : ControllerBase
 {
-    private Guid CurrentUserId => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+    private Guid? CurrentUserId => User.TryGetUserId();
 
     //GET /api/users/me — current user profile
     [HttpGet("me")]
     public async Task<IActionResult> GetProfile()
     {
-        var result = await userLogic.GetProfileAsync(CurrentUserId);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await userLogic.GetProfileAsync(CurrentUserId.Value);
         return result.Success ? Ok(result) : NotFound(result);
     }
 
@@ -24,7 +25,8 @@ public class UserController(IUserLogic userLogic) : ControllerBase
     [HttpGet("/api/mentor/company-info")]
     public async Task<IActionResult> GetCompanyInfo()
     {
-        var result = await userLogic.GetCompanyInfoAsync(CurrentUserId);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await userLogic.GetCompanyInfoAsync(CurrentUserId.Value);
         return result.Success ? Ok(result) : NotFound(result);
     }
 }

@@ -12,7 +12,7 @@ namespace InternshipPlatform.API.Controllers;
 public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicationLogic applicationLogic)
     : ControllerBase
 {
-    private Guid? CurrentUserId => Guid.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : null;
+    private Guid? CurrentUserId => User.TryGetUserId();
 
     // ─── Public / Student ────────────────────────────────────────────────────
 
@@ -39,7 +39,8 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> SaveOpportunity(Guid id)
     {
-        var result = await opportunityLogic.SaveOpportunityAsync(id, CurrentUserId!.Value);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await opportunityLogic.SaveOpportunityAsync(id, CurrentUserId.Value);
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
@@ -48,7 +49,8 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> UnsaveOpportunity(Guid id)
     {
-        var result = await opportunityLogic.UnsaveOpportunityAsync(id, CurrentUserId!.Value);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await opportunityLogic.UnsaveOpportunityAsync(id, CurrentUserId.Value);
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
@@ -57,11 +59,13 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> Apply(Guid id, [FromForm] SubmitApplicationDto dto)
     {
+        if (CurrentUserId is null) return Unauthorized();
+
         var uploadedFiles = Request.Form.Files
             .Select(f => new UploadedFile(f.Name, f.FileName, f.OpenReadStream()))
             .ToList();
 
-        var result = await applicationLogic.ApplyAsync(id, CurrentUserId!.Value, dto, uploadedFiles);
+        var result = await applicationLogic.ApplyAsync(id, CurrentUserId.Value, dto, uploadedFiles);
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
@@ -72,7 +76,8 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> GetMyApplications()
     {
-        var result = await applicationLogic.GetStudentApplicationsAsync(CurrentUserId!.Value);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await applicationLogic.GetStudentApplicationsAsync(CurrentUserId.Value);
         return Ok(result);
     }
 
@@ -81,7 +86,8 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> GetMyApplication(Guid id)
     {
-        var result = await applicationLogic.GetStudentApplicationByIdAsync(id, CurrentUserId!.Value);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await applicationLogic.GetStudentApplicationByIdAsync(id, CurrentUserId.Value);
         return result.Success ? Ok(result) : NotFound(result);
     }
 
@@ -92,7 +98,8 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> GetMentorOpportunities()
     {
-        var result = await opportunityLogic.GetMentorOpportunitiesAsync(CurrentUserId!.Value);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await opportunityLogic.GetMentorOpportunitiesAsync(CurrentUserId.Value);
         return Ok(result);
     }
 
@@ -101,7 +108,8 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> CreateOpportunity([FromBody] CreateOpportunityDto dto)
     {
-        var result = await opportunityLogic.CreateOpportunityAsync(dto, CurrentUserId!.Value);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await opportunityLogic.CreateOpportunityAsync(dto, CurrentUserId.Value);
         return result.Success ? CreatedAtAction(nameof(GetOpportunityById), new { id = result.Data!.Id }, result) : BadRequest(result);
     }
 
@@ -110,7 +118,8 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> UpdateOpportunity(Guid id, [FromBody] CreateOpportunityDto dto)
     {
-        var result = await opportunityLogic.UpdateOpportunityAsync(id, dto, CurrentUserId!.Value);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await opportunityLogic.UpdateOpportunityAsync(id, dto, CurrentUserId.Value);
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
@@ -119,7 +128,8 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> PatchStatus(Guid id, [FromBody] PatchOpportunityStatusDto dto)
     {
-        var result = await opportunityLogic.PatchOpportunityStatusAsync(id, dto.Status, CurrentUserId!.Value);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await opportunityLogic.PatchOpportunityStatusAsync(id, dto.Status, CurrentUserId.Value);
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
@@ -128,7 +138,8 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> GetApplicationsByOpportunity(Guid id)
     {
-        var result = await applicationLogic.GetApplicationsByOpportunityAsync(id, CurrentUserId!.Value);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await applicationLogic.GetApplicationsByOpportunityAsync(id, CurrentUserId.Value);
         return Ok(result);
     }
 
@@ -137,7 +148,8 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> GetApplicationForReview(Guid applicationId)
     {
-        var result = await applicationLogic.GetApplicationForReviewAsync(applicationId, CurrentUserId!.Value);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await applicationLogic.GetApplicationForReviewAsync(applicationId, CurrentUserId.Value);
         return result.Success ? Ok(result) : NotFound(result);
     }
 
@@ -146,7 +158,8 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
     [Authorize]
     public async Task<IActionResult> ReviewApplication(Guid applicationId, [FromBody] ReviewApplicationDto dto)
     {
-        var result = await applicationLogic.ReviewApplicationAsync(applicationId, CurrentUserId!.Value, dto);
+        if (CurrentUserId is null) return Unauthorized();
+        var result = await applicationLogic.ReviewApplicationAsync(applicationId, CurrentUserId.Value, dto);
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
