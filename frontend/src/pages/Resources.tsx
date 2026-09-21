@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Bookmark, ChevronDown, Plus, Search } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Topbar from '../components/Topbar'
 import FluidBackground from '../components/FluidBackground'
 import { useAuth } from '../hooks/useAuth'
@@ -24,8 +24,9 @@ export default function Resources() {
 function ResourceLibrary() {
   const { session } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [search, setSearch] = useState('')
-  const [activeTab, setActiveTab] = useState('All resources')
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') === 'drafts' ? 'Drafts' : 'All resources')
   const [category, setCategory] = useState('All')
   const [isCategoryOpen, setIsCategoryOpen] = useState(false)
   const [sort, setSort] = useState('Newest first')
@@ -92,6 +93,7 @@ function ResourceLibrary() {
       const matchesTab =
         activeTab === 'All resources' ||
         activeTab === 'My documents' ||
+        activeTab === 'Drafts' ||
         (activeTab === 'Favorites' && resource.isFavorite)
       const matchesCategory = category === 'All' || resource.type === category
 

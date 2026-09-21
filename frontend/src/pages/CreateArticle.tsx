@@ -151,7 +151,7 @@ export default function CreateArticle() {
         : await createResource(getResourceRequest(true))
       setDraft(savedResource)
       setDraftSaved(true)
-      navigate('/resources')
+      navigate('/resources?tab=drafts')
     } catch (requestError: unknown) {
       setPublishError(requestError instanceof Error ? requestError.message : 'Unable to save the draft.')
     }
