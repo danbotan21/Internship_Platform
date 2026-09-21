@@ -1,3 +1,4 @@
+using InternshipPlatform.Domain;
 using Microsoft.EntityFrameworkCore;
 using InternshipPlatform.Domain.Entities;
 
@@ -13,6 +14,8 @@ public class AppDbContext : DbContext
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<ResourceFavorite> ResourceFavorites => Set<ResourceFavorite>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -59,6 +62,23 @@ public class AppDbContext : DbContext
             entity.HasOne(favorite => favorite.Resource)
                 .WithMany(resource => resource.Favorites)
                 .HasForeignKey(favorite => favorite.ResourceId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.HasIndex(u => u.Email).IsUnique();
+            entity.Property(u => u.Email).IsRequired();
+            entity.Property(u => u.PasswordHash).IsRequired();
+            entity.Property(u => u.Role).HasConversion<string>();
+        });
+
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasIndex(rt => rt.Token).IsUnique();
+
+            entity.HasOne(rt => rt.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
     }

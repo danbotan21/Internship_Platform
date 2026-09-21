@@ -1,6 +1,6 @@
-using InternshipPlatform.BusinessLayer.Resources;
 using InternshipPlatform.DataAccess.Context;
 using InternshipPlatform.Domain.Entities;
+using InternshipPlatform.Domain.Resources;
 using Microsoft.EntityFrameworkCore;
 
 namespace InternshipPlatform.DataAccess.Resources;
@@ -25,15 +25,27 @@ public sealed class ResourceRepository(AppDbContext dbContext) : IResourceReposi
         if (query.Mine is true)
             resources = resources.Where(resource => resource.CreatedByUserId == query.UserId);
 
-        return await resources.OrderByDescending(resource => resource.UpdatedAt).ToListAsync(cancellationToken);
+        var result = await resources
+            .OrderByDescending(resource => resource.UpdatedAt)
+            .ToListAsync(cancellationToken);
+
+        await ApplyCreatorNamesAsync(result, cancellationToken);
+        return result;
     }
 
-    public Task<Resource?> GetBySlugAsync(string slug, Guid userId, CancellationToken cancellationToken) =>
-        dbContext.Resources
+    public async Task<Resource?> GetBySlugAsync(string slug, Guid userId, CancellationToken cancellationToken)
+    {
+        var resource = await dbContext.Resources
             .AsNoTracking()
             .Include(resource => resource.Favorites)
             .SingleOrDefaultAsync(resource => resource.Slug == slug &&
                 (!resource.IsDraft || resource.CreatedByUserId == userId), cancellationToken);
+
+        if (resource is not null)
+            await ApplyCreatorNamesAsync([resource], cancellationToken);
+
+        return resource;
+    }
 
     public Task<Resource?> GetOwnedAsync(Guid id, Guid userId, CancellationToken cancellationToken) =>
         dbContext.Resources.SingleOrDefaultAsync(resource => resource.Id == id && resource.CreatedByUserId == userId, cancellationToken);
@@ -41,8 +53,30 @@ public sealed class ResourceRepository(AppDbContext dbContext) : IResourceReposi
     public Task<Resource?> GetByIdAsync(Guid id, CancellationToken cancellationToken) =>
         dbContext.Resources.SingleOrDefaultAsync(resource => resource.Id == id, cancellationToken);
 
+    public Task<string?> GetUserNameAsync(Guid userId, CancellationToken cancellationToken) =>
+        dbContext.Users
+            .Where(user => user.Id == userId)
+            .Select(user => user.FullName)
+            .SingleOrDefaultAsync(cancellationToken);
+
     public Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken) =>
         dbContext.Resources.AnyAsync(resource => resource.Slug == slug, cancellationToken);
+
+    private async Task ApplyCreatorNamesAsync(
+        IReadOnlyCollection<Resource> resources,
+        CancellationToken cancellationToken)
+    {
+        var creatorIds = resources.Select(resource => resource.CreatedByUserId).Distinct().ToArray();
+        var creatorNames = await dbContext.Users
+            .Where(user => creatorIds.Contains(user.Id))
+            .ToDictionaryAsync(user => user.Id, user => user.FullName, cancellationToken);
+
+        foreach (var resource in resources)
+        {
+            if (creatorNames.TryGetValue(resource.CreatedByUserId, out var creatorName))
+                resource.MentorName = creatorName;
+        }
+    }
 
     public Task AddAsync(Resource resource, CancellationToken cancellationToken)
     {

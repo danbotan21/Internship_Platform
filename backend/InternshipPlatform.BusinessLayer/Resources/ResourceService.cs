@@ -1,4 +1,5 @@
 using InternshipPlatform.Domain.Entities;
+using InternshipPlatform.Domain.Resources;
 
 namespace InternshipPlatform.BusinessLayer.Resources;
 
@@ -18,6 +19,9 @@ public sealed class ResourceService(IResourceRepository repository)
     {
         if (!IsContentManager(role))
             throw new UnauthorizedAccessException("Only mentors and administrators can create resources.");
+
+        var creatorName = await repository.GetUserNameAsync(userId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("The current user was not found.");
 
         if (string.IsNullOrWhiteSpace(command.Title))
             throw new ArgumentException("Title is required.", nameof(command));
@@ -46,7 +50,7 @@ public sealed class ResourceService(IResourceRepository repository)
             Format = command.Format?.Trim() ?? "Article",
             Category = command.Category?.Trim() ?? "Guides and learning",
             Owner = command.Owner?.Trim() ?? "Programme team",
-            MentorName = command.MentorName?.Trim() ?? string.Empty,
+            MentorName = creatorName,
             Tags = command.Tags ?? Array.Empty<string>(),
             IsDraft = command.IsDraft
         };

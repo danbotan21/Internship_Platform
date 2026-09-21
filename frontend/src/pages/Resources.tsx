@@ -3,6 +3,7 @@ import { Bookmark, ChevronDown, Plus, Search } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import Topbar from '../components/Topbar'
 import FluidBackground from '../components/FluidBackground'
+import { useAuth } from '../hooks/useAuth'
 import {
   addResourceFavorite,
   getResources,
@@ -21,6 +22,7 @@ export default function Resources() {
 }
 
 function ResourceLibrary() {
+  const { session } = useAuth()
   const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState('All resources')
@@ -313,7 +315,7 @@ function ResourceLibrary() {
                   </div>
                   <div className="mt-3 flex min-w-0 items-center justify-between gap-3 text-[10px] text-white/60">
                     <span className="min-w-0 truncate">{resource.owner} · Updated {new Date(resource.updatedAt).toLocaleDateString()}</span>
-                    <span className="max-w-[180px] shrink-0 truncate rounded-full bg-white/15 px-3 py-2 text-xs text-white backdrop-blur-sm">{resource.mentorName}</span>
+                    <span className="max-w-[180px] shrink-0 truncate rounded-full bg-white/15 px-3 py-2 text-xs text-white backdrop-blur-sm">{resource.mentorName || (resource.createdByUserId === session?.userId ? session.fullName : 'Unknown author')}</span>
                   </div>
                 </div>
               </div>

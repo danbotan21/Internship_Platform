@@ -137,7 +137,7 @@ export default function CreateArticle() {
     format: 'Article',
     category,
     owner: 'Programme team',
-    mentorName: 'Ion Popescu',
+    mentorName: '',
     tags: tags.split(',').map((tag) => tag.trim()).filter(Boolean),
     targetGroup: targetGroup || null,
     isDraft,

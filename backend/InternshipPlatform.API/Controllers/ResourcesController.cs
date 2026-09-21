@@ -1,4 +1,5 @@
 using InternshipPlatform.BusinessLayer.Resources;
+using InternshipPlatform.Domain.Resources;
 using InternshipPlatform.Domain.Entities;
 using Microsoft.AspNetCore.Mvc;
 

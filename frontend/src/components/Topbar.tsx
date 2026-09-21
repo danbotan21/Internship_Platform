@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Search } from 'lucide-react'
 import { getNotifications, markNotificationAsRead, type Notification } from '../api/resources'
+import { useAuth } from '../hooks/useAuth'
 
 export default function Topbar() {
+  const { session } = useAuth()
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
 
@@ -51,7 +53,15 @@ export default function Topbar() {
           </div>
         )}
       </div>
-      <button type="button" className="h-14 w-14 shrink-0 rounded-full bg-[#1e3a2c]" aria-label="Open profile"><span className="sr-only">Ion Popescu profile</span></button>
+      <button type="button" className="flex h-14 items-center gap-3 rounded-xl bg-gray-50 px-3 text-left hover:bg-gray-100" aria-label="Open profile">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#1e3a2c] text-xs font-semibold text-white">
+          {session?.fullName.split(/\s+/).map((part) => part[0]).slice(0, 2).join('').toUpperCase()}
+        </span>
+        <span className="hidden min-w-0 sm:block">
+          <span className="block max-w-[140px] truncate text-sm font-semibold text-gray-800">{session?.fullName}</span>
+          <span className="block text-xs text-gray-400">{session?.role}</span>
+        </span>
+      </button>
     </header>
   )
 }

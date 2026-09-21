@@ -1,6 +1,6 @@
 using InternshipPlatform.Domain.Entities;
 
-namespace InternshipPlatform.BusinessLayer.Resources;
+namespace InternshipPlatform.Domain.Resources;
 
 public interface IResourceRepository
 {
@@ -8,6 +8,7 @@ public interface IResourceRepository
     Task<Resource?> GetBySlugAsync(string slug, Guid userId, CancellationToken cancellationToken);
     Task<Resource?> GetOwnedAsync(Guid id, Guid userId, CancellationToken cancellationToken);
     Task<Resource?> GetByIdAsync(Guid id, CancellationToken cancellationToken);
+    Task<string?> GetUserNameAsync(Guid userId, CancellationToken cancellationToken);
     Task<bool> SlugExistsAsync(string slug, CancellationToken cancellationToken);
     Task AddAsync(Resource resource, CancellationToken cancellationToken);
     Task SaveChangesAsync(CancellationToken cancellationToken);

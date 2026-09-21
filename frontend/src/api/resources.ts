@@ -1,6 +1,5 @@
 const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:5080'
-const userIdStorageKey = 'internflow-user-id'
-const userRoleStorageKey = 'internflow-user-role'
+const sessionStorageKey = 'internflow.session'
 
 export type Resource = {
   id: string
@@ -38,19 +37,25 @@ export type CreateResourceRequest = {
 export type UpdateResourceRequest = CreateResourceRequest
 
 export function getUserId() {
-  if (typeof window === 'undefined') return '00000000-0000-0000-0000-000000000001'
+  if (typeof window === 'undefined') return ''
 
-  const existingUserId = window.localStorage.getItem(userIdStorageKey)
-  if (existingUserId) return existingUserId
-
-  const userId = crypto.randomUUID()
-  window.localStorage.setItem(userIdStorageKey, userId)
-  return userId
+  try {
+    const session = JSON.parse(window.localStorage.getItem(sessionStorageKey) ?? 'null')
+    return typeof session?.userId === 'string' ? session.userId : ''
+  } catch {
+    return ''
+  }
 }
 
 export function getUserRole() {
-  if (typeof window === 'undefined') return 'Mentor'
-  return window.localStorage.getItem(userRoleStorageKey) ?? 'Mentor'
+  if (typeof window === 'undefined') return ''
+
+  try {
+    const session = JSON.parse(window.localStorage.getItem(sessionStorageKey) ?? 'null')
+    return typeof session?.role === 'string' ? session.role : ''
+  } catch {
+    return ''
+  }
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
