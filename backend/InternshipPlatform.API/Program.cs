@@ -3,8 +3,12 @@ using System.Text.Json.Serialization;
 using InternshipPlatform.BusinessLayer.Auth;
 using InternshipPlatform.BusinessLayer.Progress;
 using InternshipPlatform.DataAccess.Context;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using InternshipPlatform.BusinessLayer.Resources;
+using InternshipPlatform.DataAccess.Resources;
+using InternshipPlatform.Domain.Entities;
+using InternshipPlatform.Domain.Resources;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using InternshipPlatform.DataAccess.Seed;
 using InternshipPlatform.BusinessLayer.Admin.Users;
@@ -38,6 +42,8 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
+builder.Services.AddScoped<ResourceService>();
 
 builder.Services.AddScoped<IUserDirectoryService, UserDirectoryService>();
 builder.Services.AddScoped<IUserLifecycleService, UserLifecycleService>();
@@ -100,5 +106,30 @@ if (app.Environment.IsDevelopment())
     var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await SeedData.EnsureSeededAsync(context);
 }
+await SeedResourcesAsync(app.Services);
 
 app.Run();
+
+static async Task SeedResourcesAsync(IServiceProvider services)
+{
+    using var scope = services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    await db.Database.MigrateAsync();
+
+    var demoSlugs = new[]
+    {
+        "first-week-internship-guide",
+        "weekly-project-update-template",
+        "internship-working-agreements"
+    };
+
+    var demoResources = await db.Resources
+        .Where(resource => demoSlugs.Contains(resource.Slug))
+        .ToListAsync();
+
+    if (demoResources.Count > 0)
+        db.Resources.RemoveRange(demoResources);
+
+    await db.SaveChangesAsync();
+}
