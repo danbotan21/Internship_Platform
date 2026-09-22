@@ -1,15 +1,37 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using InternshipPlatform.API.Infrastructure;
 using InternshipPlatform.BusinessLayer.Auth;
+using InternshipPlatform.BusinessLayer.Opportunity;
+using InternshipPlatform.BusinessLayer.Users;
+using InternshipPlatform.BusinessLayer.Interfaces;
+using InternshipPlatform.BusinessLayer.Internship;
+using InternshipPlatform.BusinessLayer.Progress;
+using InternshipPlatform.BusinessLayer.Structure;
 using InternshipPlatform.DataAccess.Context;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
+using InternshipPlatform.BusinessLayer.Resources;
+using InternshipPlatform.DataAccess.Resources;
+using InternshipPlatform.Domain.Entities;
+using InternshipPlatform.Domain.Resources;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using InternshipPlatform.DataAccess.Seed;
+using InternshipPlatform.BusinessLayer.Admin.Users;
+using InternshipPlatform.BusinessLayer.Admin.Verification;
+using InternshipPlatform.BusinessLayer.Admin.Companies;
+using InternshipPlatform.BusinessLayer.Admin.Dashboard;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Add services to the container.
+
 builder.Services.AddControllers()
-    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 
 builder.Services.AddCors(options =>
 {
@@ -28,6 +50,15 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
+builder.Services.AddScoped<IResourceRepository, ResourceRepository>();
+builder.Services.AddScoped<ResourceService>();
+
+builder.Services.AddScoped<IUserDirectoryService, UserDirectoryService>();
+builder.Services.AddScoped<IUserLifecycleService, UserLifecycleService>();
+builder.Services.AddScoped<ICompanyVerificationService, CompanyVerificationService>();
+builder.Services.AddScoped<ICompanyAdminService, CompanyAdminService>();
+builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+
 
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt configuration section was not found.");
@@ -36,9 +67,26 @@ builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 
+// Opportunity module
+builder.Services.AddScoped<OpportunityActions>();
+builder.Services.AddScoped<ApplicationActions>();
+builder.Services.AddScoped<IOpportunityLogic, OpportunityLogic>();
+builder.Services.AddScoped<IApplicationLogic, ApplicationLogic>();
+
+// User module
+builder.Services.AddScoped<UserActions>();
+builder.Services.AddScoped<IUserLogic, UserLogic>();
+
+builder.Services.AddHttpContextAccessor();
+
+var programSettings = builder.Configuration.GetSection("Program").Get<ProgramSettings>() ?? new ProgramSettings();
+builder.Services.AddSingleton(programSettings);
+builder.Services.AddScoped<IProgressService, ProgressService>();
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        options.MapInboundClaims = false;
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -54,10 +102,25 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddScoped<IContributionAction, ContributionActionExecution>();
+builder.Services.AddScoped<IContributionFileStorageAction, LocalContributionFileStorage>();
+
+builder.Services.AddScoped<IInternshipDirectoryAction, DatabaseInternshipDirectory>();
+
+builder.Services.AddMemoryCache();
+builder.Services.Configure<GitHubOptions>(builder.Configuration.GetSection("GitHub"));
+builder.Services.AddHttpClient<IGitHubAction, GitHubApiClient>();
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await db.Database.MigrateAsync();
+}
 
 if (app.Environment.IsDevelopment())
 {
@@ -66,10 +129,41 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("AllowAll");
-
+app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
 
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    await SeedData.EnsureSeededAsync(context);
+}
+await SeedResourcesAsync(app.Services);
+
 app.Run();
+
+static async Task SeedResourcesAsync(IServiceProvider services)
+{
+    using var scope = services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    await db.Database.MigrateAsync();
+
+    var demoSlugs = new[]
+    {
+        "first-week-internship-guide",
+        "weekly-project-update-template",
+        "internship-working-agreements"
+    };
+
+    var demoResources = await db.Resources
+        .Where(resource => demoSlugs.Contains(resource.Slug))
+        .ToListAsync();
+
+    if (demoResources.Count > 0)
+        db.Resources.RemoveRange(demoResources);
+
+    await db.SaveChangesAsync();
+}

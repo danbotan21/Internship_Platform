@@ -7,6 +7,7 @@ import {
   Upload,
   Star,
   Briefcase,
+  FileCheck,
   Timer,
   TrendingUp,
   MessageSquare,
@@ -14,10 +15,13 @@ import {
   FolderOpen,
   Box,
   History,
+  FolderKanban,
+  UserCheck,
   LogOut,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
+import { useUserRole } from '../context/UserRoleContext'
+import { useAuth } from '../hooks/authContext'
 
 type NavItem = {
   label: string
@@ -30,38 +34,6 @@ type NavSection = {
   items: NavItem[]
 }
 
-const sections: NavSection[] = [
-  {
-    title: 'Work',
-    items: [
-      { label: 'Overview', to: '/', icon: LayoutGrid },
-      { label: 'Internship progress', to: '/internship-progress', icon: TrendingUp },
-      { label: 'Tasks', to: '/tasks', icon: ListChecks },
-      { label: 'Attendance', to: '/attendance', icon: Clock },
-      { label: 'Reports', to: '/reports', icon: FileText },
-      { label: 'Contributions', to: '/contributions', icon: Upload },
-      { label: 'Evaluation', to: '/evaluation', icon: Star },
-      { label: 'Opportunities', to: '/opportunities', icon: Briefcase },
-      { label: 'Quizzes', to: '/quizzes', icon: Timer },
-    ],
-  },
-  {
-    title: 'Connect',
-    items: [
-      { label: 'Messages', to: '/messages', icon: MessageSquare },
-      { label: 'Calendar', to: '/calendar', icon: Calendar },
-      { label: 'Resources', to: '/resources', icon: FolderOpen },
-    ],
-  },
-  {
-    title: 'Manage',
-    items: [
-      { label: 'Skills', to: '/skills', icon: Box },
-      { label: 'Audit log', to: '/audit-log', icon: History },
-    ],
-  },
-]
-
 function getInitials(fullName: string) {
   const parts = fullName.trim().split(/\s+/)
   return parts
@@ -71,10 +43,46 @@ function getInitials(fullName: string) {
 }
 
 export default function Sidebar() {
+  const { role, setRole } = useUserRole()
   const { session, logout } = useAuth()
 
+  const sections: NavSection[] = [
+    {
+      title: 'Work',
+      items: [
+        { label: 'Overview', to: '/', icon: LayoutGrid },
+        { label: 'Internship progress', to: '/internship-progress', icon: TrendingUp },
+        { label: 'Tasks', to: '/tasks', icon: ListChecks },
+        { label: 'Attendance', to: '/attendance', icon: Clock },
+        { label: 'Reports', to: '/reports', icon: FileText },
+        { label: 'Contributions', to: '/contributions', icon: Upload },
+        { label: 'Evaluation', to: '/evaluation', icon: Star },
+        { label: 'Opportunities', to: '/opportunities', icon: Briefcase },
+        role === 'Intern'
+          ? { label: 'My Applications', to: '/my-applications', icon: FileCheck }
+          : { label: 'My Opportunities', to: '/my-opportunities', icon: FolderKanban },
+        { label: 'Quizzes', to: '/quizzes', icon: Timer },
+      ],
+    },
+    {
+      title: 'Connect',
+      items: [
+        { label: 'Messages', to: '/messages', icon: MessageSquare },
+        { label: 'Calendar', to: '/calendar', icon: Calendar },
+        { label: 'Resources', to: '/resources', icon: FolderOpen },
+      ],
+    },
+    {
+      title: 'Manage',
+      items: [
+        { label: 'Skills', to: '/skills', icon: Box },
+        { label: 'Audit log', to: '/audit-log', icon: History },
+      ],
+    },
+  ]
+
   return (
-    <aside className="flex h-screen w-64 flex-col justify-between bg-[#1e3a2c] px-3 py-5">
+    <aside className="flex h-screen w-64 flex-col justify-between bg-[#1e3a2c] px-3 py-5 shrink-0">
       <div>
         <div className="flex items-center gap-2 px-2 pb-5">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white p-1.5">
@@ -85,7 +93,9 @@ export default function Sidebar() {
 
         <div className="mb-5 rounded-xl bg-white/5 px-3 py-3">
           <p className="text-sm font-medium text-white">internflow</p>
-          <p className="text-xs text-white/50">Student workspace</p>
+          <p className="text-xs text-white/50">
+            {role === 'Intern' ? 'Student workspace' : 'Mentor workspace'}
+          </p>
         </div>
 
         <nav className="flex flex-col gap-5">
@@ -103,7 +113,7 @@ export default function Sidebar() {
                     className={({ isActive }) =>
                       `flex items-center gap-3 rounded-lg px-2.5 py-2 text-sm transition-colors ${
                         isActive
-                          ? 'bg-white/10 text-white'
+                          ? 'bg-white/10 text-white font-medium'
                           : 'text-white/70 hover:bg-white/5 hover:text-white'
                       }`
                     }
@@ -118,22 +128,40 @@ export default function Sidebar() {
         </nav>
       </div>
 
-      <div className="flex items-center gap-2 border-t border-white/10 px-2 pt-4">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-medium text-white">
-          {session ? getInitials(session.fullName) : ''}
+      {/* Profile, Role Toggle & Logout */}
+      <div className="border-t border-white/10 px-2 pt-4 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-medium text-white shrink-0">
+            {session ? getInitials(session.fullName) : '??'}
+          </div>
+          <div className="truncate">
+            <p className="text-sm font-medium text-white truncate">{session?.fullName}</p>
+            <p className="text-xs text-white/50 truncate">{role} · Settings</p>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm text-white">{session?.fullName}</p>
-          <p className="text-xs text-white/40">{session?.role}</p>
+
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Toggle Role Button */}
+          <button
+            type="button"
+            onClick={() => setRole(role === 'Intern' ? 'Mentor' : 'Intern')}
+            title={`Switch to ${role === 'Intern' ? 'Mentor' : 'Intern'} view`}
+            className="bg-white/10 hover:bg-white/20 text-white text-[11px] font-semibold px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer flex items-center gap-1 border border-white/10 shadow-2xs"
+          >
+            <UserCheck className="w-3.5 h-3.5" />
+            <span>{role === 'Intern' ? 'Mentor' : 'Intern'}</span>
+          </button>
+
+          {/* Logout Button */}
+          <button
+            type="button"
+            onClick={() => logout()}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/5 hover:text-white transition-colors"
+            aria-label="Log out"
+          >
+            <LogOut className="h-4 w-4" strokeWidth={1.75} />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => logout()}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/5 hover:text-white"
-          aria-label="Log out"
-        >
-          <LogOut className="h-4 w-4" strokeWidth={1.75} />
-        </button>
       </div>
     </aside>
   )

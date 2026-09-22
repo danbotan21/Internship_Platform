@@ -14,7 +14,7 @@ import {
   saveSessionRecording,
   type SessionMetadata,
 } from '../../api/recordingService'
-import { useAuth } from '../../hooks/useAuth'
+import { useAuth } from '../../hooks/authContext'
 import {
   saveQuizAttempt,
   type UserQuizAttempt,

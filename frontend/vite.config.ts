@@ -204,4 +204,10 @@ function recordingsDevPlugin(): Plugin {
 
 export default defineConfig({
   plugins: [react(), tailwindcss(), recordingsDevPlugin()],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:5080',
+      '/uploads': 'http://localhost:5080',
+    },
+  },
 })
