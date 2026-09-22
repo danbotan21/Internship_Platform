@@ -1,4 +1,4 @@
-import type { CompanyRole, DirectoryRole } from '../../types/adminUsers'
+import type { CompanyRole, PlatformRole } from '../../types/adminUsers'
 
 const time = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
 const dayMonth = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short' })
@@ -38,12 +38,11 @@ export function formatLongDate(iso: string): string {
   return longDate.format(new Date(iso))
 }
 
-export const directoryRoleLabels: Record<DirectoryRole, string> = {
-  User: 'User',
-  Admin: 'Admin',
-  Owner: 'Owner',
-  Recruiter: 'Recruiter',
+export const platformRoleLabels: Record<PlatformRole, string> = {
+  Student: 'Student',
   Mentor: 'Mentor',
+  Company: 'Company',
+  Admin: 'Admin',
 }
 
 export const companyRoleLabels: Record<CompanyRole, string> = {
@@ -51,3 +50,4 @@ export const companyRoleLabels: Record<CompanyRole, string> = {
   Recruiter: 'Recruiter',
   Mentor: 'Mentor',
 }
+

@@ -31,11 +31,10 @@ async function toError(response: Response) {
  */
 let refreshing: Promise<string | null> | null = null
 
-function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = getSession()?.refreshToken
-  if (!refreshToken) return Promise.resolve(null)
-
+export function refreshAccessToken(): Promise<string | null> {
   refreshing ??= (async () => {
+    const refreshToken = getSession()?.refreshToken
+    if (!refreshToken) return null
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
         method: 'POST',

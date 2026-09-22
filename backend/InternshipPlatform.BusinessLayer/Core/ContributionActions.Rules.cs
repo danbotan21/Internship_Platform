@@ -97,10 +97,10 @@ public partial class ContributionActions
                 revision.Category is ContributionCategory.Development
                     ? "Your profile has no GitHub account linked."
                     : null),
-            Check("collaborators", "No collaborator disputes their participation",
+            Check("collaborators", "Every collaborator confirmed their participation",
                 contribution.Collaborators.All(item =>
-                    item.Status != ContributionCollaboratorStatus.Disputed),
-                "Update or remove disputed collaborators first.")
+                    item.Status == ContributionCollaboratorStatus.Confirmed),
+                "Wait for pending collaborators; answer disputes and ask them to confirm again.")
         };
 
         var changeRequest = GetOpenChangeRequest(contribution);
@@ -168,13 +168,15 @@ public partial class ContributionActions
                     });
                 }
 
-                signals.Add(evidence.GitHubChecksConclusion switch
+                if (evidence.GitHubChecksConclusion is "success" or "failure" or "pending")
                 {
-                    "success" => Signal("checks", "CI checks passed", VerificationSignalStatus.Passed),
-                    "failure" => Signal("checks", "CI checks failed", VerificationSignalStatus.Failed),
-                    "pending" => Signal("checks", "CI checks were still running", VerificationSignalStatus.Info),
-                    _ => Signal("checks", "No CI checks configured", VerificationSignalStatus.Info)
-                });
+                    signals.Add(evidence.GitHubChecksConclusion switch
+                    {
+                        "success" => Signal("checks", "CI checks passed", VerificationSignalStatus.Passed),
+                        "failure" => Signal("checks", "CI checks failed", VerificationSignalStatus.Failed),
+                        _ => Signal("checks", "CI checks were still running", VerificationSignalStatus.Info)
+                    });
+                }
                 break;
 
             case EvidenceType.Image:

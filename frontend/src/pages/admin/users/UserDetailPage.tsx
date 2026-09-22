@@ -5,8 +5,8 @@ import AdminHeader from '../../../components/admin/AdminHeader'
 import StatusBadge from '../../../components/admin/StatusBadge'
 import { ApiError } from '../../../api/http'
 import { changePlatformRole, deactivateUser, fetchUserDetail, reactivateUser } from '../../../api/adminUsers'
-import type { PlatformRole, UserDetail } from '../../../types/adminUsers'
-import { companyRoleLabels, directoryRoleLabels, formatLastActive, formatLongDate } from '../format'
+import type { UserDetail } from '../../../types/adminUsers'
+import { companyRoleLabels, platformRoleLabels, formatLastActive, formatLongDate } from '../format'
 import { ChangeRoleDialog, DeactivateAccountDialog, ReactivateAccountDialog } from './AccountDialogs'
 
 type OpenDialog = 'deactivate' | 'reactivate' | 'role' | null
@@ -74,7 +74,6 @@ export default function UserDetailPage() {
 
   const { user } = response
   const lastActive = formatLastActive(user.lastActiveAt)
-  const platformRole: PlatformRole = user.role === 'Admin' ? 'Admin' : 'User'
 
   // Each action: call the API, close the dialog, show fresh data. Errors surface inside the dialog.
   async function runAction(action: () => Promise<void>) {
@@ -119,7 +118,7 @@ export default function UserDetailPage() {
             <Panel title="Profile & identity" description="Account and programme identity used across the internship platform.">
               <Field label="Full name" value={user.fullName} />
               <Field label="Email" value={user.email} />
-              <Field label="Role" value={directoryRoleLabels[user.role]} />
+              <Field label="Platform role" value={platformRoleLabels[user.platformRole]} />
               <Field label="University" value={user.university} />
               <Field label="Programme" value={user.programme} />
               <Field label="Academic group" value={user.academicGroup} />
@@ -178,7 +177,7 @@ export default function UserDetailPage() {
       {dialog === 'role' && (
         <ChangeRoleDialog
           userName={user.fullName}
-          currentRole={platformRole}
+          currentRole={user.platformRole}
           onCancel={closeDialog}
           onConfirm={(role, reason) => runAction(() => changePlatformRole(user.id, role, reason))}
         />
