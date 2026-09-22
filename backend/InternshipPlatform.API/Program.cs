@@ -121,6 +121,7 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<IContributionAction, ContributionActionExecution>();
 builder.Services.AddScoped<IContributionFileStorageAction, LocalContributionFileStorage>();
+builder.Services.AddScoped<IEvaluationAction, EvaluationActionExecution>();
 
 builder.Services.AddScoped<IInternshipDirectoryAction, DatabaseInternshipDirectory>();
 
