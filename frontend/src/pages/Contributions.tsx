@@ -11,7 +11,7 @@ import StudentContributionsPage from './contributions/StudentContributionsPage'
 export default function Contributions() {
   const { session } = useAuth()
 
-  if (session?.role === 'Mentor') {
+  if (session?.role === 'Mentor' || session?.role === 'Company') {
     return (
       <Routes>
         <Route index element={<MentorReviewQueuePage />} />
@@ -19,6 +19,10 @@ export default function Contributions() {
         <Route path='*' element={<Navigate to='/contributions' replace />} />
       </Routes>
     )
+  }
+
+  if (session?.role !== 'Student') {
+    return <p role="status">Contribution management is available to students and mentors.</p>
   }
 
   return (

@@ -9,28 +9,7 @@ import type {
 } from '../types/opportunities'
 import { normalizeOpportunity } from '../types/opportunities'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5080'
-
-function getAuthHeaders(includeContentType = true): HeadersInit {
-  const headers: Record<string, string> = {}
-  if (includeContentType) {
-    headers['Content-Type'] = 'application/json'
-  }
-
-  try {
-    const raw = localStorage.getItem('internflow.session')
-    if (raw) {
-      const session = JSON.parse(raw)
-      if (session?.accessToken) {
-        headers['Authorization'] = `Bearer ${session.accessToken}`
-      }
-    }
-  } catch {
-    // Ignore storage parse error
-  }
-
-  return headers
-}
+import { apiRequest } from './client'
 
 async function handleApiResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
@@ -71,11 +50,10 @@ export async function getOpportunities(
   if (params?.limit) query.append('limit', String(params.limit))
 
   const queryString = query.toString()
-  const url = `${API_BASE_URL}/api/opportunities${queryString ? `?${queryString}` : ''}`
+  const url = `/api/opportunities${queryString ? `?${queryString}` : ''}`
 
-  const res = await fetch(url, {
+  const res = await apiRequest(url, {
     method: 'GET',
-    headers: getAuthHeaders(),
   })
 
   const data = await handleApiResponse<{ items: any[]; pagination: any }>(res)
@@ -95,9 +73,8 @@ export async function getOpportunities(
  * GET /api/opportunities/:id
  */
 export async function getOpportunityById(id: string): Promise<Opportunity> {
-  const res = await fetch(`${API_BASE_URL}/api/opportunities/${id}`, {
+  const res = await apiRequest(`/api/opportunities/${id}`, {
     method: 'GET',
-    headers: getAuthHeaders(),
   })
   const data = await handleApiResponse<any>(res)
   return normalizeOpportunity(data)
@@ -107,9 +84,8 @@ export async function getOpportunityById(id: string): Promise<Opportunity> {
  * POST /api/opportunities/:id/save
  */
 export async function saveOpportunity(id: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE_URL}/api/opportunities/${id}/save`, {
+  const res = await apiRequest(`/api/opportunities/${id}/save`, {
     method: 'POST',
-    headers: getAuthHeaders(),
   })
   return handleApiResponse<boolean>(res)
 }
@@ -118,9 +94,8 @@ export async function saveOpportunity(id: string): Promise<boolean> {
  * DELETE /api/opportunities/:id/save
  */
 export async function unsaveOpportunity(id: string): Promise<boolean> {
-  const res = await fetch(`${API_BASE_URL}/api/opportunities/${id}/save`, {
+  const res = await apiRequest(`/api/opportunities/${id}/save`, {
     method: 'DELETE',
-    headers: getAuthHeaders(),
   })
   return handleApiResponse<boolean>(res)
 }
@@ -132,9 +107,8 @@ export async function applyToOpportunity(
   opportunityId: string,
   formData: FormData
 ): Promise<boolean> {
-  const res = await fetch(`${API_BASE_URL}/api/opportunities/${opportunityId}/apply`, {
+  const res = await apiRequest(`/api/opportunities/${opportunityId}/apply`, {
     method: 'POST',
-    headers: getAuthHeaders(false), // don't set Content-Type so browser sets boundary
     body: formData,
   })
   return handleApiResponse<boolean>(res)
@@ -146,9 +120,8 @@ export async function applyToOpportunity(
  * GET /api/student/applications
  */
 export async function getMyApplications(): Promise<StudentApplicationListItem[]> {
-  const res = await fetch(`${API_BASE_URL}/api/student/applications`, {
+  const res = await apiRequest(`/api/student/applications`, {
     method: 'GET',
-    headers: getAuthHeaders(),
   })
   return handleApiResponse<StudentApplicationListItem[]>(res)
 }
@@ -157,9 +130,8 @@ export async function getMyApplications(): Promise<StudentApplicationListItem[]>
  * GET /api/student/applications/:id
  */
 export async function getMyApplicationById(id: string): Promise<ApplicationDetail> {
-  const res = await fetch(`${API_BASE_URL}/api/student/applications/${id}`, {
+  const res = await apiRequest(`/api/student/applications/${id}`, {
     method: 'GET',
-    headers: getAuthHeaders(),
   })
   return handleApiResponse<ApplicationDetail>(res)
 }
@@ -170,9 +142,8 @@ export async function getMyApplicationById(id: string): Promise<ApplicationDetai
  * GET /api/mentor/opportunities
  */
 export async function getMentorOpportunities(): Promise<Opportunity[]> {
-  const res = await fetch(`${API_BASE_URL}/api/mentor/opportunities`, {
+  const res = await apiRequest(`/api/mentor/opportunities`, {
     method: 'GET',
-    headers: getAuthHeaders(),
   })
   const rawList = await handleApiResponse<any[]>(res)
   return (rawList || []).map(normalizeOpportunity)
@@ -184,9 +155,8 @@ export async function getMentorOpportunities(): Promise<Opportunity[]> {
 export async function createOpportunity(
   payload: CreateOpportunityPayload
 ): Promise<Opportunity> {
-  const res = await fetch(`${API_BASE_URL}/api/mentor/opportunities`, {
+  const res = await apiRequest(`/api/mentor/opportunities`, {
     method: 'POST',
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   })
   const data = await handleApiResponse<any>(res)
@@ -200,9 +170,8 @@ export async function updateOpportunity(
   id: string,
   payload: CreateOpportunityPayload
 ): Promise<Opportunity> {
-  const res = await fetch(`${API_BASE_URL}/api/mentor/opportunities/${id}`, {
+  const res = await apiRequest(`/api/mentor/opportunities/${id}`, {
     method: 'PUT',
-    headers: getAuthHeaders(),
     body: JSON.stringify(payload),
   })
   const data = await handleApiResponse<any>(res)
@@ -216,9 +185,8 @@ export async function patchOpportunityStatus(
   id: string,
   status: string
 ): Promise<boolean> {
-  const res = await fetch(`${API_BASE_URL}/api/mentor/opportunities/${id}/status`, {
+  const res = await apiRequest(`/api/mentor/opportunities/${id}/status`, {
     method: 'PATCH',
-    headers: getAuthHeaders(),
     body: JSON.stringify({ status }),
   })
   return handleApiResponse<boolean>(res)
@@ -230,11 +198,10 @@ export async function patchOpportunityStatus(
 export async function getApplicationsByOpportunity(
   opportunityId: string
 ): Promise<ApplicationDetail[]> {
-  const res = await fetch(
-    `${API_BASE_URL}/api/mentor/opportunities/${opportunityId}/applications`,
+  const res = await apiRequest(
+    `/api/mentor/opportunities/${opportunityId}/applications`,
     {
       method: 'GET',
-      headers: getAuthHeaders(),
     }
   )
   return handleApiResponse<ApplicationDetail[]>(res)
@@ -246,11 +213,10 @@ export async function getApplicationsByOpportunity(
 export async function getApplicationForReview(
   applicationId: string
 ): Promise<ApplicationDetail> {
-  const res = await fetch(
-    `${API_BASE_URL}/api/mentor/applications/${applicationId}/review`,
+  const res = await apiRequest(
+    `/api/mentor/applications/${applicationId}/review`,
     {
       method: 'GET',
-      headers: getAuthHeaders(),
     }
   )
   return handleApiResponse<ApplicationDetail>(res)
@@ -263,11 +229,10 @@ export async function reviewApplication(
   applicationId: string,
   payload: ReviewApplicationPayload
 ): Promise<boolean> {
-  const res = await fetch(
-    `${API_BASE_URL}/api/mentor/applications/${applicationId}/review`,
+  const res = await apiRequest(
+    `/api/mentor/applications/${applicationId}/review`,
     {
       method: 'POST',
-      headers: getAuthHeaders(),
       body: JSON.stringify(payload),
     }
   )
@@ -278,9 +243,8 @@ export async function reviewApplication(
  * GET /api/mentor/company-info
  */
 export async function getCompanyInfo(): Promise<string> {
-  const res = await fetch(`${API_BASE_URL}/api/mentor/company-info`, {
+  const res = await apiRequest(`/api/mentor/company-info`, {
     method: 'GET',
-    headers: getAuthHeaders(),
   })
   return handleApiResponse<string>(res)
 }
@@ -289,9 +253,8 @@ export async function getCompanyInfo(): Promise<string> {
  * Download document via fetch blob
  */
 export async function downloadDocument(documentId: string, fileName?: string): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/api/documents/${documentId}/download`, {
+  const res = await apiRequest(`/api/documents/${documentId}/download`, {
     method: 'GET',
-    headers: getAuthHeaders(false),
   })
 
   if (!res.ok) {

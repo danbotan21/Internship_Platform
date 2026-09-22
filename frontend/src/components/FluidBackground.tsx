@@ -4,6 +4,7 @@ import { vertexShader, fluidShader, displayShader, fluidConfig } from '../utils/
 
 type FluidBackgroundProps = {
   variant?: 'guide' | 'template' | 'policy';
+  animated?: boolean;
 };
 
 const templateConfig = {
@@ -22,7 +23,7 @@ const policyConfig = {
   color4: '#e76f51',
 };
 
-const FluidBackground: React.FC<FluidBackgroundProps> = ({ variant = 'guide' }) => {
+const FluidBackground: React.FC<FluidBackgroundProps> = ({ variant = 'guide', animated = true }) => {
   const shaderConfig = variant === 'template' ? templateConfig : variant === 'policy' ? policyConfig : fluidConfig;
   const containerRef = useRef<HTMLDivElement>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
@@ -30,7 +31,7 @@ const FluidBackground: React.FC<FluidBackgroundProps> = ({ variant = 'guide' }) 
 
   useEffect(() => {
     const container = containerRef.current;
-    if (!container) return;
+    if (!container || !animated) return;
 
     const width = container.clientWidth;
     const height = container.clientHeight;
@@ -191,6 +192,8 @@ const FluidBackground: React.FC<FluidBackgroundProps> = ({ variant = 'guide' }) 
       if (requestRef.current) cancelAnimationFrame(requestRef.current);
       if (rendererRef.current) {
         rendererRef.current.dispose();
+        rendererRef.current.forceContextLoss();
+        rendererRef.current = null;
       }
       fluidTarget1.dispose();
       fluidTarget2.dispose();
@@ -201,9 +204,10 @@ const FluidBackground: React.FC<FluidBackgroundProps> = ({ variant = 'guide' }) 
         container.removeChild(renderer.domElement);
       }
     };
-  }, []);
+  }, [animated, shaderConfig]);
 
-  return <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none" />;
+  return <div ref={containerRef} className="absolute inset-0 z-0 pointer-events-none"
+    style={{ background: `radial-gradient(ellipse at 20% 30%, ${shaderConfig.color2}, transparent 65%), radial-gradient(ellipse at 80% 70%, ${shaderConfig.color3}, transparent 65%), ${shaderConfig.color1}` }} />;
 };
 
 export default FluidBackground;

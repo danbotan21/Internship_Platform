@@ -34,7 +34,7 @@ export default function Sidebar() {
         <div className="mb-5 rounded-xl bg-white/5 px-3 py-3">
           <p className="text-sm font-medium">practica</p>
           <p className="text-xs text-white/50">
-            {role === 'Student' ? 'Student workspace' : 'Mentor workspace'}
+            {role} workspace
           </p>
         </div>
 
@@ -76,7 +76,7 @@ export default function Sidebar() {
           <div className="min-w-0">
             <p className="truncate text-sm">{session?.fullName ?? '—'}</p>
             <p className="text-xs text-white/40">
-              {role === 'Student' ? 'Student' : 'Mentor'}
+              {role}
             </p>
           </div>
         </div>

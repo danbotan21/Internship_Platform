@@ -121,9 +121,7 @@ public class ResourcesController(ResourceService resourceService) : ControllerBa
     public async Task<IActionResult> MarkNotificationAsRead(Guid id, CancellationToken cancellationToken) =>
         await resourceService.MarkNotificationAsReadAsync(id, GetUserId(), cancellationToken) ? NoContent() : NotFound();
 
-    private Guid GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier) is { } value && Guid.TryParse(value, out var userId)
-        ? userId
-        : Guid.Empty;
+    private Guid GetUserId() => User.GetUserId();
 
     private string GetUserRole() => User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
 
