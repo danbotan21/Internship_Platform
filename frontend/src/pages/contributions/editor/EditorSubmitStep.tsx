@@ -125,7 +125,9 @@ export default function EditorSubmitStep({
         </Button>
         {blocking.length ? (
           <p className='mt-2 text-center text-[12px] text-[#a3530f]'>
-            Complete the missing checks above to submit.
+            {blocking.some((check) => check.code === 'collaborators')
+              ? 'Save the draft and wait for every collaborator to confirm. Answer any dispute, then ask them to check the updated version.'
+              : 'Complete the missing checks above to submit.'}
           </p>
         ) : (
           <p className='mt-2 text-center text-[12px] text-[#5d6b64]'>

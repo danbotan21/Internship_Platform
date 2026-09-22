@@ -2,7 +2,6 @@ using InternshipPlatform.BusinessLayer.Interfaces;
 using InternshipPlatform.Domain.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Net.Http.Headers;
 
 namespace InternshipPlatform.API.Controllers;
 
@@ -107,25 +106,6 @@ public sealed class ContributionsController : ContributionControllerBase
         Guid evidenceId,
         CancellationToken ct) =>
         ToActionResult(await _contributionAction.RemoveEvidenceAsync(contributionId, evidenceId, CurrentUserId, ct));
-
-    // Author, collaborators and the student's mentor can open uploaded files.
-    [HttpGet("evidence/{evidenceId:guid}/file")]
-    public async Task<IActionResult> DownloadEvidenceFile(Guid evidenceId, CancellationToken ct)
-    {
-        var result = await _contributionAction.OpenEvidenceFileAsync(evidenceId, CurrentUserId, ct);
-        if (!result.IsSuccess)
-        {
-            return ToActionResult(result);
-        }
-
-        var file = result.Data!;
-        Response.Headers[HeaderNames.XContentTypeOptions] = "nosniff";
-        Response.Headers[HeaderNames.ContentDisposition] = new ContentDispositionHeaderValue("inline")
-        {
-            FileNameStar = file.FileName
-        }.ToString();
-        return File(file.Content, file.ContentType);
-    }
 
     // Current GitHub state (CI, pull request) of the evidence snapshots.
     [HttpGet("{contributionId:guid}/github-status")]

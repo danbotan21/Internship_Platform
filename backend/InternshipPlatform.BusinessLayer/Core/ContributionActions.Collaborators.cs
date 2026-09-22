@@ -142,6 +142,12 @@ public partial class ContributionActions
         }
 
         var now = DateTimeOffset.UtcNow;
+        if (isDisputed && IsEditable(contribution.Status))
+        {
+            // The teammate reviews a new contribution version after their dispute.
+            EnsureEditableRevision(contribution, now, forceNew: true);
+        }
+
         collaborator.Area = request.Area;
         collaborator.RoleDescription = roleDescription;
         collaborator.Status = ContributionCollaboratorStatus.PendingConfirmation;
@@ -151,6 +157,10 @@ public partial class ContributionActions
         {
             collaborator.ResolutionNote = resolutionNote;
             collaborator.ResolvedAtUtc = now;
+        }
+        else
+        {
+            collaborator.ResolutionNote = null;
         }
 
         contribution.UpdatedAtUtc = now;
