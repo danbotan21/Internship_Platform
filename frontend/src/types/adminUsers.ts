@@ -1,14 +1,18 @@
 import type { PagedResult } from './common'
+import type { UserRole } from './auth'
 
 // Mirrors the DTOs in InternshipPlatform.BusinessLayer/Admin/Users.
 // Enums arrive as strings because the API registers JsonStringEnumConverter.
 
 export type UserStatus = 'Active' | 'Deactivated'
 
-export type PlatformRole = 'User' | 'Admin'
+/**
+ * The platform role stored on the account and carried in the access token.
+ * Re-exported from the auth types so there is one definition of it in the app.
+ */
+export type PlatformRole = UserRole
 
-export type DirectoryRole = 'User' | 'Admin' | 'Owner' | 'Recruiter' | 'Mentor'
-
+/** The role a person holds inside the company they belong to, if any. */
 export type CompanyRole = 'Owner' | 'Recruiter' | 'Mentor'
 
 export type UserDirectoryScope = 'All' | 'CompanyMembers' | 'Admins'
@@ -20,7 +24,8 @@ export type UserListItem = {
   fullName: string
   email: string
   status: UserStatus
-  role: DirectoryRole
+  platformRole: PlatformRole
+  companyRole: CompanyRole | null
   organisation: string | null
   lastActiveAt: string | null
 }
@@ -39,7 +44,8 @@ export type UserDirectoryResult = {
 export type UserDirectoryQuery = {
   scope?: UserDirectoryScope
   search?: string
-  role?: DirectoryRole
+  platformRole?: PlatformRole
+  companyRole?: CompanyRole
   status?: UserStatus
   companyId?: string
   sort?: UserDirectorySort
@@ -58,7 +64,7 @@ export type UserDetail = {
   fullName: string
   email: string
   status: UserStatus
-  role: DirectoryRole
+  platformRole: PlatformRole
   university: string | null
   programme: string | null
   academicGroup: string | null

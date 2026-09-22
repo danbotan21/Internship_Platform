@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Bookmark, ChevronDown, Plus, Search } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import Topbar from '../components/Topbar'
 import FluidBackground from '../components/FluidBackground'
 import { useAuth } from '../hooks/authContext'
 import {
@@ -15,7 +14,6 @@ import {
 export default function Resources() {
   return (
     <div className="-m-8">
-      <Topbar />
       <ResourceLibrary />
     </div>
   )
@@ -333,4 +331,3 @@ function ResourceLibrary() {
     </section>
   )
 }
-

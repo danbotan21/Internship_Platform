@@ -17,8 +17,7 @@ public partial class ContributionActions
         }
 
         var contributions = await ContributionGraph(tracking: false)
-            .Where(item => item.Status != ContributionStatus.Draft &&
-                item.Collaborators.Any(collaborator => collaborator.UserId == userId))
+            .Where(item => item.Collaborators.Any(collaborator => collaborator.UserId == userId))
             .OrderByDescending(item => item.UpdatedAtUtc)
             .ToListAsync(ct);
 
@@ -43,7 +42,6 @@ public partial class ContributionActions
         var contribution = await ContributionGraph(tracking: false)
             .FirstOrDefaultAsync(item =>
                 item.Id == contributionId &&
-                item.Status != ContributionStatus.Draft &&
                 item.Collaborators.Any(collaborator => collaborator.UserId == userId),
                 ct);
 
@@ -63,9 +61,9 @@ public partial class ContributionActions
             return error;
         }
 
-        if (collaborator!.Status == ContributionCollaboratorStatus.Confirmed)
+        if (collaborator!.Status != ContributionCollaboratorStatus.PendingConfirmation)
         {
-            return Failure("You already confirmed your participation.", ServiceErrorType.Conflict);
+            return Failure("Only a pending attribution can be confirmed.", ServiceErrorType.Conflict);
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -98,9 +96,9 @@ public partial class ContributionActions
             return error;
         }
 
-        if (collaborator!.Status == ContributionCollaboratorStatus.Disputed)
+        if (collaborator!.Status != ContributionCollaboratorStatus.PendingConfirmation)
         {
-            return Failure("You already disputed this attribution.", ServiceErrorType.Conflict);
+            return Failure("Only a pending attribution can be disputed.", ServiceErrorType.Conflict);
         }
 
         var now = DateTimeOffset.UtcNow;
@@ -122,7 +120,7 @@ public partial class ContributionActions
     {
         var contribution = await ContributionGraph(tracking: true)
             .FirstOrDefaultAsync(
-                item => item.Id == contributionId && item.Status != ContributionStatus.Draft,
+                item => item.Id == contributionId,
                 ct);
         var collaborator = contribution?.Collaborators.FirstOrDefault(item => item.UserId == userId);
         if (contribution is null || collaborator is null)

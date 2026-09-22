@@ -12,7 +12,13 @@ import {
   downloadDocument,
 } from "../api/opportunities"
 
-interface ApplicantFile { name: string; size: string; type: string }
+interface ApplicantFile {
+  name: string
+  rawName?: string
+  size: string
+  type: string
+  fileType?: string
+}
 interface Applicant {
   id: string; firstName: string; lastName: string
   email: string; phone: string; educationLevel: string; fieldOfStudy: string
@@ -26,23 +32,32 @@ interface MentorOpp {
   logoBg: string; logoType: "leaf" | "code" | "chart" | "check"
 }
 
-const MOCK_OPPS: Record<string, MentorOpp> = {
-  "1": { id:"1", title:"Software Development Intern", company:"GreenTech Solutions", location:"Chișinău, MD", type:"Full-time", duration:"3-6 months", logoBg:"bg-[#1b5e3a]", logoType:"leaf" },
-  "2": { id:"2", title:"Frontend Intern", company:"TechVision", location:"Remote", type:"Full-time", duration:"3 months", logoBg:"bg-[#2563eb]", logoType:"code" },
-  "3": { id:"3", title:"Data Analytics Intern", company:"NextGen Analytics", location:"Chișinău, MD", type:"Full-time", duration:"6 months", logoBg:"bg-[#0f172a]", logoType:"chart" },
-  "4": { id:"4", title:"QA Automation Intern", company:"AlphaSystems", location:"Remote", type:"Part-time", duration:"3 months", logoBg:"bg-[#ea580c]", logoType:"check" },
-  "5": { id:"5", title:"Technical Writing Intern", company:"GreenTech Solutions", location:"Remote", type:"Part-time", duration:"2 months", logoBg:"bg-gray-600", logoType:"code" },
-  "6": { id:"6", title:"Sustainability Research Intern", company:"GreenTech Solutions", location:"Chișinău, MD", type:"Full-time", duration:"4 months", logoBg:"bg-[#1b5e3a]", logoType:"leaf" },
-  "7": { id:"7", title:"Business Analysis Intern", company:"NextGen Analytics", location:"Remote", type:"Full-time", duration:"3-6 months", logoBg:"bg-[#0f172a]", logoType:"chart" },
-  "8": { id:"8", title:"Marketing Intern", company:"TechVision", location:"Chișinău, MD", type:"Part-time", duration:"2-3 months", logoBg:"bg-[#ea580c]", logoType:"check" },
+const DEFAULT_OPP: MentorOpp = {
+  id: '',
+  title: 'Internship Opportunity',
+  company: 'Company',
+  location: 'On-site',
+  type: 'Full-time',
+  duration: '',
+  logoBg: 'bg-[#1b5e3a]',
+  logoType: 'leaf',
 }
 
-const MOCK_APPLICANTS: Record<string, Applicant> = {
-  "a1": { id:"a1", firstName:"Daniel", lastName:"Chitanu", email:"daniel.chitanu@gmail.com", phone:"+373 68 123 456", educationLevel:"Bachelor Degree", fieldOfStudy:"Computer Science", expectedGraduation:"June 2026", availability:"Full-time", motivation:"I am passionate about software development and want to gain hands-on experience in a company that builds innovative and sustainable solutions.", appliedDate:"Sep 15, 2026", status:"Under Review", avatar:"bg-[#1b5e3a]", files:[{name:"Resume_Daniel_Chitanu.pdf",size:"245 KB",type:"PDF"},{name:"Cover_Letter.pdf",size:"180 KB",type:"PDF"},{name:"Transcript.pdf",size:"350 KB",type:"PDF"}] },
-  "a2": { id:"a2", firstName:"Maria", lastName:"Ionescu", email:"maria.ionescu@student.utm.md", phone:"+373 79 456 789", educationLevel:"Master Degree", fieldOfStudy:"Software Engineering", expectedGraduation:"January 2027", availability:"Part-time", motivation:"With a strong background in software engineering and a genuine interest in building scalable applications, I am eager to contribute to your team.", appliedDate:"Sep 14, 2026", status:"Accepted", avatar:"bg-[#2563eb]", files:[{name:"Maria_Ionescu_CV.pdf",size:"312 KB",type:"PDF"},{name:"Portfolio_Links.pdf",size:"95 KB",type:"PDF"}] },
-  "a3": { id:"a3", firstName:"Alexandru", lastName:"Moraru", email:"alex.moraru@mail.com", phone:"+373 60 789 012", educationLevel:"Bachelor Degree", fieldOfStudy:"Information Technology", expectedGraduation:"July 2026", availability:"Full-time", motivation:"I have been following the company work for over a year and deeply admire the focus on sustainability.", appliedDate:"Sep 13, 2026", status:"Pending", avatar:"bg-[#ea580c]", files:[{name:"CV_Alexandru_Moraru.pdf",size:"198 KB",type:"PDF"},{name:"Cover_Letter_AlexMoraru.pdf",size:"155 KB",type:"PDF"},{name:"Recommendation_Letter.pdf",size:"420 KB",type:"PDF"}] },
-  "a4": { id:"a4", firstName:"Elena", lastName:"Popescu", email:"elena.popescu@techuni.md", phone:"+373 69 321 654", educationLevel:"Bachelor Degree", fieldOfStudy:"Computer Engineering", expectedGraduation:"May 2026", availability:"Full-time", motivation:"As a driven student with hands-on project experience in React and TypeScript, I am confident I can contribute to your frontend team from day one.", appliedDate:"Sep 12, 2026", status:"Rejected", avatar:"bg-[#0f172a]", files:[{name:"Elena_Popescu_Resume.pdf",size:"267 KB",type:"PDF"},{name:"GitHub_Portfolio.pdf",size:"88 KB",type:"PDF"}] },
-  "a5": { id:"a5", firstName:"Andrei", lastName:"Vacaru", email:"andrei.vacaru@gmail.com", phone:"+373 62 654 321", educationLevel:"Bachelor Degree", fieldOfStudy:"Mathematics and Informatics", expectedGraduation:"September 2026", availability:"Full-time", motivation:"I have a strong foundation in algorithms and data structures, and I have built several personal projects using modern frameworks.", appliedDate:"Sep 10, 2026", status:"Under Review", avatar:"bg-purple-600", files:[{name:"Andrei_Vacaru_CV.pdf",size:"302 KB",type:"PDF"},{name:"Transcript_2026.pdf",size:"410 KB",type:"PDF"}] },
+const DEFAULT_APPLICANT: Applicant = {
+  id: '',
+  firstName: '',
+  lastName: '',
+  email: '',
+  phone: '',
+  educationLevel: '',
+  fieldOfStudy: '',
+  expectedGraduation: '',
+  availability: '',
+  motivation: '',
+  appliedDate: '',
+  status: 'Under Review',
+  avatar: 'bg-[#1b5e3a]',
+  files: [],
 }
 
 const STATUS_OPTIONS = [
@@ -61,12 +76,12 @@ function LogoIcon({ type, cls = "w-5 h-5" }: { type: string; cls?: string }) {
 export default function ApplicantReview() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const oppId  = searchParams.get("oppId")  || "1"
-  const userId = searchParams.get("userId") || "a1"
+  const oppId  = searchParams.get("oppId")  || ""
+  const userId = searchParams.get("userId") || ""
   const appId  = searchParams.get("appId")  || searchParams.get("userId") || ""
 
-  const [opp, setOpp] = useState<MentorOpp>(() => MOCK_OPPS[oppId] ?? MOCK_OPPS["1"])
-  const [applicant, setApplicant] = useState<Applicant>(() => MOCK_APPLICANTS[userId] ?? MOCK_APPLICANTS["a1"])
+  const [opp, setOpp] = useState<MentorOpp>(DEFAULT_OPP)
+  const [applicant, setApplicant] = useState<Applicant>(DEFAULT_APPLICANT)
 
   const [feedback, setFeedback]             = useState("")
   const [selectedStatus, setSelectedStatus] = useState<Applicant["status"]>("Under Review")
@@ -75,6 +90,8 @@ export default function ApplicantReview() {
   const [isLoading, setIsLoading]           = useState(false)
   const [isSubmitting, setIsSubmitting]     = useState(false)
   const [submitError, setSubmitError]       = useState<string | null>(null)
+  const [isDownloading, setIsDownloading]   = useState(false)
+  const [downloadError, setDownloadError]   = useState<string | null>(null)
 
   useEffect(() => {
     async function loadData() {
@@ -101,17 +118,41 @@ export default function ApplicantReview() {
           if (appData) {
             const files: ApplicantFile[] = []
             if (appData.resumePath) {
+              const rawName = appData.resumePath.split(/[\/\\]/).pop() || 'Resume.pdf'
+              const displayName = rawName.replace(/^[0-9a-fA-F-]{36}_/, '')
+              const ext = displayName.split('.').pop()?.toUpperCase() || 'PDF'
               files.push({
-                name: appData.resumePath.split(/[\/\\]/).pop() || 'Resume.pdf',
-                size: '245 KB',
-                type: 'PDF',
+                name: displayName,
+                rawName,
+                size: 'Document',
+                type: ext,
+                fileType: 'resume',
               })
             }
             if (appData.coverLetterPath) {
+              const rawName = appData.coverLetterPath.split(/[\/\\]/).pop() || 'Cover_Letter.pdf'
+              const displayName = rawName.replace(/^[0-9a-fA-F-]{36}_/, '')
+              const ext = displayName.split('.').pop()?.toUpperCase() || 'PDF'
               files.push({
-                name: appData.coverLetterPath.split(/[\/\\]/).pop() || 'Cover_Letter.pdf',
-                size: '180 KB',
-                type: 'PDF',
+                name: displayName,
+                rawName,
+                size: 'Document',
+                type: ext,
+                fileType: 'coverLetter',
+              })
+            }
+            if (Array.isArray(appData.additionalFilePaths)) {
+              appData.additionalFilePaths.forEach((p) => {
+                const rawName = p.split(/[\/\\]/).pop() || 'Additional_File.pdf'
+                const displayName = rawName.replace(/^[0-9a-fA-F-]{36}_/, '')
+                const ext = displayName.split('.').pop()?.toUpperCase() || 'FILE'
+                files.push({
+                  name: displayName,
+                  rawName,
+                  size: 'Document',
+                  type: ext,
+                  fileType: 'additional',
+                })
               })
             }
 
@@ -403,28 +444,60 @@ export default function ApplicantReview() {
       </div>
 
       {previewFile && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4" onClick={() => setPreviewFile(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4" onClick={() => { setPreviewFile(null); setDownloadError(null) }}>
           <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-gray-900">Download File</h3>
-              <button type="button" onClick={() => setPreviewFile(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-4 h-4" /></button>
+              <button type="button" onClick={() => { setPreviewFile(null); setDownloadError(null) }} className="text-gray-400 hover:text-gray-600 cursor-pointer"><X className="w-4 h-4" /></button>
             </div>
             <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3">
               <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">{previewFile.type}</span>
-              <div><p className="text-xs font-semibold text-gray-800">{previewFile.name}</p><p className="text-xs text-gray-400">{previewFile.size}</p></div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-gray-800 truncate">{previewFile.name}</p>
+                <p className="text-xs text-gray-400">{previewFile.size}</p>
+              </div>
             </div>
+            {downloadError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5">{downloadError}</p>
+            )}
             <p className="text-xs text-gray-500">Document ready to download from the application record.</p>
             <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => setPreviewFile(null)} className="px-4 py-2 text-xs font-semibold text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer">Cancel</button>
               <button
                 type="button"
-                onClick={() => {
-                  downloadDocument(appId || userId, previewFile.name).catch(() => {})
-                  setPreviewFile(null)
-                }}
-                className="px-4 py-2 text-xs font-semibold text-white bg-[#1b5e3a] hover:bg-[#154d2f] rounded-xl flex items-center gap-2 cursor-pointer"
+                disabled={isDownloading}
+                onClick={() => { setPreviewFile(null); setDownloadError(null) }}
+                className="px-4 py-2 text-xs font-semibold text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer disabled:opacity-50"
               >
-                <Download className="w-3.5 h-3.5" />Download
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDownloading}
+                onClick={async () => {
+                  setIsDownloading(true)
+                  setDownloadError(null)
+                  try {
+                    await downloadDocument(appId || userId, previewFile.rawName || previewFile.name, previewFile.fileType)
+                    setPreviewFile(null)
+                  } catch (err: any) {
+                    setDownloadError(err.message || 'Failed to download file.')
+                  } finally {
+                    setIsDownloading(false)
+                  }
+                }}
+                className="px-4 py-2 text-xs font-semibold text-white bg-[#1b5e3a] hover:bg-[#154d2f] rounded-xl flex items-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    Download
+                  </>
+                )}
               </button>
             </div>
           </div>

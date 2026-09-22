@@ -60,7 +60,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("Type");
 
-                    b.ToTable("Conversations", (string)null);
+                    b.ToTable("Conversations");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.ConversationMember", b =>
@@ -78,7 +78,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ConversationMembers", (string)null);
+                    b.ToTable("ConversationMembers");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Application", b =>
@@ -165,7 +165,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("StudentId");
 
-                    b.ToTable("Applications", (string)null);
+                    b.ToTable("Applications");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Company", b =>
@@ -220,7 +220,7 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.HasIndex("RegistrationNumber")
                         .IsUnique();
 
-                    b.ToTable("Companies", (string)null);
+                    b.ToTable("Companies");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.CompanyMembership", b =>
@@ -243,7 +243,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("CompanyId");
 
-                    b.ToTable("CompanyMemberships", (string)null);
+                    b.ToTable("CompanyMemberships");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.CompanyVerificationRequest", b =>
@@ -336,7 +336,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("Status");
 
-                    b.ToTable("CompanyVerificationRequests", (string)null);
+                    b.ToTable("CompanyVerificationRequests");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Contribution", b =>
@@ -813,7 +813,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Documents", (string)null);
+                    b.ToTable("Documents");
 
                     b.HasData(
                         new
@@ -933,7 +933,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("DocumentId");
 
-                    b.ToTable("DocumentAudits", (string)null);
+                    b.ToTable("DocumentAudits");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Notification", b =>
@@ -968,7 +968,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("RecipientUserId", "IsRead");
 
-                    b.ToTable("Notifications", (string)null);
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Opportunity", b =>
@@ -1070,7 +1070,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Opportunities", (string)null);
+                    b.ToTable("Opportunities");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Resource", b =>
@@ -1152,7 +1152,7 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.HasIndex("Slug")
                         .IsUnique();
 
-                    b.ToTable("Resources", (string)null);
+                    b.ToTable("Resources");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.ResourceFavorite", b =>
@@ -1168,7 +1168,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasKey("ResourceId", "UserId");
 
-                    b.ToTable("ResourceFavorites", (string)null);
+                    b.ToTable("ResourceFavorites");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Message", b =>
@@ -1207,7 +1207,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("ConversationId", "CreatedAt");
 
-                    b.ToTable("Messages", (string)null);
+                    b.ToTable("Messages");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.MessageDelivery", b =>
@@ -1225,7 +1225,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("MessageDeliveries", (string)null);
+                    b.ToTable("MessageDeliveries");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.MessageRead", b =>
@@ -1243,7 +1243,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("MessageReads", (string)null);
+                    b.ToTable("MessageReads");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Milestone", b =>
@@ -1287,7 +1287,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("StudentUserId");
 
-                    b.ToTable("Milestones", (string)null);
+                    b.ToTable("Milestones");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Notification", b =>
@@ -1332,7 +1332,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("SenderId");
 
-                    b.ToTable("MessagingNotifications", (string)null);
+                    b.ToTable("MessagingNotifications");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.NotificationRecipient", b =>
@@ -1350,7 +1350,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("NotificationRecipients", (string)null);
+                    b.ToTable("NotificationRecipients");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.RefreshToken", b =>
@@ -1382,7 +1382,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("RefreshTokens", (string)null);
+                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.SupervisorFeedback", b =>
@@ -1418,7 +1418,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("SupervisorUserId");
 
-                    b.ToTable("SupervisorFeedback", (string)null);
+                    b.ToTable("SupervisorFeedback");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.TaskLogEntry", b =>
@@ -1447,7 +1447,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("StudentUserId");
 
-                    b.ToTable("TaskLogEntries", (string)null);
+                    b.ToTable("TaskLogEntries");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.User", b =>
@@ -1526,7 +1526,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasIndex("MentorId");
 
-                    b.ToTable("Users", (string)null);
+                    b.ToTable("Users");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Conversation", b =>
@@ -1942,7 +1942,7 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                             b1.HasKey("UserId");
 
-                            b1.ToTable("Users", (string)null);
+                            b1.ToTable("Users");
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");

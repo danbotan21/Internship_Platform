@@ -2,6 +2,7 @@ import { ArrowLeft, Pencil, Trash2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { contributionApi } from '../../api/contributions'
+import { ApiError } from '../../api/http'
 import { useAuth } from '../../hooks/authContext'
 import CategoryTag from '../../components/contributions/CategoryTag'
 import ContributionOverview from '../../components/contributions/ContributionOverview'
@@ -13,7 +14,7 @@ import EvidenceList from '../../components/contributions/evidence/EvidenceList'
 import ReviewResultCard from '../../components/contributions/review/ReviewResultCard'
 import Alert, { type AlertTone } from '../../components/ui/Alert'
 import Button from '../../components/ui/Button'
-import Modal from '../../components/ui/Modal'
+import ContributionModal from '../../components/contributions/ContributionModal'
 import PageHeading from '../../components/ui/PageHeading'
 import { formatDateTime } from '../../components/ui/formatDateTime'
 import { card, sectionTitle } from '../../components/ui/styles'
@@ -26,8 +27,8 @@ function statusGuidance(contribution: ContributionDetails): { tone: AlertTone; t
     case 'draft':
       return {
         tone: 'info',
-        title: 'Draft — only you can see it',
-        text: 'Complete the checklist and submit it when the evidence is attached.',
+        title: 'Draft — awaiting your submission',
+        text: 'Listed collaborators can confirm or dispute their role now. Submit after all have confirmed.',
       }
     case 'submitted':
       return disputed
@@ -69,7 +70,21 @@ export default function StudentContributionPage() {
   const { session } = useAuth()
   const [flash, setFlash] = useState(() => (location.state as { flash?: string } | null)?.flash ?? '')
   const { data: contribution, setData, error: loadError, loading } = useLoadedData(
-    () => contributionApi.getMine(id),
+    async () => {
+      try {
+        return await contributionApi.getMine(id)
+      } catch (reason) {
+        if (reason instanceof ApiError && reason.status === 404) {
+          try {
+            await contributionApi.getAttributed(id)
+            navigate(`/contributions/shared/${id}`, { replace: true })
+          } catch {
+            navigate('/contributions', { replace: true })
+          }
+        }
+        throw reason
+      }
+    },
     id,
   )
   const { busy, error, setError, run } = useAction()
@@ -165,7 +180,7 @@ export default function StudentContributionPage() {
           <AttributionPanel
             contribution={contribution}
             viewerId={session?.userId ?? ''}
-            canAnswerDisputes={contribution.status === 'submitted'}
+            canAnswerDisputes={contribution.status !== 'validated' && contribution.status !== 'rejected'}
             busy={busy}
             onUpdate={(collaborator, input) =>
               apply(() => contributionApi.updateCollaborator(contribution.id, collaborator.id, input))
@@ -194,7 +209,7 @@ export default function StudentContributionPage() {
       </div>
 
       {confirmDelete ? (
-        <Modal
+        <ContributionModal
           title='Delete this draft?'
           description='The draft and its uploaded files are removed permanently.'
           onClose={() => setConfirmDelete(false)}
@@ -210,7 +225,7 @@ export default function StudentContributionPage() {
           }
         >
           <p className='text-[14px] text-[#2b3833]'>“{revision.title || 'Untitled draft'}” will be deleted.</p>
-        </Modal>
+        </ContributionModal>
       ) : null}
     </>
   )

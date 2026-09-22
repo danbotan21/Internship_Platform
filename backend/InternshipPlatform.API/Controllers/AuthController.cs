@@ -31,6 +31,10 @@ public class AuthController(IAuthService authService) : ControllerBase
         {
             return Unauthorized(new { message = ex.Message });
         }
+        catch (AccountDeactivatedException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
+        }
     }
 
     [HttpPost("refresh")]
@@ -43,6 +47,10 @@ public class AuthController(IAuthService authService) : ControllerBase
         catch (InvalidRefreshTokenException ex)
         {
             return Unauthorized(new { message = ex.Message });
+        }
+        catch (AccountDeactivatedException ex)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = ex.Message });
         }
     }
 

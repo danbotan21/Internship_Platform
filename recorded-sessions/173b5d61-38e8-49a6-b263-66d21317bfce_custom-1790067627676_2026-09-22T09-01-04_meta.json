@@ -1,0 +1,17 @@
+{
+  "sessionId": "sess_1790067664687",
+  "studentId": "173b5d61-38e8-49a6-b263-66d21317bfce",
+  "studentName": "Danu",
+  "quizId": "custom-1790067627676",
+  "quizTitle": "testing",
+  "startedAt": "2026-09-22T09:01:01.612Z",
+  "finishedAt": "2026-09-22T09:01:04.687Z",
+  "durationSeconds": 3,
+  "score": 2,
+  "totalQuestions": 2,
+  "percentage": 100,
+  "isPassed": true,
+  "isCompromised": false,
+  "violationsCount": 0,
+  "violations": []
+}

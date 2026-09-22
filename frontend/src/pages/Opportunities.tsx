@@ -10,20 +10,17 @@ import {
   Leaf,
   Code2,
   X,
-  Bookmark,
   RotateCcw,
   BarChart3,
   CheckCircle2,
   Loader2,
+  AlertCircle,
 } from 'lucide-react'
 import { CustomSelect } from '../components/CustomSelect'
-import { MOCK_OPPORTUNITIES } from '../types/opportunities'
 import type { Opportunity } from '../types/opportunities'
 import {
   getOpportunities,
   getOpportunityById,
-  saveOpportunity,
-  unsaveOpportunity,
 } from '../api/opportunities'
 
 export default function Opportunities() {
@@ -34,7 +31,6 @@ export default function Opportunities() {
   const [sortBy, setSortBy] = useState('Most Recent')
   const [selectedOpportunity, setSelectedOpportunity] =
     useState<Opportunity | null>(null)
-  const [isSaved, setIsSaved] = useState(false)
   const [isFilterOpen, setIsFilterOpen] = useState(false)
 
   // Filter States
@@ -58,11 +54,11 @@ export default function Opportunities() {
       if (res.items && res.items.length > 0) {
         setOpportunities(res.items)
       } else {
-        // Use initial mock as baseline if DB has no seed records
-        setOpportunities(MOCK_OPPORTUNITIES)
+        setOpportunities([])
       }
-    } catch {
-      setOpportunities(MOCK_OPPORTUNITIES)
+    } catch (err) {
+      console.error('Failed to load opportunities:', err)
+      setOpportunities([])
     } finally {
       setIsLoading(false)
     }
@@ -72,32 +68,11 @@ export default function Opportunities() {
     fetchOpportunitiesList()
   }, [fetchOpportunitiesList])
 
-  const handleToggleSave = async (oppId: string, currentlySaved: boolean) => {
-    try {
-      if (currentlySaved) {
-        await unsaveOpportunity(oppId)
-      } else {
-        await saveOpportunity(oppId)
-      }
-      setIsSaved(!currentlySaved)
-      setOpportunities((prev) =>
-        prev.map((o) => (o.id === oppId ? { ...o, isSaved: !currentlySaved } : o))
-      )
-    } catch {
-      setIsSaved(!currentlySaved)
-      setOpportunities((prev) =>
-        prev.map((o) => (o.id === oppId ? { ...o, isSaved: !currentlySaved } : o))
-      )
-    }
-  }
-
   const handleOpenDetail = async (opp: Opportunity) => {
     setSelectedOpportunity(opp)
-    setIsSaved(Boolean(opp.isSaved))
     try {
       const fullDetail = await getOpportunityById(opp.id)
       setSelectedOpportunity(fullDetail)
-      setIsSaved(Boolean(fullDetail.isSaved))
     } catch {
       // Keep opp from list
     }
@@ -122,10 +97,10 @@ export default function Opportunities() {
     // Search query matching
     const query = searchQuery.toLowerCase()
     const matchesQuery =
-      opp.title.toLowerCase().includes(query) ||
-      opp.company.toLowerCase().includes(query) ||
-      opp.tags.some((tag) => tag.toLowerCase().includes(query)) ||
-      opp.technologies.some((tech) => tech.toLowerCase().includes(query))
+      (opp.title && opp.title.toLowerCase().includes(query)) ||
+      (opp.company && opp.company.toLowerCase().includes(query)) ||
+      (Array.isArray(opp.tags) && opp.tags.some((tag) => tag && tag.toLowerCase().includes(query))) ||
+      (Array.isArray(opp.technologies) && opp.technologies.some((tech) => tech && tech.toLowerCase().includes(query)))
 
     if (!matchesQuery) return false
 
@@ -157,7 +132,8 @@ export default function Opportunities() {
 
     // Language / Technology filter
     if (filterLanguage !== 'All') {
-      const matchTech = opp.technologies.some((t) => {
+      const matchTech = Array.isArray(opp.technologies) && opp.technologies.some((t) => {
+        if (!t) return false
         if (filterLanguage === 'C / C++') return t === 'C++' || t === 'C'
         if (filterLanguage === 'C# / .NET') return t === 'C#' || t === '.NET'
         if (filterLanguage === 'Java') return t === 'Java'
@@ -411,7 +387,16 @@ export default function Opportunities() {
                   </p>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-0.5">
+                <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                  {opp.status === 'Closed' ? (
+                    <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                      Closed
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Open
+                    </span>
+                  )}
                   {opp.tags.map((tag, idx) => (
                     <span
                       key={idx}
@@ -464,7 +449,29 @@ export default function Opportunities() {
           </div>
         )}
 
-        {!isLoading && filteredOpportunities.length === 0 && (
+        {!isLoading && opportunities.length === 0 && (
+          <div className="bg-white border border-gray-200/70 rounded-2xl p-12 text-center space-y-4 shadow-xs">
+            <div className="w-16 h-16 bg-orange-50 text-[#ff5500] rounded-2xl flex items-center justify-center mx-auto shadow-xs">
+              <Briefcase className="w-8 h-8" />
+            </div>
+            <div className="space-y-1.5 max-w-md mx-auto">
+              <h3 className="text-lg font-bold text-gray-900">We're currently out of internships!</h3>
+              <p className="text-sm text-gray-500 leading-relaxed">
+                There are no active internship opportunities available at the moment. Please check back soon as new positions are posted regularly.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={fetchOpportunitiesList}
+              className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Refresh
+            </button>
+          </div>
+        )}
+
+        {!isLoading && opportunities.length > 0 && filteredOpportunities.length === 0 && (
           <div className="bg-white border border-gray-200/70 rounded-2xl p-10 text-center space-y-3">
             <p className="text-gray-600 font-medium">
               No opportunities found matching your active filter criteria.
@@ -513,14 +520,25 @@ export default function Opportunities() {
                 </div>
 
                 <div className="space-y-1">
-                  <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 leading-tight">
-                    {selectedOpportunity.title}
-                  </h2>
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 leading-tight">
+                      {selectedOpportunity.title}
+                    </h2>
+                    {selectedOpportunity.status === 'Closed' ? (
+                      <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-rose-50 text-rose-700 border border-rose-200">
+                        Closed
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Open
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs sm:text-sm font-medium text-gray-500">
                     {selectedOpportunity.company}
                   </p>
                   <div className="flex flex-wrap gap-2 pt-1">
-                    {selectedOpportunity.tags.map((tag, idx) => (
+                    {(selectedOpportunity.tags || []).map((tag, idx) => (
                       <span
                         key={idx}
                         className="px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-md"
@@ -532,30 +550,36 @@ export default function Opportunities() {
                 </div>
               </div>
 
-              {/* Header Action Buttons (Save stacked under Apply Now) */}
-              <div className="flex flex-col gap-2 pt-1 sm:pt-0 shrink-0 min-w-[130px]">
-                <button
-                  type="button"
-                  onClick={() => navigate(`/opportunities/apply?id=${selectedOpportunity.id}`)}
-                  className="bg-[#ff5500] hover:bg-[#e64d00] text-white font-medium text-sm px-6 py-2 sm:py-2.5 rounded-xl transition-colors cursor-pointer shadow-xs w-full text-center"
-                >
-                  Apply Now
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleToggleSave(selectedOpportunity.id, isSaved)}
-                  className={`border font-medium text-sm px-5 py-1.5 sm:py-2 rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs w-full ${isSaved
-                      ? 'border-[#ff5500] bg-orange-50 text-[#ff5500]'
-                      : 'border-gray-300 hover:bg-gray-50 text-gray-700'
-                    }`}
-                >
-                  <Bookmark
-                    className={`w-4 h-4 ${isSaved ? 'fill-[#ff5500]' : ''}`}
-                  />
-                  <span>{isSaved ? 'Saved' : 'Save'}</span>
-                </button>
+              {/* Header Action Button */}
+              <div className="pt-1 sm:pt-0 shrink-0 min-w-[150px]">
+                {selectedOpportunity.status === 'Closed' ? (
+                  <button
+                    type="button"
+                    disabled
+                    className="bg-gray-100 border border-gray-200 text-gray-400 font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-xl cursor-not-allowed shadow-none w-full text-center"
+                  >
+                    Applications Closed
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => navigate(`/opportunities/apply?id=${selectedOpportunity.id}`)}
+                    className="bg-[#ff5500] hover:bg-[#e64d00] text-white font-medium text-sm px-6 py-2.5 rounded-xl transition-colors cursor-pointer shadow-xs w-full text-center"
+                  >
+                    Apply Now
+                  </button>
+                )}
               </div>
             </div>
+
+            {selectedOpportunity.status === 'Closed' && (
+              <div className="bg-rose-50 border border-rose-200 rounded-xl p-3 text-xs text-rose-800 flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>
+                  Applications for this internship are currently closed. New applications cannot be submitted.
+                </span>
+              </div>
+            )}
 
             <hr className="border-gray-100" />
 
@@ -620,12 +644,15 @@ export default function Opportunities() {
                   Responsibilities
                 </h3>
                 <ul className="space-y-1.5 text-xs sm:text-sm text-gray-600">
-                  {selectedOpportunity.responsibilities.map((resp, idx) => (
+                  {(selectedOpportunity.responsibilities || []).map((resp, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <span className="text-gray-800 font-bold">•</span>
                       <span>{resp}</span>
                     </li>
                   ))}
+                  {(!selectedOpportunity.responsibilities || selectedOpportunity.responsibilities.length === 0) && (
+                    <li className="text-gray-400 italic">No specific responsibilities listed.</li>
+                  )}
                 </ul>
               </div>
 
@@ -635,12 +662,15 @@ export default function Opportunities() {
                   Requirements
                 </h3>
                 <ul className="space-y-1.5 text-xs sm:text-sm text-gray-600">
-                  {selectedOpportunity.requirements.map((req, idx) => (
+                  {(selectedOpportunity.requirements || []).map((req, idx) => (
                     <li key={idx} className="flex items-start gap-2">
                       <span className="text-gray-800 font-bold">•</span>
                       <span>{req}</span>
                     </li>
                   ))}
+                  {(!selectedOpportunity.requirements || selectedOpportunity.requirements.length === 0) && (
+                    <li className="text-gray-400 italic">No specific requirements listed.</li>
+                  )}
                 </ul>
               </div>
             </div>
@@ -651,7 +681,7 @@ export default function Opportunities() {
                 Technologies
               </h3>
               <div className="flex flex-wrap gap-2">
-                {selectedOpportunity.technologies.map((tech, idx) => (
+                {(selectedOpportunity.technologies || []).map((tech, idx) => (
                   <span
                     key={idx}
                     className="px-3 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-lg"

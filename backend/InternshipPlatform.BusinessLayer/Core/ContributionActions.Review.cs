@@ -231,9 +231,9 @@ public partial class ContributionActions
         ReviewContributionRequest request)
     {
         if (request.Outcome == ContributionReviewOutcome.Validated &&
-            contribution.Collaborators.Any(item => item.Status == ContributionCollaboratorStatus.Disputed))
+            contribution.Collaborators.Any(item => item.Status != ContributionCollaboratorStatus.Confirmed))
         {
-            return "Attribution is disputed. Wait until the author resolves it, request changes or reject.";
+            return "All collaborators must confirm their attribution before validation.";
         }
 
         if (request.Outcome == ContributionReviewOutcome.ChangesRequested)

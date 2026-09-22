@@ -3,13 +3,14 @@ import type { VaultStats } from '../../types/documentation'
 
 interface MetricHeaderProps {
   stats: VaultStats
+  onMetricClick: (metric: 'pending' | 'agreements' | 'expiring' | 'verification') => void
 }
 
-export default function MetricHeader({ stats }: MetricHeaderProps) {
+export default function MetricHeader({ stats, onMetricClick }: MetricHeaderProps) {
   return (
     <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {/* 1. Pending Sign-offs */}
-      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white/60 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-white/80 relative overflow-hidden">
+      <button type="button" onClick={() => onMetricClick('pending')} className="group relative flex items-start justify-between overflow-hidden rounded-2xl border border-white/40 bg-white p-6 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#EAF2EC] rounded-full blur-[40px] -mr-10 -mt-10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
         <div className="relative z-10">
           <p className="text-sm font-semibold tracking-wide text-[#5d6b64] uppercase">Pending Sign-offs</p>
@@ -24,10 +25,10 @@ export default function MetricHeader({ stats }: MetricHeaderProps) {
         <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#1e3a2c] to-[#2c533e] text-white shadow-inner group-hover:scale-110 transition-transform duration-300">
           <Clock className="h-5 w-5" />
         </div>
-      </div>
+      </button>
 
       {/* 2. Completed Agreements */}
-      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white/60 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-white/80 relative overflow-hidden">
+      <button type="button" onClick={() => onMetricClick('agreements')} className="group relative flex items-start justify-between overflow-hidden rounded-2xl border border-white/40 bg-white p-6 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500">
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100 rounded-full blur-[40px] -mr-10 -mt-10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
         <div className="relative z-10">
           <p className="text-sm font-semibold tracking-wide text-[#5d6b64] uppercase">Completed Agreements</p>
@@ -42,10 +43,10 @@ export default function MetricHeader({ stats }: MetricHeaderProps) {
         <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-inner group-hover:scale-110 transition-transform duration-300">
           <CheckCircle2 className="h-5 w-5" />
         </div>
-      </div>
+      </button>
 
       {/* 3. Expiring Documents */}
-      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white/60 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-white/80 relative overflow-hidden">
+      <button type="button" onClick={() => onMetricClick('expiring')} className="group relative flex items-start justify-between overflow-hidden rounded-2xl border border-white/40 bg-white p-6 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500">
         <div className="absolute top-0 right-0 w-32 h-32 bg-amber-100 rounded-full blur-[40px] -mr-10 -mt-10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
         <div className="relative z-10">
           <p className="text-sm font-semibold tracking-wide text-[#5d6b64] uppercase">Expiring Documents</p>
@@ -60,10 +61,10 @@ export default function MetricHeader({ stats }: MetricHeaderProps) {
         <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 text-white shadow-inner group-hover:scale-110 transition-transform duration-300">
           <AlertTriangle className="h-5 w-5" />
         </div>
-      </div>
+      </button>
 
       {/* 4. Verification Score */}
-      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white/60 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-white/80 relative overflow-hidden">
+      <button type="button" onClick={() => onMetricClick('verification')} className="group relative flex items-start justify-between overflow-hidden rounded-2xl border border-white/40 bg-white p-6 text-left shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-emerald-500">
         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full blur-[40px] -mr-10 -mt-10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
         <div className="relative z-10">
           <p className="text-sm font-semibold tracking-wide text-[#5d6b64] uppercase">Verification Score</p>
@@ -79,7 +80,7 @@ export default function MetricHeader({ stats }: MetricHeaderProps) {
         <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white shadow-inner group-hover:scale-110 transition-transform duration-300">
           <ShieldCheck className="h-5 w-5" />
         </div>
-      </div>
+      </button>
     </div>
   )
 }

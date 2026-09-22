@@ -57,3 +57,10 @@ Desktop.ini
 
 # Contribution evidence files uploaded while running locally
 backend/InternshipPlatform.API/App_Data/
+
+# Temporary .NET CLI home
+.dotnet_cli*/
+.dotnet/
+**/.dotnet/
+
+

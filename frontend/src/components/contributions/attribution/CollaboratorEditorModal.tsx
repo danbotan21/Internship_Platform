@@ -3,7 +3,7 @@ import type { Collaborator, ContributionCategory } from '../../../types/contribu
 import Alert from '../../ui/Alert'
 import Button from '../../ui/Button'
 import Field from '../../ui/Field'
-import Modal from '../../ui/Modal'
+import ContributionModal from '../ContributionModal'
 import { inputBase, textareaBase } from '../../ui/styles'
 import { categories, categoryMeta } from '../contributionLabels'
 
@@ -29,7 +29,7 @@ export default function CollaboratorEditorModal({
     roleDescription.trim().length >= 10 && (!disputed || resolutionNote.trim().length >= 10)
 
   return (
-    <Modal
+    <ContributionModal
       title={disputed ? `Answer ${collaborator.name}'s dispute` : `Edit ${collaborator.name}'s role`}
       description='Changing the role asks the collaborator to confirm again.'
       onClose={onClose}
@@ -106,6 +106,6 @@ export default function CollaboratorEditorModal({
           </Field>
         ) : null}
       </div>
-    </Modal>
+    </ContributionModal>
   )
 }

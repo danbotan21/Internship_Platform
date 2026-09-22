@@ -13,7 +13,6 @@ const checksLabel: Record<string, { label: string; tone: string }> = {
   success: { label: 'CI passed', tone: 'text-[#17603f]' },
   failure: { label: 'CI failed', tone: 'text-[#a1332b]' },
   pending: { label: 'CI running', tone: 'text-[#2f5aa8]' },
-  none: { label: 'No CI configured', tone: 'text-[#8a958f]' },
 }
 
 type GitHubEvidenceBodyProps = {
@@ -60,7 +59,7 @@ export default function GitHubEvidenceBody({ evidence, live }: GitHubEvidenceBod
         ) : null}
       </div>
 
-      {live ? (
+      {live && (live.error || liveChecks || stateChanged) ? (
         <p className='mt-2 text-[12px] text-[#5d6b64]'>
           <span className='font-semibold text-[#3d4a44]'>Live on GitHub:</span>{' '}
           {live.error ? (
