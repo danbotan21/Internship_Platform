@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   SquarePen,
@@ -23,6 +23,16 @@ import QuestionBuilder from '../components/quizzes/QuestionBuilder'
 import QuizAnalyticsDashboard from '../components/quizzes/QuizAnalyticsDashboard'
 import { useAuth } from '../hooks/authContext'
 import type { QuizCatalogItem } from '../types/quiz'
+import {
+  fetchQuizzes,
+  fetchQuizByIdOrSlug,
+  createCustomQuiz,
+  updateCustomQuiz,
+  deleteCustomQuiz,
+  type QuizDto,
+  type QuizDetailDto,
+  type CreateQuizPayload,
+} from '../api/quizzes'
 
 const CUSTOM_QUIZZES_KEY = 'internflow_custom_quizzes'
 
@@ -39,6 +49,48 @@ function loadSavedCustomQuizzes(): QuizCatalogItem[] {
   return []
 }
 
+function mapDtoToCatalogItem(dto: QuizDto | QuizDetailDto): QuizCatalogItem {
+  const isCustom = dto.isCustom
+  const catalogMatch = quizzesCatalog.find((c) => c.id === dto.slug || c.id === dto.id)
+  const theme = isCustom
+    ? { iconBg: 'bg-emerald-50', iconBorder: 'border-emerald-200/60', iconColor: 'text-emerald-700' }
+    : (catalogMatch?.theme ?? {
+        iconBg: 'bg-emerald-50',
+        iconBorder: 'border-emerald-200/60',
+        iconColor: 'text-emerald-700',
+      })
+
+  const questions =
+    'questions' in dto && Array.isArray((dto as QuizDetailDto).questions) && (dto as QuizDetailDto).questions.length > 0
+      ? (dto as QuizDetailDto).questions.map((q) => ({
+          id: q.id,
+          numberLabel: q.numberLabel,
+          category: q.category,
+          question: q.questionText,
+          hint: q.hint,
+          correctOptionId: q.correctOptionId,
+          options: q.options.map((opt) => ({
+            id: opt.id,
+            label: opt.label as any,
+            text: opt.text,
+          })),
+        }))
+      : catalogMatch?.questions
+
+  return {
+    id: dto.slug || dto.id,
+    title: dto.title,
+    description: dto.description,
+    category: dto.category,
+    questionCount: dto.questionCount,
+    durationMinutes: dto.durationMinutes,
+    passingScore: dto.passingScore,
+    difficulty: dto.difficulty,
+    theme,
+    questions,
+  }
+}
+
 export default function Quizzes() {
   const { session } = useAuth()
   const role = session?.role ?? 'Student'
@@ -50,19 +102,52 @@ export default function Quizzes() {
   const [activeTab, setActiveTab] = useState<'catalog' | 'analytics'>('catalog')
   const [editingQuiz, setEditingQuiz] = useState<QuizCatalogItem | null>(null)
 
+  const [apiQuizzes, setApiQuizzes] = useState<QuizDto[]>([])
+  const [loadedQuizDetail, setLoadedQuizDetail] = useState<QuizCatalogItem | null>(null)
+  const [, setIsLoadingQuizzes] = useState(false)
+
   // Custom Quizzes persisted in localStorage
   const [customQuizzes, setCustomQuizzes] = useState<QuizCatalogItem[]>(() =>
     loadSavedCustomQuizzes()
   )
 
+  const loadBackendQuizzes = useCallback(() => {
+    setIsLoadingQuizzes(true)
+    fetchQuizzes()
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setApiQuizzes(data)
+          const custom = data.filter((q) => q.isCustom).map(mapDtoToCatalogItem)
+          if (custom.length > 0) {
+            setCustomQuizzes(custom)
+            if (typeof window !== 'undefined') {
+              localStorage.setItem(CUSTOM_QUIZZES_KEY, JSON.stringify(custom))
+            }
+          }
+        }
+      })
+      .catch((err) => {
+        console.warn('Backend quizzes fetch failed, using local catalog:', err)
+      })
+      .finally(() => {
+        setIsLoadingQuizzes(false)
+      })
+  }, [])
+
+  useEffect(() => {
+    loadBackendQuizzes()
+  }, [loadBackendQuizzes])
+
   const selectedQuizId = searchParams.get('quiz')
   const status = searchParams.get('status') // e.g. 'active' or null
   const view = searchParams.get('view')
 
-  const allQuizzes = useMemo(
-    () => [...customQuizzes, ...quizzesCatalog],
-    [customQuizzes]
-  )
+  const allQuizzes = useMemo(() => {
+    if (apiQuizzes.length > 0) {
+      return apiQuizzes.map(mapDtoToCatalogItem)
+    }
+    return [...customQuizzes, ...quizzesCatalog]
+  }, [apiQuizzes, customQuizzes])
 
   const [searchQuery, setSearchQuery] = useState('')
   const [filterDifficulty, setFilterDifficulty] = useState<string>('All')
@@ -94,7 +179,35 @@ export default function Quizzes() {
     setFilterDifficulty('All')
   }
 
-  const selectedQuiz = allQuizzes.find((q) => q.id === selectedQuizId) ?? null
+  const selectedQuiz = useMemo(() => {
+    if (!selectedQuizId) return null
+    if (loadedQuizDetail && (loadedQuizDetail.id === selectedQuizId)) {
+      return loadedQuizDetail
+    }
+    return allQuizzes.find((q) => q.id === selectedQuizId) ?? null
+  }, [selectedQuizId, loadedQuizDetail, allQuizzes])
+
+  useEffect(() => {
+    if (!selectedQuizId) {
+      setLoadedQuizDetail(null)
+      return
+    }
+    const current = allQuizzes.find((q) => q.id === selectedQuizId)
+    if (current && current.questions && current.questions.length > 0) {
+      setLoadedQuizDetail(current)
+      return
+    }
+
+    fetchQuizByIdOrSlug(selectedQuizId)
+      .then((detail) => {
+        if (detail) {
+          setLoadedQuizDetail(mapDtoToCatalogItem(detail))
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load quiz detail with questions:', err)
+      })
+  }, [selectedQuizId, allQuizzes])
 
   const cleanUpStreams = () => {
     if (recordingStream) {
@@ -149,7 +262,7 @@ export default function Quizzes() {
     setSearchParams({ view: 'custom' })
   }
 
-  const handleSaveCustomQuiz = (newQuiz: QuizCatalogItem) => {
+  const handleSaveCustomQuiz = async (newQuiz: QuizCatalogItem) => {
     const exists = customQuizzes.some((q) => q.id === newQuiz.id)
     const updated = exists
       ? customQuizzes.map((q) => (q.id === newQuiz.id ? newQuiz : q))
@@ -160,6 +273,39 @@ export default function Quizzes() {
     }
     setEditingQuiz(null)
     handleBackToCatalog()
+
+    try {
+      const payload: CreateQuizPayload = {
+        title: newQuiz.title,
+        description: newQuiz.description,
+        category: newQuiz.category || 'General',
+        durationMinutes: newQuiz.durationMinutes,
+        passingScore: newQuiz.passingScore,
+        difficulty: newQuiz.difficulty,
+        questions: (newQuiz.questions || []).map((q) => ({
+          numberLabel: q.numberLabel,
+          category: q.category,
+          questionText: q.question,
+          hint: q.hint,
+          correctOptionId: q.correctOptionId,
+          options: q.options.map((opt) => ({
+            id: opt.id,
+            label: opt.label,
+            text: opt.text,
+          })),
+        })),
+      }
+
+      const existingInApi = apiQuizzes.find((q) => q.id === newQuiz.id || q.slug === newQuiz.id)
+      if (existingInApi && existingInApi.isCustom) {
+        await updateCustomQuiz(existingInApi.id, payload)
+      } else {
+        await createCustomQuiz(payload)
+      }
+      loadBackendQuizzes()
+    } catch (err) {
+      console.warn('Failed to persist custom quiz to PostgreSQL backend:', err)
+    }
   }
 
   // Delete modal state
@@ -171,7 +317,7 @@ export default function Quizzes() {
     setQuizToDelete(quiz)
   }
 
-  const confirmDeleteQuiz = () => {
+  const confirmDeleteQuiz = async () => {
     if (!quizToDelete) return
     const id = quizToDelete.id
     const title = quizToDelete.title
@@ -185,6 +331,16 @@ export default function Quizzes() {
     setTimeout(() => {
       setDeletedToast((curr) => (curr === `"${title}" was deleted.` ? null : curr))
     }, 3000)
+
+    try {
+      const existingInApi = apiQuizzes.find((q) => q.id === id || q.slug === id)
+      if (existingInApi && existingInApi.isCustom) {
+        await deleteCustomQuiz(existingInApi.id)
+        loadBackendQuizzes()
+      }
+    } catch (err) {
+      console.warn('Failed to delete custom quiz from PostgreSQL backend:', err)
+    }
   }
 
   const handleBeginAssessment = (streams: {

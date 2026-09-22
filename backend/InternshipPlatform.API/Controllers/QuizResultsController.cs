@@ -1,4 +1,5 @@
-using System.Text.Json;
+﻿using System.Text.Json;
+using InternshipPlatform.BusinessLayer.Quizzes;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InternshipPlatform.API.Controllers;
@@ -7,106 +8,74 @@ namespace InternshipPlatform.API.Controllers;
 [Route("api/quiz-results")]
 public class QuizResultsController : ControllerBase
 {
+    private readonly IQuizService _quizService;
     private readonly ILogger<QuizResultsController> _logger;
 
-    public QuizResultsController(ILogger<QuizResultsController> logger)
+    public QuizResultsController(IQuizService quizService, ILogger<QuizResultsController> logger)
     {
+        _quizService = quizService;
         _logger = logger;
     }
 
-    private static string GetDatabaseFilePath()
-    {
-        var current = new DirectoryInfo(AppContext.BaseDirectory);
-        while (current != null &&
-               !System.IO.File.Exists(Path.Combine(current.FullName, "InternshipPlatform.slnx")) &&
-               !Directory.Exists(Path.Combine(current.FullName, ".git")))
-        {
-            current = current.Parent;
-        }
-
-        var repoRoot = current?.FullName ?? Directory.GetCurrentDirectory();
-        var recordingsDir = Path.Combine(repoRoot, "recorded-sessions");
-
-        if (!Directory.Exists(recordingsDir))
-        {
-            Directory.CreateDirectory(recordingsDir);
-        }
-
-        return Path.Combine(recordingsDir, "quiz_results.json");
-    }
-
     [HttpGet]
-    public async Task<IActionResult> GetQuizResults()
+    public async Task<IActionResult> GetQuizResults(CancellationToken ct)
     {
         try
         {
-            var filePath = GetDatabaseFilePath();
-            if (!System.IO.File.Exists(filePath))
-            {
-                return Ok(Array.Empty<object>());
-            }
-
-            var json = await System.IO.File.ReadAllTextAsync(filePath);
-            var results = JsonSerializer.Deserialize<JsonElement>(json);
-            return Ok(results);
+            var summary = await _quizService.GetAnalyticsSummaryAsync(null, ct);
+            return Ok(summary.RecentAttempts);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to read quiz results from database.");
+            _logger.LogError(ex, "Failed to read quiz results from PostgreSQL.");
             return StatusCode(500, new { error = ex.Message });
         }
     }
 
     [HttpPost]
-    public async Task<IActionResult> SaveQuizResult([FromBody] JsonElement attempt)
+    public async Task<IActionResult> SaveQuizResult([FromBody] JsonElement attempt, CancellationToken ct)
     {
         try
         {
-            var filePath = GetDatabaseFilePath();
-            List<JsonElement> existingList = new();
+            // Parse attempt payload
+            var quizIdStr = attempt.TryGetProperty("quizId", out var qidProp) ? qidProp.GetString() : null;
+            var userName = attempt.TryGetProperty("userName", out var nameProp) ? nameProp.GetString() : "Student";
+            var userEmail = attempt.TryGetProperty("userEmail", out var emailProp) ? emailProp.GetString() : "student@internflow.dev";
+            var score = attempt.TryGetProperty("score", out var scoreProp) ? scoreProp.GetInt32() : 0;
+            var total = attempt.TryGetProperty("totalQuestions", out var totalProp) ? totalProp.GetInt32() : 10;
+            var percentage = attempt.TryGetProperty("percentage", out var pctProp) ? pctProp.GetInt32() : 0;
+            var passingScore = attempt.TryGetProperty("passingScore", out var passProp) ? passProp.GetInt32() : 70;
+            var status = attempt.TryGetProperty("status", out var statProp) ? statProp.GetString() : (percentage >= passingScore ? "PASSED" : "FAILED");
+            var timeSpentSeconds = attempt.TryGetProperty("timeSpentSeconds", out var timeProp) ? timeProp.GetInt32() : 0;
+            var isFlagged = attempt.TryGetProperty("isFlagged", out var flagProp) && flagProp.GetBoolean();
+            var flagReason = attempt.TryGetProperty("flagReason", out var reasonProp) ? reasonProp.GetString() : null;
+            var cohortWeek = attempt.TryGetProperty("cohortWeek", out var weekProp) ? weekProp.GetInt32() : 8;
 
-            if (System.IO.File.Exists(filePath))
+            var submitDto = new SubmitQuizAttemptDto
             {
-                try
-                {
-                    var existingJson = await System.IO.File.ReadAllTextAsync(filePath);
-                    var parsed = JsonSerializer.Deserialize<List<JsonElement>>(existingJson);
-                    if (parsed != null)
-                    {
-                        existingList = parsed;
-                    }
-                }
-                catch
-                {
-                    existingList = new();
-                }
+                QuizSlug = quizIdStr,
+                Score = score,
+                TotalQuestions = total,
+                Percentage = percentage,
+                PassingScore = passingScore,
+                Status = status ?? "PASSED",
+                TimeSpentSeconds = timeSpentSeconds,
+                IsFlagged = isFlagged,
+                FlagReason = flagReason,
+                CohortWeek = cohortWeek
+            };
+
+            if (Guid.TryParse(quizIdStr, out var qGuid))
+            {
+                submitDto.QuizId = qGuid;
             }
 
-            string? newId = null;
-            if (attempt.TryGetProperty("id", out var idProp))
-            {
-                newId = idProp.GetString();
-            }
-
-            // Remove existing attempt with same ID if any
-            if (!string.IsNullOrEmpty(newId))
-            {
-                existingList.RemoveAll(item =>
-                    item.TryGetProperty("id", out var existingId) && existingId.GetString() == newId);
-            }
-
-            existingList.Insert(0, attempt);
-
-            var options = new JsonSerializerOptions { WriteIndented = true };
-            var updatedJson = JsonSerializer.Serialize(existingList, options);
-            await System.IO.File.WriteAllTextAsync(filePath, updatedJson);
-
-            _logger.LogInformation("Saved quiz attempt {Id} to results database.", newId);
-            return Ok(new { success = true, count = existingList.Count, attempt });
+            var saved = await _quizService.SubmitAttemptAsync(submitDto, null, userName ?? "Student", userEmail ?? "student@internflow.dev", ct);
+            return Ok(new { success = true, attempt = saved });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to write quiz result to database.");
+            _logger.LogError(ex, "Failed to save quiz result to PostgreSQL.");
             return StatusCode(500, new { error = ex.Message });
         }
     }
