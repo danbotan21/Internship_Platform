@@ -14,7 +14,7 @@ import ComplianceGateOverlay from '../components/documentation/ComplianceGateOve
 
 export default function DocumentationPage() {
   const { session } = useAuth()
-  const { role, capabilities } = useUserRole()
+  const { role } = useUserRole()
   const docState = useDocumentation(role, session?.fullName)
 
   return (
@@ -94,7 +94,7 @@ export default function DocumentationPage() {
         document={docState.selectedDoc}
         onClose={docState.handleClosePreview}
         onApprove={docState.handleApprove}
-        onReject={(id) => docState.handleOpenRejectModal(docState.selectedDoc!)}
+        onReject={() => docState.handleOpenRejectModal(docState.selectedDoc!)}
       />
 
       {/* US 729: Rejection Reason Modal */}

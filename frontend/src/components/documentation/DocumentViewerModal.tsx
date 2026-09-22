@@ -108,7 +108,7 @@ export default function DocumentViewerModal({
       };
       renderDocx();
     }
-  }, [document?.fileUrl, document?.fileType, docxContainer]);
+  }, [document?.fileUrl, document?.fileType, docxContainer, document]);
 
   if (!document) return null;
 

@@ -44,10 +44,6 @@ export default function VaultTable({
 }: VaultTableProps) {
   const [visibleCount, setVisibleCount] = useState(10)
 
-  useEffect(() => {
-    setVisibleCount(10)
-  }, [activeTab])
-
   const isAllSelected = documents.length > 0 && selectedDocIds.length === documents.length
 
   const formatDate = (isoString?: string): string => {
@@ -77,7 +73,10 @@ export default function VaultTable({
           {TABS.map((tab) => (
             <button
               key={tab}
-              onClick={() => onTabChange(tab)}
+              onClick={() => {
+                onTabChange(tab)
+                setVisibleCount(10)
+              }}
               className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab
                 ? 'bg-[#1B4332] text-white shadow-xs'
                 : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
@@ -140,7 +139,7 @@ export default function VaultTable({
       ) : (
         <>
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-          {documents.filter(Boolean).slice(0, visibleCount).map((doc) => {
+          {documents.filter(Boolean).slice(0, visibleCount).map((doc, idx) => {
             const isSelected = selectedDocIds.includes(doc?.id)
             const isPdf = doc?.fileType?.toLowerCase() === 'pdf'
             const isDocx = ['docx', 'doc'].includes(doc?.fileType?.toLowerCase() || '')
@@ -148,8 +147,8 @@ export default function VaultTable({
 
             return (
               <div
-                key={doc?.id || Math.random().toString()}
-                onClick={() => doc && onRowClick(doc)}
+                key={doc?.id || idx.toString()}
+                onClick={() => { if (doc) onRowClick(doc); }}
                 className={`group relative flex flex-col rounded-[12px] bg-[#f0f4f9] hover:bg-[#e4e9f1] transition-colors cursor-pointer overflow-hidden ${isSelected ? 'ring-2 ring-blue-500 bg-[#e8f0fe]' : ''
                   }`}
               >
@@ -203,14 +202,14 @@ export default function VaultTable({
                 {/* Action buttons (Download & Delete) - Absolute Top Right on Hover */}
                 <div className="absolute top-2 right-2 z-30 shrink-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity bg-[#e4e9f1] rounded-md shadow-sm p-0.5">
                   <button
-                    onClick={(e) => doc && handleDownload(e, doc)}
+                    onClick={(e) => { if (doc) handleDownload(e, doc); }}
                     className="p-1 rounded hover:bg-white text-gray-600 transition-colors"
                     title="Download document"
                   >
                     <Download className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); doc && onDeleteDoc(doc.id); }}
+                    onClick={(e) => { e.stopPropagation(); if (doc) onDeleteDoc(doc.id); }}
                     className="p-1 rounded hover:bg-white text-gray-600 transition-colors"
                     title="Delete document"
                   >

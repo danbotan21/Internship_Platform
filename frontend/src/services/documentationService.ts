@@ -361,7 +361,7 @@ class DocumentationService {
     performedBy = 'Ana Popescu',
     currentDoc?: VaultDocument
   ): Promise<VaultDocument | null> {
-    let backendDoc: VaultDocument | null = null;
+    const backendDoc: VaultDocument | null = null;
     /*
     try {
       const res = await fetch(`${API_BASE_URL}/api/documents/${id}/status`, {
