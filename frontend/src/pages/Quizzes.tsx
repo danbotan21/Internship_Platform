@@ -1,6 +1,20 @@
 import { useState, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { SquarePen, Trash2, X, Check, LayoutGrid, BarChart2 } from 'lucide-react'
+import {
+  SquarePen,
+  Trash2,
+  X,
+  Check,
+  LayoutGrid,
+  BarChart2,
+  Search,
+  SlidersHorizontal,
+  BookOpen,
+  ShieldCheck,
+  Award,
+  RotateCcw,
+  SearchX,
+} from 'lucide-react'
 import { quizzesCatalog } from '../data/quizzesData'
 import QuizCard from '../components/quizzes/QuizCard'
 import QuizDetail from '../components/quizzes/QuizDetail'
@@ -49,6 +63,36 @@ export default function Quizzes() {
     () => [...customQuizzes, ...quizzesCatalog],
     [customQuizzes]
   )
+
+  const [searchQuery, setSearchQuery] = useState('')
+  const [filterDifficulty, setFilterDifficulty] = useState<string>('All')
+
+  const filteredQuizzes = useMemo(() => {
+    return allQuizzes.filter((quiz) => {
+      const isCustom = customQuizzes.some((c) => c.id === quiz.id)
+      if (filterDifficulty === 'CUSTOM' && !isCustom) return false
+      if (
+        filterDifficulty !== 'All' &&
+        filterDifficulty !== 'CUSTOM' &&
+        quiz.difficulty !== filterDifficulty
+      ) {
+        return false
+      }
+      if (searchQuery.trim()) {
+        const q = searchQuery.trim().toLowerCase()
+        const matchTitle = quiz.title.toLowerCase().includes(q)
+        const matchDesc = quiz.description.toLowerCase().includes(q)
+        const matchCategory = quiz.category?.toLowerCase().includes(q)
+        if (!matchTitle && !matchDesc && !matchCategory) return false
+      }
+      return true
+    })
+  }, [allQuizzes, customQuizzes, filterDifficulty, searchQuery])
+
+  const resetFilters = () => {
+    setSearchQuery('')
+    setFilterDifficulty('All')
+  }
 
   const selectedQuiz = allQuizzes.find((q) => q.id === selectedQuizId) ?? null
 
@@ -225,18 +269,18 @@ export default function Quizzes() {
 
   // 4. Quizzes Screen (Catalog or Performance Analytics)
   return (
-    <div className="max-w-6xl">
+    <div className="max-w-6xl space-y-6">
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#0c382b]">
             {isMentor
               ? activeTab === 'catalog'
                 ? 'Custom Assessments & Quizzes'
                 : 'Performance Analytics'
               : 'Skill Assessments'}
           </h1>
-          <p className="mt-1.5 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-500">
             {isMentor
               ? activeTab === 'catalog'
                 ? `${allQuizzes.length} assessments available — author, configure, and monitor custom quizzes`
@@ -248,14 +292,14 @@ export default function Quizzes() {
         {isMentor && (
           <div className="flex flex-wrap items-center gap-3">
             {/* Tab Switcher */}
-            <div className="flex items-center rounded-xl bg-gray-100 p-1 border border-gray-200/80 shadow-2xs">
+            <div className="flex items-center rounded-xl bg-[#f0f4f1] p-1 border border-[#e6ebe8] shadow-2xs">
               <button
                 type="button"
                 onClick={() => setActiveTab('catalog')}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'catalog'
-                    ? 'bg-white text-gray-900 shadow-xs'
-                    : 'text-gray-500 hover:text-gray-900'
+                    ? 'bg-white text-[#1e3a2c] shadow-xs'
+                    : 'text-[#5d6b64] hover:text-[#14211b]'
                 }`}
               >
                 <LayoutGrid className="h-3.5 w-3.5" />
@@ -266,8 +310,8 @@ export default function Quizzes() {
                 onClick={() => setActiveTab('analytics')}
                 className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === 'analytics'
-                    ? 'bg-white text-gray-900 shadow-xs'
-                    : 'text-gray-500 hover:text-gray-900'
+                    ? 'bg-white text-[#1e3a2c] shadow-xs'
+                    : 'text-[#5d6b64] hover:text-[#14211b]'
                 }`}
               >
                 <BarChart2 className="h-3.5 w-3.5" />
@@ -282,7 +326,7 @@ export default function Quizzes() {
                   setEditingQuiz(null)
                   setSearchParams({ view: 'custom' })
                 }}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#1e3a2c] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#162d22] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#ff5500] hover:bg-[#e64d00] px-4 py-2 text-xs font-semibold text-white shadow-xs transition-colors cursor-pointer"
               >
                 <SquarePen className="h-3.5 w-3.5" />
                 Create Quiz
@@ -292,15 +336,151 @@ export default function Quizzes() {
         )}
       </div>
 
+      {/* Overview Stat Cards */}
+      {!(isMentor && activeTab === 'analytics') && (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="bg-white rounded-2xl border border-[#e6ebe8] p-4 shadow-xs flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-[#e9f3ee] text-[#164c3a] border border-[#cde0d5] flex items-center justify-center shrink-0">
+              <BookOpen className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xl font-bold text-[#14211b]">{allQuizzes.length} Quizzes</div>
+              <div className="text-xs text-[#5d6b64] font-medium">Curated Technical Tracks</div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[#e6ebe8] p-4 shadow-xs flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-[#edf3ef] text-[#1e3a2c] border border-[#d8e2dc] flex items-center justify-center shrink-0">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xl font-bold text-[#14211b]">AI Proctoring</div>
+              <div className="text-xs text-[#5d6b64] font-medium">Anti-Cheat Live Verification</div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-[#e6ebe8] p-4 shadow-xs flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-xl bg-[#e9f3ee] text-[#164c3a] border border-[#cde0d5] flex items-center justify-center shrink-0">
+              <Award className="h-5 w-5" />
+            </div>
+            <div>
+              <div className="text-xl font-bold text-[#14211b]">70% Pass Mark</div>
+              <div className="text-xs text-[#5d6b64] font-medium">Skill Verification Standard</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Search and Filters Toolbar */}
+      {!(isMentor && activeTab === 'analytics') && (
+        <div className="bg-white rounded-2xl border border-[#e6ebe8] p-4 shadow-xs space-y-3">
+          <div className="flex flex-col sm:flex-row gap-3 items-center">
+            {/* Search Input */}
+            <div className="relative flex-1 w-full bg-[#f5f7f6] rounded-xl border border-[#e6ebe8] flex items-center px-3.5 py-2.5 transition-colors focus-within:bg-white focus-within:border-[#1e3a2c]/50">
+              <Search className="w-4 h-4 text-[#71817a] mr-2.5 shrink-0" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search assessments by skill, topic, or keyword..."
+                className="w-full bg-transparent text-xs sm:text-sm text-[#14211b] placeholder:text-[#71817a] outline-none"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="text-[#71817a] hover:text-[#14211b] p-0.5 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Clear button if filters active */}
+            {(searchQuery || filterDifficulty !== 'All') && (
+              <button
+                type="button"
+                onClick={resetFilters}
+                className="text-xs font-semibold text-[#ff5500] hover:text-[#e64d00] flex items-center gap-1.5 px-3 py-2 shrink-0 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset filters</span>
+              </button>
+            )}
+          </div>
+
+          {/* Difficulty Filter Chips */}
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#f0f4f1]">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs font-semibold text-[#5d6b64] mr-1 flex items-center gap-1.5">
+                <SlidersHorizontal className="w-3.5 h-3.5" />
+                Difficulty:
+              </span>
+              {['All', 'EASY', 'MEDIUM', 'HARD', ...(customQuizzes.length > 0 ? ['CUSTOM'] : [])].map(
+                (level) => {
+                  const isActive = filterDifficulty === level
+                  const label =
+                    level === 'All'
+                      ? 'All Levels'
+                      : level === 'CUSTOM'
+                      ? 'Custom Quizzes'
+                      : level.charAt(0) + level.slice(1).toLowerCase()
+
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => setFilterDifficulty(level)}
+                      className={`px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-[#1e3a2c] text-white shadow-2xs font-semibold'
+                          : 'bg-[#f5f7f6] text-[#5d6b64] hover:bg-[#edf3ef] hover:text-[#14211b] border border-[#e6ebe8]'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  )
+                }
+              )}
+            </div>
+
+            <div className="text-xs text-[#5d6b64] font-medium">
+              Showing <span className="font-semibold text-[#14211b]">{filteredQuizzes.length}</span> of {allQuizzes.length}
+            </div>
+          </div>
+        </div>
+      )}
+
       {isMentor && activeTab === 'analytics' ? (
         <QuizAnalyticsDashboard
           allQuizzes={allQuizzes}
           customQuizzes={customQuizzes}
         />
+      ) : filteredQuizzes.length === 0 ? (
+        /* Empty State */
+        <div className="rounded-2xl border border-dashed border-[#d2e2d8] bg-white p-12 text-center shadow-xs">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#e9f3ee] text-[#164c3a]">
+            <SearchX className="h-6 w-6" />
+          </div>
+          <h3 className="mt-4 text-base font-semibold text-[#14211b]">No assessments found</h3>
+          <p className="mt-1 text-sm text-[#5d6b64] max-w-sm mx-auto">
+            {searchQuery
+              ? `We couldn't find any quizzes matching "${searchQuery}" with the current filters.`
+              : 'No quizzes match the selected difficulty level.'}
+          </p>
+          <button
+            type="button"
+            onClick={resetFilters}
+            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[#1e3a2c] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#164c3a] transition-colors cursor-pointer"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            Clear Filters
+          </button>
+        </div>
       ) : (
         /* Quizzes Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {allQuizzes.map((quiz) => {
+          {filteredQuizzes.map((quiz) => {
             const isCustom = customQuizzes.some((c) => c.id === quiz.id)
             return (
               <QuizCard

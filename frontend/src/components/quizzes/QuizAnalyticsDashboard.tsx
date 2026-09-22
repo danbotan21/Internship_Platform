@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import {
   Flag,
   ArrowUpRight,
@@ -10,6 +10,8 @@ import {
   Check,
   Award,
   Layers,
+  ChevronDown,
+  BookOpen,
 } from 'lucide-react'
 import {
   getQuizAttempts,
@@ -51,6 +53,21 @@ export default function QuizAnalyticsDashboard({
   const [hoveredWeek, setHoveredWeek] = useState<WeekScoreEvolution | null>(null)
   const [showResetModal, setShowResetModal] = useState(false)
   const [resetToast, setResetToast] = useState<string | null>(null)
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false)
+  const filterDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsFilterDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     // 1. Keep in sync with local quiz submissions
@@ -126,6 +143,15 @@ export default function QuizAnalyticsDashboard({
     return filterQuizList.find((q) => q.id === selectedQuizFilter) || null
   }, [filterQuizList, selectedQuizFilter])
 
+  // Selected quiz display label
+  const selectedQuizLabel = useMemo(() => {
+    if (selectedQuizFilter === 'ALL') {
+      return `All Assessments (${attempts.length} total records)`
+    }
+    const found = filterQuizList.find((q) => q.id === selectedQuizFilter)
+    return found ? `${found.title} (${found.attemptCount} submissions)` : selectedQuizFilter
+  }, [selectedQuizFilter, attempts.length, filterQuizList])
+
   // Dynamic calculations from database
   const summary = useMemo(
     () => calculateAnalyticsSummary(attempts, selectedQuizFilter),
@@ -191,48 +217,143 @@ export default function QuizAnalyticsDashboard({
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Controls Bar: Filter by Quiz & Reset Seed */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-gray-200/80 shadow-2xs">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Filter className="h-4 w-4 text-gray-500" />
-          <span className="text-xs font-semibold text-gray-700">Filter by Assessment:</span>
-          <select
-            value={selectedQuizFilter}
-            onChange={(e) => setSelectedQuizFilter(e.target.value)}
-            className="rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-1.5 text-xs font-medium text-gray-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 cursor-pointer max-w-xs sm:max-w-md truncate"
-          >
-            <option value="ALL">All Assessments ({attempts.length} total records)</option>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#e6ebe8] shadow-xs">
+        <div className="flex items-center gap-2 flex-wrap" ref={filterDropdownRef}>
+          <Filter className="h-4 w-4 text-[#5d6b64]" />
+          <span className="text-xs font-semibold text-[#14211b]">Filter by Assessment:</span>
 
-            {/* Custom Created Quizzes Group */}
-            {customQuizOptions.length > 0 && (
-              <optgroup label="Custom Created Assessments">
-                {customQuizOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    ★ {opt.title} ({opt.attemptCount} {opt.attemptCount === 1 ? 'submission' : 'submissions'})
-                  </option>
-                ))}
-              </optgroup>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+              className={`flex items-center justify-between gap-2.5 rounded-xl border px-3.5 py-2 text-xs font-medium transition-all cursor-pointer shadow-2xs ${
+                isFilterDropdownOpen
+                  ? 'border-[#1e3a2c] bg-white ring-2 ring-[#1e3a2c]/10 text-[#14211b]'
+                  : 'border-[#e6ebe8] bg-[#f5f7f6] hover:bg-white text-[#14211b]'
+              }`}
+            >
+              <span className="font-semibold">{selectedQuizLabel}</span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 text-[#71817a] transition-transform duration-200 ${
+                  isFilterDropdownOpen ? 'rotate-180 text-[#1e3a2c]' : ''
+                }`}
+              />
+            </button>
+
+            {isFilterDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1.5 z-50 w-72 sm:w-84 rounded-2xl border border-[#e6ebe8] bg-white p-1.5 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 max-h-72 overflow-y-auto hardware-scroll">
+                {/* All Assessments Option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedQuizFilter('ALL')
+                    setIsFilterDropdownOpen(false)
+                  }}
+                  className={`w-full text-left px-3 py-2 text-xs rounded-xl font-medium transition-colors cursor-pointer flex items-center justify-between ${
+                    selectedQuizFilter === 'ALL'
+                      ? 'bg-[#e9f3ee] text-[#164c3a] font-semibold'
+                      : 'text-[#14211b] hover:bg-[#f5f7f6]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-3.5 w-3.5 text-[#164c3a]" />
+                    <span>All Assessments</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#f0f4f1] text-[#5d6b64]">
+                      {attempts.length} records
+                    </span>
+                    {selectedQuizFilter === 'ALL' && (
+                      <Check className="h-3.5 w-3.5 text-[#164c3a]" />
+                    )}
+                  </div>
+                </button>
+
+                {/* Custom Created Quizzes */}
+                {customQuizOptions.length > 0 && (
+                  <div className="pt-2 border-t border-[#f0f4f1] mt-1.5">
+                    <div className="px-2.5 py-1 text-[10px] font-bold text-[#71817a] uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="h-3 w-3 text-[#ff5500]" />
+                      Custom Created Assessments
+                    </div>
+                    {customQuizOptions.map((opt) => {
+                      const isSelected = selectedQuizFilter === opt.id
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedQuizFilter(opt.id)
+                            setIsFilterDropdownOpen(false)
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs rounded-xl font-medium transition-colors cursor-pointer flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-[#e9f3ee] text-[#164c3a] font-semibold'
+                              : 'text-[#14211b] hover:bg-[#f5f7f6]'
+                          }`}
+                        >
+                          <span className="truncate pr-2">{opt.title}</span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] text-[#71817a]">
+                              {opt.attemptCount} {opt.attemptCount === 1 ? 'sub' : 'subs'}
+                            </span>
+                            {isSelected && <Check className="h-3.5 w-3.5 text-[#164c3a]" />}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Standard Catalog Quizzes */}
+                {catalogQuizOptions.length > 0 && (
+                  <div className="pt-2 border-t border-[#f0f4f1] mt-1.5">
+                    <div className="px-2.5 py-1 text-[10px] font-bold text-[#71817a] uppercase tracking-wider flex items-center gap-1.5">
+                      <BookOpen className="h-3 w-3 text-[#164c3a]" />
+                      Standard Catalog Assessments
+                    </div>
+                    {catalogQuizOptions.map((opt) => {
+                      const isSelected = selectedQuizFilter === opt.id
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedQuizFilter(opt.id)
+                            setIsFilterDropdownOpen(false)
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs rounded-xl font-medium transition-colors cursor-pointer flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-[#e9f3ee] text-[#164c3a] font-semibold'
+                              : 'text-[#14211b] hover:bg-[#f5f7f6]'
+                          }`}
+                        >
+                          <span className="truncate pr-2">{opt.title}</span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] text-[#71817a]">
+                              {opt.attemptCount} {opt.attemptCount === 1 ? 'sub' : 'subs'}
+                            </span>
+                            {isSelected && <Check className="h-3.5 w-3.5 text-[#164c3a]" />}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             )}
-
-            {/* Standard Catalog Quizzes Group */}
-            <optgroup label="Standard Catalog Assessments">
-              {catalogQuizOptions.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.title} ({opt.attemptCount} {opt.attemptCount === 1 ? 'submission' : 'submissions'})
-                </option>
-              ))}
-            </optgroup>
-          </select>
+          </div>
 
           {currentFilteredQuiz && (
             <span
-              className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold border ${
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold border shadow-2xs ${
                 currentFilteredQuiz.isCustom
-                  ? 'bg-purple-50 text-purple-700 border-purple-200'
-                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  ? 'bg-[#fff2ea] text-[#ff5500] border-[#ffd8c4]'
+                  : 'bg-[#e9f3ee] text-[#164c3a] border-[#cde0d5]'
               }`}
             >
-              {currentFilteredQuiz.isCustom && <Sparkles className="h-3 w-3 text-purple-500" />}
-              {currentFilteredQuiz.isCustom ? 'CUSTOM QUIZ' : 'CATALOG QUIZ'}
+              {currentFilteredQuiz.isCustom && <Sparkles className="h-3 w-3 text-[#ff5500]" />}
+              {currentFilteredQuiz.isCustom ? 'Custom Assessment' : 'Catalog Assessment'}
             </span>
           )}
         </div>
