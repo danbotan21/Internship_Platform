@@ -18,8 +18,8 @@ export default function Sidebar() {
   const sections = navigationFor(role)
 
   return (
-    <aside className="flex h-screen w-64 shrink-0 flex-col justify-between bg-[#1e3a2c] px-3 py-5 text-white">
-      <div className="min-h-0 overflow-y-auto">
+    <aside id="app-sidebar" className="flex h-screen w-64 shrink-0 flex-col justify-between bg-[#1e3a2c] px-3 py-5 text-white">
+      <div id="sidebar-navigation" className="min-h-0 flex-1 overflow-y-auto">
         <div className="flex items-center gap-2 px-2 pb-5">
           <div className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-white p-1.5">
             <img

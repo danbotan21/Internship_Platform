@@ -1,7 +1,6 @@
 import { useAuth } from '../hooks/authContext'
 import { useUserRole } from '../hooks/useUserRole'
 import { useDocumentation } from '../hooks/useDocumentation'
-import TopBar from '../components/documentation/TopBar'
 import MetricHeader from '../components/documentation/MetricHeader'
 import FilterSidebar from '../components/documentation/FilterSidebar'
 import UploadDropzone from '../components/documentation/UploadDropzone'
@@ -19,8 +18,6 @@ export default function DocumentationPage() {
 
   return (
     <div className='w-full pb-8 overflow-x-hidden animate-in fade-in duration-500'>
-      <TopBar />
-
       <div className='w-full px-6 pt-8 md:px-10'>
         <div className='relative mb-8'>
           <div className='absolute -left-4 top-1 h-12 w-1.5 rounded-full bg-gradient-to-b from-[#1e3a2c] to-emerald-500'></div>
@@ -37,7 +34,7 @@ export default function DocumentationPage() {
           onSignCompliance={docState.handleSignCompliance}
         />
 
-        <MetricHeader stats={docState.stats} />
+        <MetricHeader stats={docState.stats} onMetricClick={docState.handleMetricFilter} />
 
         <div className='flex flex-col items-start gap-8 xl:flex-row'>
           <FilterSidebar
@@ -82,6 +79,7 @@ export default function DocumentationPage() {
           onClose={docState.handleClosePreview}
           onApprove={docState.handleApprove}
           onReject={() => docState.handleOpenRejectModal(docState.selectedDoc!)}
+          onSign={docState.handleSignDocument}
         />
 
         <RejectModal
@@ -97,6 +95,7 @@ export default function DocumentationPage() {
           recipientName={session?.fullName ?? 'Student'}
         />
       </div>
+
     </div>
   )
 }
