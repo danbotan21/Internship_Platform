@@ -9,9 +9,13 @@ export async function triggerFileDownload(
   const safeFileName = fileName.trim() || 'download.pdf'
 
   const saveBlob = (blob: Blob, name: string) => {
-    const url = window.URL.createObjectURL(blob)
+    // Force application/octet-stream so Chrome and Edge NEVER open the file
+    // in an internal PDF tab or viewer, but directly save it to the Downloads folder!
+    const downloadBlob = new Blob([blob], { type: 'application/octet-stream' })
+    const url = window.URL.createObjectURL(downloadBlob)
     const a = window.document.createElement('a')
     a.style.display = 'none'
+    a.target = '_self'
     a.href = url
     a.download = name
     window.document.body.appendChild(a)
@@ -21,7 +25,7 @@ export async function triggerFileDownload(
         window.document.body.removeChild(a)
       }
       window.URL.revokeObjectURL(url)
-    }, 500)
+    }, 1000)
   }
 
   // 1. If fileUrl is provided, attempt to fetch it and download as blob
