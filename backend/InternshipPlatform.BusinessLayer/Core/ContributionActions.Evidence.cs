@@ -504,7 +504,7 @@ public partial class ContributionActions
                 evidence.OriginalFileName ?? evidence.Name));
     }
 
-    // Owner always; mentor of the student and listed collaborators once submitted.
+    // Owner and listed collaborators can view drafts; the mentor sees only submitted work.
     private static bool CanView(
         Contribution contribution,
         Guid actorId,
@@ -515,13 +515,9 @@ public partial class ContributionActions
             return true;
         }
 
-        if (contribution.Status == ContributionStatus.Draft)
-        {
-            return false;
-        }
-
-        return IsMentorOf(members, actorId, contribution.StudentId) ||
-            contribution.Collaborators.Any(item => item.UserId == actorId);
+        return contribution.Collaborators.Any(item => item.UserId == actorId) ||
+            contribution.Status != ContributionStatus.Draft &&
+            IsMentorOf(members, actorId, contribution.StudentId);
     }
 
     // ---- Helpers ----------------------------------------------------------------

@@ -4,13 +4,14 @@ import type { Collaborator, ContributionStatus } from '../../../types/contributi
 import Alert from '../../ui/Alert'
 import Button from '../../ui/Button'
 import Field from '../../ui/Field'
-import Modal from '../../ui/Modal'
+import ContributionModal from '../ContributionModal'
 import { textareaBase } from '../../ui/styles'
 import { categoryMeta } from '../contributionLabels'
 
 type ParticipationPanelProps = {
   collaborator: Collaborator
   authorName: string
+  revisionNumber: number
   status: ContributionStatus
   busy: boolean
   onConfirm: () => void
@@ -21,6 +22,7 @@ type ParticipationPanelProps = {
 export default function ParticipationPanel({
   collaborator,
   authorName,
+  revisionNumber,
   status,
   busy,
   onConfirm,
@@ -37,7 +39,7 @@ export default function ParticipationPanel({
         {authorName} credited you on this contribution
       </h2>
       <p className='mt-2 text-[14px] text-[#2b3833]'>
-        <span className='font-semibold'>{area}:</span> {collaborator.roleDescription}
+        <span className='font-semibold'>{area} (v{revisionNumber}):</span> {collaborator.roleDescription}
       </p>
 
       {collaborator.status === 'disputed' ? (
@@ -46,7 +48,7 @@ export default function ParticipationPanel({
         </Alert>
       ) : collaborator.status === 'confirmed' ? (
         <Alert tone='success' className='mt-4' title='You confirmed your participation'>
-          You can still dispute it until the mentor's final decision.
+          Your decision is recorded. If the author changes your role, you will be asked to review it again.
         </Alert>
       ) : collaborator.resolutionNote ? (
         <Alert tone='info' className='mt-4' title={`${authorName} answered your dispute`}>
@@ -58,12 +60,12 @@ export default function ParticipationPanel({
         <p className='mt-4 text-[13px] text-[#5d6b64]'>The mentor's decision is final; attribution is read-only.</p>
       ) : (
         <div className='mt-4 flex flex-wrap gap-2'>
-          {collaborator.status !== 'confirmed' ? (
+          {collaborator.status === 'pending' ? (
             <Button icon={CircleCheck} loading={busy} onClick={onConfirm}>
               Confirm — this is accurate
             </Button>
           ) : null}
-          {collaborator.status !== 'disputed' ? (
+          {collaborator.status === 'pending' ? (
             <Button variant='danger' icon={Flag} disabled={busy} onClick={() => setDisputing(true)}>
               Dispute
             </Button>
@@ -72,7 +74,7 @@ export default function ParticipationPanel({
       )}
 
       {disputing ? (
-        <Modal
+        <ContributionModal
           title='Dispute this attribution'
           description={`${authorName} will be asked to correct it. The mentor cannot validate while it is disputed.`}
           onClose={() => setDisputing(false)}
@@ -112,7 +114,7 @@ export default function ParticipationPanel({
               onChange={(event) => setReason(event.target.value)}
             />
           </Field>
-        </Modal>
+        </ContributionModal>
       ) : null}
     </section>
   )

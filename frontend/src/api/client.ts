@@ -24,7 +24,7 @@ async function toError(response: Response) {
  */
 let refreshing: Promise<string | null> | null = null
 
-function refreshAccessToken(): Promise<string | null> {
+export function refreshAccessToken(): Promise<string | null> {
   refreshing ??= (async () => {
     const refreshToken = getSession()?.refreshToken
     if (!refreshToken) return null
