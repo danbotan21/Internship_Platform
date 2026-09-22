@@ -3,6 +3,12 @@ using InternshipPlatform.Domain;
 using InternshipPlatform.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 
+// Two features ship a type called Notification: the messaging one lives in
+// InternshipPlatform.Domain, the resource one in InternshipPlatform.Domain.Entities.
+// Both namespaces are imported here, so each is referred to by an alias.
+using MessagingNotification = InternshipPlatform.Domain.Notification;
+using ResourceNotification = InternshipPlatform.Domain.Entities.Notification;
+
 namespace InternshipPlatform.DataAccess.Context;
 
 // Each feature module keeps its DbSets and mappings in a partial context file.
@@ -16,7 +22,7 @@ public partial class AppDbContext : DbContext
     // Auth entities
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<ResourceFavorite> ResourceFavorites => Set<ResourceFavorite>();
-    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<ResourceNotification> Notifications => Set<ResourceNotification>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
@@ -31,6 +37,17 @@ public partial class AppDbContext : DbContext
     // Document entities
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<DocumentAudit> DocumentAudits => Set<DocumentAudit>();
+
+    // Messaging entities
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<ConversationMember> ConversationMembers => Set<ConversationMember>();
+    public DbSet<Message> Messages => Set<Message>();
+    public DbSet<MessageDelivery> MessageDeliveries => Set<MessageDelivery>();
+    public DbSet<MessageRead> MessageReads => Set<MessageRead>();
+    // Named apart from the resource Notifications set above; this also keeps the
+    // two features on separate tables.
+    public DbSet<MessagingNotification> MessagingNotifications => Set<MessagingNotification>();
+    public DbSet<NotificationRecipient> NotificationRecipients => Set<NotificationRecipient>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -60,7 +77,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("timestamp with time zone");
         });
 
-        modelBuilder.Entity<Notification>(entity =>
+        modelBuilder.Entity<ResourceNotification>(entity =>
         {
             entity.HasKey(notification => notification.Id);
             entity.HasIndex(notification => new { notification.RecipientUserId, notification.IsRead });
@@ -79,6 +96,144 @@ public partial class AppDbContext : DbContext
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
+        modelBuilder.Entity<RefreshToken>(entity =>
+        {
+            entity.HasIndex(rt => rt.Token).IsUnique();
+
+            entity.HasOne(rt => rt.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(rt => rt.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ── Messaging configuration ──
+        modelBuilder.Entity<Conversation>(entity =>
+        {
+            entity.Property(c => c.Type).HasConversion<string>().IsRequired();
+            entity.Property(c => c.Kind).HasConversion<string>();
+            entity.Property(c => c.Visibility).HasConversion<string>();
+
+            entity.HasOne(c => c.Owner)
+                .WithMany()
+                .HasForeignKey(c => c.OwnerId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(c => c.Type);
+        });
+
+        modelBuilder.Entity<ConversationMember>(entity =>
+        {
+            entity.HasKey(cm => new { cm.ConversationId, cm.UserId });
+
+            entity.HasOne(cm => cm.Conversation)
+                .WithMany(c => c.Members)
+                .HasForeignKey(cm => cm.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(cm => cm.User)
+                .WithMany(u => u.ConversationMemberships)
+                .HasForeignKey(cm => cm.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(cm => cm.UserId);
+        });
+
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.Property(m => m.Body).IsRequired();
+
+            entity.HasOne(m => m.Conversation)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Deleting an account must not silently erase the conversation
+            // history other members can still see.
+            entity.HasOne(m => m.Author)
+                .WithMany(u => u.Messages)
+                .HasForeignKey(m => m.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(m => m.Parent)
+                .WithMany(m => m.Replies)
+                .HasForeignKey(m => m.ParentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(m => new { m.ConversationId, m.CreatedAt });
+            entity.HasIndex(m => m.ParentId);
+            entity.HasIndex(m => m.AuthorId);
+        });
+
+        modelBuilder.Entity<MessageDelivery>(entity =>
+        {
+            entity.HasKey(md => new { md.MessageId, md.UserId });
+
+            entity.HasOne(md => md.Message)
+                .WithMany(m => m.Deliveries)
+                .HasForeignKey(md => md.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(md => md.User)
+                .WithMany()
+                .HasForeignKey(md => md.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(md => md.UserId);
+        });
+
+        modelBuilder.Entity<MessageRead>(entity =>
+        {
+            entity.HasKey(mr => new { mr.MessageId, mr.UserId });
+
+            entity.HasOne(mr => mr.Message)
+                .WithMany(m => m.Reads)
+                .HasForeignKey(mr => mr.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(mr => mr.User)
+                .WithMany()
+                .HasForeignKey(mr => mr.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(mr => mr.UserId);
+        });
+
+        modelBuilder.Entity<MessagingNotification>(entity =>
+        {
+            entity.Property(n => n.Category).HasConversion<string>().IsRequired();
+            entity.Property(n => n.Source).HasConversion<string>().IsRequired();
+            entity.Property(n => n.Title).IsRequired();
+            entity.Property(n => n.Body).IsRequired();
+
+            entity.HasOne(n => n.Sender)
+                .WithMany()
+                .HasForeignKey(n => n.SenderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(n => n.Conversation)
+                .WithMany()
+                .HasForeignKey(n => n.ConversationId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(n => n.CreatedAt);
+        });
+
+        modelBuilder.Entity<NotificationRecipient>(entity =>
+        {
+            entity.HasKey(nr => new { nr.NotificationId, nr.UserId });
+
+            entity.HasOne(nr => nr.Notification)
+                .WithMany(n => n.Recipients)
+                .HasForeignKey(nr => nr.NotificationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(nr => nr.User)
+                .WithMany()
+                .HasForeignKey(nr => nr.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(nr => nr.UserId);
+        });
 
         // ── Document configuration ──
         modelBuilder.Entity<Document>(entity =>

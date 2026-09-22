@@ -17,9 +17,9 @@ public interface IResourceRepository
     Task AddFavoriteAsync(ResourceFavorite favorite, CancellationToken cancellationToken);
     Task<ResourceFavorite?> GetFavoriteAsync(Guid resourceId, Guid userId, CancellationToken cancellationToken);
     void RemoveFavorite(ResourceFavorite favorite);
-    Task AddNotificationAsync(Notification notification, CancellationToken cancellationToken);
-    Task<IReadOnlyList<Notification>> GetNotificationsAsync(Guid userId, CancellationToken cancellationToken);
-    Task<Notification?> GetNotificationAsync(Guid id, Guid userId, CancellationToken cancellationToken);
+    Task AddNotificationAsync(Entities.Notification notification, CancellationToken cancellationToken);
+    Task<IReadOnlyList<Entities.Notification>> GetNotificationsAsync(Guid userId, CancellationToken cancellationToken);
+    Task<Entities.Notification?> GetNotificationAsync(Guid id, Guid userId, CancellationToken cancellationToken);
 }
 
 public sealed record ResourceQuery(

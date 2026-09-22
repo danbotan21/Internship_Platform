@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using InternshipPlatform.API.Infrastructure;
 using InternshipPlatform.BusinessLayer.Auth;
+using InternshipPlatform.BusinessLayer.Messaging;
 using InternshipPlatform.BusinessLayer.Services;
 using InternshipPlatform.BusinessLayer.Opportunity;
 using InternshipPlatform.BusinessLayer.Users;
@@ -33,6 +34,9 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        // The frontend types mark absent fields as optional, so null is omitted
+        // rather than sent as an explicit null.
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
 
 builder.Services.AddCors(options =>
@@ -71,6 +75,7 @@ var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IMessagingService, MessagingService>();
 
 // Opportunity module
 builder.Services.AddScoped<OpportunityActions>();
@@ -91,7 +96,10 @@ builder.Services.AddScoped<IProgressService, ProgressService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Keep "sub" as "sub" instead of letting the handler rename it to the
+        // legacy nameidentifier claim, so controllers can read it by its JWT name.
         options.MapInboundClaims = false;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,

@@ -1,0 +1,17 @@
+{
+  "name": "internship-platform",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Dev runner for the Internship Platform (.NET API + Vite frontend)",
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,magenta --kill-others-on-fail \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "dotnet run --project backend/InternshipPlatform.API",
+    "dev:web": "npm run dev --prefix frontend",
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "start": "npm run db:up && npm run dev"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
