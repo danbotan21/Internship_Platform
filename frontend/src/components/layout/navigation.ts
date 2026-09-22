@@ -56,6 +56,7 @@ const studentSections: NavSection[] = [
     items: [
       { label: 'Messages', to: '/messages', icon: MessageSquare },
       { label: 'Calendar', to: '/calendar', icon: Calendar },
+      { label: 'Documentation', to: '/documentation', icon: FileText },
       { label: 'Resources', to: '/resources', icon: FolderOpen },
     ],
   },
@@ -84,6 +85,7 @@ const mentorSections: NavSection[] = [
     items: [
       { label: 'Messages', to: '/messages', icon: MessageSquare },
       { label: 'Calendar', to: '/calendar', icon: Calendar },
+      { label: 'Documentation', to: '/documentation', icon: FileText },
       { label: 'Resources', to: '/resources', icon: FolderOpen },
     ],
   },
@@ -112,6 +114,7 @@ const pageTitles: Record<string, string> = {
   '/custom-quizzes': 'Custom Quizzes',
   '/messages': 'Messages',
   '/calendar': 'Calendar',
+  '/documentation': 'Documentation',
   '/resources': 'Resources',
   '/skills': 'Skills',
   '/audit-log': 'Audit log',
