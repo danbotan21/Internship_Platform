@@ -61,7 +61,7 @@ export default function Sidebar() {
         { label: 'Contributions', to: '/contributions', icon: Upload },
         { label: 'Evaluation', to: '/evaluation', icon: Star },
         { label: 'Opportunities', to: '/opportunities', icon: Briefcase },
-        role === 'Intern'
+        role === 'Student'
           ? { label: 'My Applications', to: '/my-applications', icon: FileCheck }
           : { label: 'My Opportunities', to: '/my-opportunities', icon: FolderKanban },
         { label: 'Quizzes', to: '/quizzes', icon: Timer },
@@ -101,7 +101,7 @@ export default function Sidebar() {
           <div className="mb-6 rounded-xl bg-white/5 px-4 py-4">
             <p className="text-base font-medium text-white">internflow</p>
             <p className="text-sm text-white/50">
-              {role === 'Intern' ? 'Student workspace' : 'Mentor workspace'}
+              {role === 'Student' ? 'Student workspace' : 'Mentor workspace'}
             </p>
           </div>
 
@@ -147,8 +147,8 @@ export default function Sidebar() {
           <div className="flex items-center gap-1 shrink-0">
             <button
               type="button"
-              onClick={() => setRole(role === 'Intern' ? 'Mentor' : 'Intern')}
-              title={`Switch to ${role === 'Intern' ? 'Mentor' : 'Intern'} view`}
+              onClick={() => setRole(role === 'Student' ? 'Mentor' : 'Student')}
+              title={`Switch to ${role === 'Student' ? 'Mentor' : 'Student'} view`}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white transition-colors"
             >
               <UserCheck className="h-4.5 w-4.5" strokeWidth={1.75} />

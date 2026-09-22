@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Trash2, CheckCircle2, AlertCircle, Download } from 'lucide-react'
 import type {
   VaultDocument,
