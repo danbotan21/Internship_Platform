@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 
@@ -40,6 +40,20 @@ namespace InternshipPlatform.DataAccess.Migrations
             migrationBuilder.DropIndex(
                 name: "IX_Applications_StudentId_OpportunityId",
                 table: "Applications");
+
+            // Explicitly cast or reset columns that PostgreSQL cannot auto-cast from text/jsonb to integer/text[]
+            migrationBuilder.Sql(@"
+                ALTER TABLE ""Opportunities"" ALTER COLUMN ""Type"" TYPE integer USING 0;
+                ALTER TABLE ""Opportunities"" ALTER COLUMN ""Technologies"" TYPE text[] USING '{}';
+                ALTER TABLE ""Opportunities"" ALTER COLUMN ""Tags"" TYPE text[] USING '{}';
+                ALTER TABLE ""Opportunities"" ALTER COLUMN ""Status"" TYPE integer USING 0;
+                ALTER TABLE ""Opportunities"" ALTER COLUMN ""Responsibilities"" TYPE text[] USING '{}';
+                ALTER TABLE ""Opportunities"" ALTER COLUMN ""Requirements"" TYPE text[] USING '{}';
+                ALTER TABLE ""Opportunities"" ALTER COLUMN ""LocationType"" TYPE integer USING 0;
+                ALTER TABLE ""Milestones"" ALTER COLUMN ""Status"" TYPE integer USING 0;
+                ALTER TABLE ""Applications"" ALTER COLUMN ""Status"" TYPE integer USING 0;
+                ALTER TABLE ""Applications"" ALTER COLUMN ""AdditionalFilePaths"" TYPE text[] USING '{}';
+            ");
 
             migrationBuilder.AlterColumn<int>(
                 name: "Type",
@@ -126,6 +140,8 @@ namespace InternshipPlatform.DataAccess.Migrations
                 nullable: false,
                 oldClrType: typeof(string),
                 oldType: "jsonb");
+
+            migrationBuilder.Sql("DROP TABLE IF EXISTS \"DocumentAudits\" CASCADE; DROP TABLE IF EXISTS \"Documents\" CASCADE;");
 
             migrationBuilder.CreateTable(
                 name: "Documents",
