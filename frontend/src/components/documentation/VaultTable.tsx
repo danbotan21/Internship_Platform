@@ -134,7 +134,7 @@ export default function VaultTable({
         <>
         <div
           className="grid gap-4"
-          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}
+          style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 220px))' }}
         >
           {documents.filter(Boolean).slice(0, visibleCount).map((doc, idx) => {
             const isSelected = selectedDocIds.includes(doc?.id)
