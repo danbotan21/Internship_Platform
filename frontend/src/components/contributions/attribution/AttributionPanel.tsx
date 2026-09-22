@@ -74,6 +74,7 @@ export default function AttributionPanel({
           <CollaboratorCard
             key={collaborator.id}
             collaborator={collaborator}
+            revisionNumber={contribution.currentRevisionNumber}
             isViewer={viewerId === collaborator.userId}
             canEdit={canEdit}
             canAnswerDispute={canAnswerDisputes}

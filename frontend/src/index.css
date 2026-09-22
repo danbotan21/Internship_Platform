@@ -8,6 +8,8 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
+  transform: translateZ(0);
+  will-change: scroll-position;
 }
 
 /* Lightweight scrollbar with smooth rounded thumb */
@@ -26,6 +28,20 @@
 
 .hardware-scroll::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Keep sidebar navigation scrollable while hiding its native scrollbar. */
+#app-sidebar,
+#app-sidebar * {
+  -ms-overflow-style: none !important;
+  scrollbar-width: none !important;
+}
+
+#app-sidebar::-webkit-scrollbar,
+#app-sidebar *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
 }
 
 @layer utilities {
@@ -59,6 +75,10 @@
   color: #14211b;
   background: #f5f7f6;
   font-synthesis: none;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 button {

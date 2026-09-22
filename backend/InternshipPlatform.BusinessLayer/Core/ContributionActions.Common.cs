@@ -70,10 +70,11 @@ public partial class ContributionActions
         EnsureEditableRevision(
             Contribution contribution,
             DateTimeOffset now,
-            Guid? sourceEvidenceId = null)
+            Guid? sourceEvidenceId = null,
+            bool forceNew = false)
     {
         var current = GetCurrentRevision(contribution);
-        if (current.SubmittedAtUtc is null)
+        if (current.SubmittedAtUtc is null && !forceNew)
         {
             return (current, sourceEvidenceId);
         }

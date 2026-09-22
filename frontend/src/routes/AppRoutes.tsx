@@ -26,7 +26,7 @@ import ResourceDetails from '../pages/ResourceDetails'
 import Skills from '../pages/Skills'
 import Tasks from '../pages/Tasks'
 import PagePlaceholder from '../components/PagePlaceholder'
-import AdminLayout from '../components/admin/AdminLayout'
+import RequireAdmin from '../components/admin/RequireAdmin'
 import AdminDashboardPage from '../pages/admin/dashboard/AdminDashboardPage'
 import CompanyDetailPage from '../pages/admin/companies/CompanyDetailPage'
 import CompanyListPage from '../pages/admin/companies/CompanyListPage'
@@ -67,7 +67,7 @@ export default function AppRoutes() {
         <Route path='/audit-log' element={<AuditLog />} />
       </Route>
 
-      <Route path='/admin' element={<AdminLayout />}>
+      <Route path='/admin' element={<RequireAdmin />}>
         <Route index element={<Navigate to='overview' replace />} />
         <Route path='overview' element={<AdminDashboardPage />} />
         <Route path='users' element={<UserDirectoryPage />} />

@@ -55,7 +55,8 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
                 r.FullName,
                 r.Email,
                 r.Status,
-                ResolveRole(r.Role, r.CompanyRole),
+                r.Role,
+                r.CompanyRole,
                 r.CompanyName ?? ComposeOrganisation(r.University, r.AcademicGroup),
                 r.LastLoginAt))
             .ToList();
@@ -106,7 +107,7 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
             row.FullName,
             row.Email,
             row.Status,
-            ResolveRole(row.Role, row.CompanyRole),
+            row.Role,
             row.University,
             row.Programme,
             row.AcademicGroup,
@@ -137,18 +138,17 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
             users = users.Where(u => u.Membership != null && u.Membership.CompanyId == companyId);
         }
 
-        return query.Role switch
+        if (query.PlatformRole is UserRole platformRole)
         {
-            DirectoryRole.Admin => users.Where(u => u.Role == UserRole.Admin),
-            DirectoryRole.User => users.Where(u => u.Role != UserRole.Admin && u.Membership == null),
-            DirectoryRole.Owner => users.Where(u => u.Role != UserRole.Admin
-                && u.Membership != null && u.Membership.Role == CompanyRole.Owner),
-            DirectoryRole.Recruiter => users.Where(u => u.Role != UserRole.Admin
-                && u.Membership != null && u.Membership.Role == CompanyRole.Recruiter),
-            DirectoryRole.Mentor => users.Where(u => u.Role != UserRole.Admin
-                && u.Membership != null && u.Membership.Role == CompanyRole.Mentor),
-            _ => users,
-        };
+            users = users.Where(u => u.Role == platformRole);
+        }
+
+        if (query.CompanyRole is CompanyRole companyRole)
+        {
+            users = users.Where(u => u.Membership != null && u.Membership.Role == companyRole);
+        }
+
+        return users;
     }
 
     private static IQueryable<User> ApplyScope(IQueryable<User> users, UserDirectoryScope scope) =>
@@ -158,22 +158,6 @@ public class UserDirectoryService(AppDbContext context) : IUserDirectoryService
             UserDirectoryScope.Admins => users.Where(u => u.Role == UserRole.Admin),
             _ => users,
         };
-
-    private static DirectoryRole ResolveRole(UserRole platformRole, CompanyRole? companyRole)
-    {
-        if (platformRole == UserRole.Admin)
-        {
-            return DirectoryRole.Admin;
-        }
-
-        return companyRole switch
-        {
-            CompanyRole.Owner => DirectoryRole.Owner,
-            CompanyRole.Recruiter => DirectoryRole.Recruiter,
-            CompanyRole.Mentor => DirectoryRole.Mentor,
-            _ => DirectoryRole.User,
-        };
-    }
 
     private static string? ComposeOrganisation(string? university, string? academicGroup) =>
         university is null

@@ -22,7 +22,7 @@ export default function RevisionComparisonCard({
         <p className='mt-3 text-[13px] text-[#a3530f]'>Nothing changed since the reviewed revision.</p>
       ) : (
         <div className='mt-4 space-y-3'>
-          {comparison.fieldChanges.map((change) => (
+          {comparison.fieldChanges.filter((change) => change.field !== 'Linked issue').map((change) => (
             <div key={change.field} className='rounded-lg border border-[#eef1ef] p-3'>
               <p className='text-[12px] font-semibold uppercase tracking-wide text-[#8a958f]'>{change.field}</p>
               <div className='mt-2 grid gap-2 md:grid-cols-2'>

@@ -69,6 +69,7 @@ export default function AttributedContributionPage() {
             <ParticipationPanel
               collaborator={mine}
               authorName={contribution.student.fullName}
+              revisionNumber={contribution.currentRevisionNumber}
               status={contribution.status}
               busy={busy}
               onConfirm={() => void apply(() => contributionApi.confirmParticipation(contribution.id))}

@@ -1,11 +1,16 @@
-import { X, CheckCircle2 } from 'lucide-react'
+import { useState } from 'react'
+import { X, CheckCircle2, Download, Loader2, PenTool } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import type { VaultDocument } from '../../types/documentation'
+import { triggerFileDownload } from '../../utils/downloadHelper'
+import InlineDocumentPreview from './InlineDocumentPreview'
 
 interface QuickPreviewDrawerProps {
   document: VaultDocument | null
   onClose: () => void
   onApprove: (id: string) => void
   onReject: (id: string) => void
+  onSign: (id: string) => void | Promise<void>
 }
 
 export default function QuickPreviewDrawer({
@@ -13,11 +18,14 @@ export default function QuickPreviewDrawer({
   onClose,
   onApprove,
   onReject,
+  onSign,
 }: QuickPreviewDrawerProps) {
+  const [isDownloading, setIsDownloading] = useState(false)
+
   if (!document) return null
 
-  return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-white shadow-2xl border-l border-blue-500 overflow-y-auto flex flex-col transition-transform transform translate-x-0">
+  return createPortal(
+    <div className="fixed bottom-0 right-0 top-[88px] z-[100] flex w-full max-w-sm translate-x-0 transform flex-col overflow-y-auto border-l border-emerald-500 bg-white shadow-2xl transition-transform">
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
         <div className="pr-2">
@@ -34,9 +42,8 @@ export default function QuickPreviewDrawer({
       </div>
 
       <div className="flex-1 p-5 overflow-y-auto">
-        {/* Fake Preview Box */}
-        <div className="w-full h-48 bg-[#EAF2EC] rounded-xl flex items-center justify-center mb-6">
-          <span className="text-xs text-gray-500">PDF preview</span>
+        <div className="mb-6">
+          <InlineDocumentPreview document={document} />
         </div>
 
         {/* Metadata List */}
@@ -121,35 +128,57 @@ export default function QuickPreviewDrawer({
 
         {/* Action Buttons */}
         <div className="flex flex-wrap items-center gap-2 mt-auto pb-4">
-          <button 
-            onClick={() => {
-              if (document?.fileUrl) {
-                const a = window.document.createElement('a')
-                a.href = document.fileUrl
-                a.download = document.fileName || 'download'
-                window.document.body.appendChild(a)
-                a.click()
-                window.document.body.removeChild(a)
-              }
-            }}
-            className="flex-[1_1_30%] min-w-[80px] py-1.5 px-3 rounded-lg border border-gray-200 text-xs font-semibold text-gray-800 hover:bg-gray-50 flex justify-center items-center"
+          <button
+            type="button"
+            disabled={document.completedSignatures >= document.totalSignatures}
+            onClick={() => onSign(document.id)}
+            className="flex-[1_1_30%] min-w-[110px] py-1.5 px-3 rounded-lg bg-[#153327] text-xs font-semibold text-white hover:bg-[#1B4332] flex justify-center items-center gap-1.5 transition-colors disabled:cursor-not-allowed disabled:bg-emerald-100 disabled:text-emerald-700"
           >
-            Download
+            <PenTool className="w-3.5 h-3.5" />
+            {document.completedSignatures >= document.totalSignatures ? 'Signed' : 'Add Signature'}
           </button>
           <button 
+            type="button"
+            disabled={isDownloading}
+            onClick={async () => {
+              try {
+                setIsDownloading(true)
+                await triggerFileDownload(document.fileUrl, document.fileName)
+              } finally {
+                setIsDownloading(false)
+              }
+            }}
+            className="flex-[1_1_30%] min-w-[80px] py-1.5 px-3 rounded-lg border border-gray-200 text-xs font-semibold text-gray-800 hover:bg-gray-50 flex justify-center items-center gap-1.5 transition-all disabled:opacity-60 cursor-pointer"
+          >
+            {isDownloading ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-600" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <Download className="w-3.5 h-3.5 text-gray-600" />
+                <span>Download</span>
+              </>
+            )}
+          </button>
+          <button 
+            type="button"
             onClick={() => onReject(document.id)}
-            className="flex-[1_1_30%] min-w-[80px] py-1.5 px-3 rounded-lg border border-red-300 text-xs font-semibold text-red-600 hover:bg-red-50 flex justify-center items-center"
+            className="flex-[1_1_30%] min-w-[80px] py-1.5 px-3 rounded-lg border border-red-300 text-xs font-semibold text-red-600 hover:bg-red-50 flex justify-center items-center cursor-pointer transition-colors"
           >
             Reject
           </button>
           <button 
+            type="button"
             onClick={() => onApprove(document.id)}
-            className="flex-[1_1_30%] min-w-[80px] py-1.5 px-3 rounded-lg bg-[#FF7A00] text-xs font-semibold text-white hover:bg-[#E86E00] flex justify-center items-center"
+            className="flex-[1_1_30%] min-w-[80px] py-1.5 px-3 rounded-lg bg-[#FF7A00] text-xs font-semibold text-white hover:bg-[#E86E00] flex justify-center items-center cursor-pointer transition-colors"
           >
             Approve
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    window.document.body
   )
 }

@@ -6,6 +6,7 @@ import { categoryMeta, collaboratorStatusMeta } from '../contributionLabels'
 
 type CollaboratorCardProps = {
   collaborator: Collaborator
+  revisionNumber: number
   isViewer?: boolean
   canEdit?: boolean
   canAnswerDispute?: boolean
@@ -16,6 +17,7 @@ type CollaboratorCardProps = {
 
 export default function CollaboratorCard({
   collaborator,
+  revisionNumber,
   isViewer,
   canEdit,
   canAnswerDispute,
@@ -52,7 +54,7 @@ export default function CollaboratorCard({
       <div className='mt-3 flex gap-2 rounded-lg bg-[#f7f9f8] px-3 py-2.5'>
         <AreaIcon className='mt-0.5 size-4 shrink-0 text-[#2b6a50]' aria-hidden='true' />
         <p className='text-[13px] text-[#2b3833]'>
-          <span className='font-semibold'>{categoryMeta[collaborator.area].label}:</span>{' '}
+          <span className='font-semibold'>{categoryMeta[collaborator.area].label} (v{revisionNumber}):</span>{' '}
           {collaborator.roleDescription}
         </p>
       </div>
