@@ -53,10 +53,10 @@ export default function UploadDropzone({ onUpload, activeCategory }: UploadDropz
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`relative mb-6 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center transition-all duration-300 backdrop-blur-sm ${
+      className={`relative mb-6 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center transition-all duration-300 ${
         isDragging
           ? 'border-emerald-500 bg-emerald-50/80 scale-[1.01] shadow-emerald-500/10 shadow-lg'
-          : 'border-emerald-200/60 bg-white/40 hover:border-emerald-400 hover:bg-white/60 hover:shadow-md'
+          : 'border-emerald-200/60 bg-white hover:border-emerald-400 hover:bg-white hover:shadow-md'
       }`}
     >
       <input

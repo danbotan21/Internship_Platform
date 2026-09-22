@@ -8,7 +8,7 @@ export default function Layout() {
       <Sidebar />
       <div className='flex min-w-0 flex-1 flex-col'>
         <TopBar />
-        <main className='min-w-0 flex-1 overflow-y-auto hardware-scroll scroll-smooth'>
+        <main className='min-w-0 flex-1 overflow-y-auto hardware-scroll'>
           <div className='w-full px-5 py-7 md:px-8 relative'>
             <Outlet />
           </div>
