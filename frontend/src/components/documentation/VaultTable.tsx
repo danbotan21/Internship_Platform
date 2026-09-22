@@ -6,6 +6,7 @@ import type {
 } from '../../types/documentation'
 import DocumentThumbnail from './DocumentThumbnail'
 import { ErrorBoundary } from '../ErrorBoundary'
+import { triggerFileDownload } from '../../utils/downloadHelper'
 
 interface VaultTableProps {
   documents: VaultDocument[]
@@ -55,14 +56,7 @@ export default function VaultTable({
 
   const handleDownload = (e: React.MouseEvent, doc: VaultDocument) => {
     e.stopPropagation()
-    if (doc?.fileUrl) {
-      const a = document.createElement('a')
-      a.href = doc.fileUrl
-      a.download = doc.fileName || 'download'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    }
+    triggerFileDownload(doc?.fileUrl, doc?.fileName)
   }
 
   return (
