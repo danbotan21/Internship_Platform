@@ -9,7 +9,7 @@ export default function MetricHeader({ stats }: MetricHeaderProps) {
   return (
     <div className="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
       {/* 1. Pending Sign-offs */}
-      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white/60 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-white/80 relative overflow-hidden">
+      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-[#EAF2EC] rounded-full blur-[40px] -mr-10 -mt-10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
         <div className="relative z-10">
           <p className="text-sm font-semibold tracking-wide text-[#5d6b64] uppercase">Pending Sign-offs</p>
@@ -27,7 +27,7 @@ export default function MetricHeader({ stats }: MetricHeaderProps) {
       </div>
 
       {/* 2. Completed Agreements */}
-      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white/60 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-white/80 relative overflow-hidden">
+      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-100 rounded-full blur-[40px] -mr-10 -mt-10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
         <div className="relative z-10">
           <p className="text-sm font-semibold tracking-wide text-[#5d6b64] uppercase">Completed Agreements</p>
@@ -45,7 +45,7 @@ export default function MetricHeader({ stats }: MetricHeaderProps) {
       </div>
 
       {/* 3. Expiring Documents */}
-      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white/60 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-white/80 relative overflow-hidden">
+      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-amber-100 rounded-full blur-[40px] -mr-10 -mt-10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
         <div className="relative z-10">
           <p className="text-sm font-semibold tracking-wide text-[#5d6b64] uppercase">Expiring Documents</p>
@@ -63,7 +63,7 @@ export default function MetricHeader({ stats }: MetricHeaderProps) {
       </div>
 
       {/* 4. Verification Score */}
-      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white/60 p-6 shadow-sm backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:bg-white/80 relative overflow-hidden">
+      <div className="group flex items-start justify-between rounded-2xl border border-white/40 bg-white p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-blue-100 rounded-full blur-[40px] -mr-10 -mt-10 opacity-60 group-hover:opacity-100 transition-opacity"></div>
         <div className="relative z-10">
           <p className="text-sm font-semibold tracking-wide text-[#5d6b64] uppercase">Verification Score</p>

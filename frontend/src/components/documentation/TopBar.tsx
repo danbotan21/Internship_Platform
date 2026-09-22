@@ -11,6 +11,7 @@ import {
   X,
   LogOut,
 } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../hooks/useAuth'
 import ConfirmLogoutModal from '../ConfirmLogoutModal'
 
@@ -23,10 +24,7 @@ function getInitials(name: string): string {
     .join('')
 }
 
-interface TopBarProps {
-  searchQuery: string
-  onSearchChange: (q: string) => void
-}
+
 
 interface NotificationItem {
   id: string
@@ -80,8 +78,22 @@ const INITIAL_NOTIFICATIONS: NotificationItem[] = [
   },
 ]
 
-export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
+export default function TopBar() {
   const { session, logout } = useAuth()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const searchQuery = searchParams.get('q') || ''
+
+  const handleSearchChange = (val: string) => {
+    setSearchParams(
+      (prev) => {
+        if (val) prev.set('q', val)
+        else prev.delete('q')
+        return prev
+      },
+      { replace: true }
+    )
+  }
+
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS)
   const [isOpen, setIsOpen] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
@@ -161,7 +173,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           placeholder="Search documents, templates, requirements..."
           className="w-full rounded-full border border-white bg-white py-3 pl-12 pr-4 text-base text-gray-800 placeholder-gray-400 shadow-sm transition-colors focus:border-[#1e3a2c] focus:outline-none focus:ring-1 focus:ring-[#1e3a2c]"
         />

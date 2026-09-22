@@ -28,7 +28,7 @@ export default function RightRailPanel({
   return (
     <aside className="w-full xl:w-72 shrink-0 space-y-5">
       {/* 1. Vault Storage Card */}
-      <div className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md">
+      <div className="rounded-2xl border border-white/40 bg-white p-5 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-gray-900">Vault Storage</h3>
         {/* Storage Bar */}
         <div className="h-2 w-full rounded-full bg-emerald-100 overflow-hidden shadow-inner">
@@ -46,7 +46,7 @@ export default function RightRailPanel({
       </div>
 
       {/* 2. Mandatory Checklists Card */}
-      <div className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md">
+      <div className="rounded-2xl border border-white/40 bg-white p-5 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-gray-900">Mandatory Checklists</h3>
         <div className="space-y-3.5">
           {checklists.map((item) => (
@@ -73,7 +73,7 @@ export default function RightRailPanel({
       </div>
 
       {/* 3. Recent Actions & Logs Card */}
-      <div className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md">
+      <div className="rounded-2xl border border-white/40 bg-white p-5 shadow-sm">
         <h3 className="mb-3 text-sm font-semibold text-gray-900">Recent Actions & Logs</h3>
         <div className="space-y-4 max-h-[280px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
           {activityLogs.map((log) => (
