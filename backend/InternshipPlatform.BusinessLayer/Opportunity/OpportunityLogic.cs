@@ -69,6 +69,9 @@ public class OpportunityLogic(OpportunityActions actions) : IOpportunityLogic
         if (opp is null)
             return ApiResponse<OpportunityDetailDto>.Fail("Opportunity not found.");
 
+        if (opp.Status == OpportunityStatus.Draft && opp.MentorId != currentUserId)
+            return ApiResponse<OpportunityDetailDto>.Fail("Opportunity not found.");
+
         bool isSaved = currentUserId.HasValue && await actions.IsSavedByUserAsync(id, currentUserId.Value);
 
         return ApiResponse<OpportunityDetailDto>.Ok(MapToDetail(opp, isSaved, hasApplied: false));
@@ -120,7 +123,7 @@ public class OpportunityLogic(OpportunityActions actions) : IOpportunityLogic
             Deadline = dto.Deadline,
             StartDate = dto.StartDate,
             EndDate = dto.EndDate,
-            Status = OpportunityStatus.Draft,
+            Status = dto.Status ?? OpportunityStatus.Open,
             MentorId = mentorId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -156,6 +159,10 @@ public class OpportunityLogic(OpportunityActions actions) : IOpportunityLogic
         opp.Deadline = dto.Deadline;
         opp.StartDate = dto.StartDate;
         opp.EndDate = dto.EndDate;
+        if (dto.Status.HasValue)
+        {
+            opp.Status = dto.Status.Value;
+        }
 
         var updated = await actions.UpdateAsync(opp);
         return ApiResponse<OpportunityDetailDto>.Ok(MapToDetail(updated, isSaved: false, hasApplied: false));
@@ -187,6 +194,7 @@ public class OpportunityLogic(OpportunityActions actions) : IOpportunityLogic
         Type = o.Type.ToString(),
         DurationCategory = o.DurationCategory,
         Field = o.Field,
+        Technologies = o.Technologies,
         Tags = o.Tags,
         Deadline = o.Deadline,
         CreatedAt = o.CreatedAt,

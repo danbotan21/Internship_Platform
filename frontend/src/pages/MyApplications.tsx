@@ -14,7 +14,6 @@ import {
   X,
   Loader2,
 } from 'lucide-react'
-import { MOCK_OPPORTUNITIES } from '../types/opportunities'
 import type { Opportunity } from '../types/opportunities'
 import { CustomSelect } from '../components/CustomSelect'
 import { getMyApplications, getOpportunities } from '../api/opportunities'
@@ -27,37 +26,6 @@ interface DisplayApplication {
   step: string
   opportunity?: Opportunity
 }
-
-const FALLBACK_MY_APPLICATIONS: DisplayApplication[] = [
-  {
-    id: 'app-1',
-    opportunityId: '1',
-    appliedDate: '18 Sep 2026',
-    status: 'Under Review',
-    step: 'Document Review',
-  },
-  {
-    id: 'app-2',
-    opportunityId: '2',
-    appliedDate: '10 Sep 2026',
-    status: 'Under Review',
-    step: 'Technical Assessment',
-  },
-  {
-    id: 'app-3',
-    opportunityId: '3',
-    appliedDate: '01 Sep 2026',
-    status: 'Accepted',
-    step: 'Offer Accepted',
-  },
-  {
-    id: 'app-4',
-    opportunityId: '4',
-    appliedDate: '15 Aug 2026',
-    status: 'Rejected',
-    step: 'Application Closed',
-  },
-]
 
 export default function MyApplications() {
   const [applications, setApplications] = useState<DisplayApplication[]>([])
@@ -73,11 +41,11 @@ export default function MyApplications() {
       setIsLoading(true)
       try {
         const [oppsRes, appsRes] = await Promise.all([
-          getOpportunities().catch(() => ({ items: MOCK_OPPORTUNITIES, pagination: { totalItems: 0, totalPages: 1, currentPage: 1, limit: 10 } })),
+          getOpportunities().catch(() => ({ items: [], pagination: { totalItems: 0, totalPages: 1, currentPage: 1, limit: 10 } })),
           getMyApplications().catch(() => null),
         ])
 
-        const opps = oppsRes?.items?.length ? oppsRes.items : MOCK_OPPORTUNITIES
+        const opps = oppsRes?.items || []
         const oppMap: Record<string, Opportunity> = {}
         opps.forEach((o) => {
           oppMap[o.id] = o
@@ -132,21 +100,10 @@ export default function MyApplications() {
           })
           setApplications(displayApps)
         } else {
-          // Use fallback mock items mapped to opps
-          setApplications(
-            FALLBACK_MY_APPLICATIONS.map((fa) => ({
-              ...fa,
-              opportunity: oppMap[fa.opportunityId] || MOCK_OPPORTUNITIES[0],
-            }))
-          )
+          setApplications([])
         }
       } catch {
-        setApplications(
-          FALLBACK_MY_APPLICATIONS.map((fa) => ({
-            ...fa,
-            opportunity: MOCK_OPPORTUNITIES.find((o) => o.id === fa.opportunityId),
-          }))
-        )
+        setApplications([])
       } finally {
         setIsLoading(false)
       }
@@ -380,7 +337,29 @@ export default function MyApplications() {
             )
           })}
 
-        {!isLoading && applicationsWithDetails.length === 0 && (
+        {!isLoading && applications.length === 0 && (
+          <div className="bg-white border border-gray-200/70 rounded-2xl p-12 text-center space-y-4 shadow-xs">
+            <div className="w-14 h-14 bg-gray-100 text-gray-400 rounded-2xl flex items-center justify-center mx-auto">
+              <FileCheck className="w-7 h-7" />
+            </div>
+            <div className="space-y-1 max-w-md mx-auto">
+              <h3 className="text-base font-bold text-gray-900">No applications yet</h3>
+              <p className="text-sm text-gray-500">
+                You haven't submitted any internship applications yet. Browse available positions and apply to get started.
+              </p>
+            </div>
+            <div>
+              <Link
+                to="/opportunities"
+                className="inline-flex items-center gap-2 bg-[#ff5500] hover:bg-[#e64d00] text-white text-xs font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-xs"
+              >
+                Browse Opportunities
+              </Link>
+            </div>
+          </div>
+        )}
+
+        {!isLoading && applications.length > 0 && applicationsWithDetails.length === 0 && (
           <div className="bg-white border border-gray-200/70 rounded-2xl p-10 text-center space-y-3">
             <FileText className="w-10 h-10 text-gray-300 mx-auto" />
             <p className="text-gray-600 font-medium text-sm">

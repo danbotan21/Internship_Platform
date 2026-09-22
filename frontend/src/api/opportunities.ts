@@ -35,9 +35,28 @@ function getAuthHeaders(includeContentType = true): HeadersInit {
 async function handleApiResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorBody = await response.json().catch(() => null)
+
+    let detailedErrors: string | null = null
+    if (errorBody?.errors) {
+      if (Array.isArray(errorBody.errors)) {
+        detailedErrors = errorBody.errors.filter(Boolean).join('\n')
+      } else if (typeof errorBody.errors === 'object') {
+        const entries = Object.entries(errorBody.errors)
+        if (entries.length > 0) {
+          detailedErrors = entries
+            .map(([field, msgs]) => {
+              const msgText = Array.isArray(msgs) ? msgs.join(', ') : String(msgs)
+              return `${field}: ${msgText}`
+            })
+            .join('\n')
+        }
+      }
+    }
+
     const errorMsg =
+      detailedErrors ||
       errorBody?.message ||
-      (Array.isArray(errorBody?.errors) ? errorBody.errors.join(', ') : null) ||
+      errorBody?.title ||
       `HTTP Error ${response.status}: ${response.statusText}`
     throw new Error(errorMsg)
   }
@@ -69,6 +88,7 @@ export async function getOpportunities(
     query.append('durationCategory', params.durationCategory)
   if (params?.page) query.append('page', String(params.page))
   if (params?.limit) query.append('limit', String(params.limit))
+  else query.append('limit', '100')
 
   const queryString = query.toString()
   const url = `${API_BASE_URL}/api/opportunities${queryString ? `?${queryString}` : ''}`
@@ -286,25 +306,68 @@ export async function getCompanyInfo(): Promise<string> {
 }
 
 /**
- * Download document via fetch blob
+ * Download document or application file via fetch blob
  */
-export async function downloadDocument(documentId: string, fileName?: string): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/api/documents/${documentId}/download`, {
+export async function downloadDocument(
+  documentId: string,
+  fileName?: string,
+  fileType?: string
+): Promise<void> {
+  const params = new URLSearchParams()
+  if (fileType) params.set('fileType', fileType)
+  if (fileName) params.set('fileName', fileName)
+  const qs = params.toString() ? `?${params.toString()}` : ''
+
+  // Attempt download from applications endpoint, fallback to documents endpoint
+  let res = await fetch(`${API_BASE_URL}/api/applications/${documentId}/download${qs}`, {
     method: 'GET',
     headers: getAuthHeaders(false),
   })
 
   if (!res.ok) {
-    throw new Error(`Failed to download document (${res.status})`)
+    res = await fetch(`${API_BASE_URL}/api/documents/${documentId}/download${qs}`, {
+      method: 'GET',
+      headers: getAuthHeaders(false),
+    })
+  }
+
+  if (!res.ok) {
+    let errorMsg = `Failed to download file (${res.status})`
+    try {
+      const errJson = await res.json()
+      if (errJson?.message) errorMsg = errJson.message
+    } catch {
+      // ignore json parse error
+    }
+    throw new Error(errorMsg)
+  }
+
+  // Extract filename from Content-Disposition header if available
+  let resolvedFileName = fileName
+  const disposition = res.headers.get('content-disposition') || res.headers.get('Content-Disposition')
+  if (disposition) {
+    // Check filename*=UTF-8''filename.ext or filename="filename.ext"
+    const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i)
+    if (utf8Match && utf8Match[1]) {
+      resolvedFileName = decodeURIComponent(utf8Match[1])
+    } else {
+      const standardMatch = disposition.match(/filename="?([^";\n]+)"?/i)
+      if (standardMatch && standardMatch[1]) {
+        resolvedFileName = standardMatch[1].trim()
+      }
+    }
   }
 
   const blob = await res.blob()
   const url = window.URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = fileName || `document-${documentId}.pdf`
+  a.download = resolvedFileName || `document-${documentId}`
   document.body.appendChild(a)
   a.click()
   a.remove()
   window.URL.revokeObjectURL(url)
 }
+
+export const downloadApplicationFile = downloadDocument
+

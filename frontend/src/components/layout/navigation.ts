@@ -42,7 +42,6 @@ const studentSections: NavSection[] = [
         icon: TrendingUp,
       },
       { label: 'Tasks', to: '/tasks', icon: ListChecks },
-      { label: 'Attendance', to: '/attendance', icon: Clock },
       { label: 'Reports', to: '/reports', icon: FileText },
       { label: 'Contributions', to: '/contributions', icon: Upload },
       { label: 'Evaluation', to: '/evaluation', icon: Star },

@@ -11,7 +11,7 @@ namespace InternshipPlatform.DataAccess.Context;
 public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
     private const string FallbackConnection =
-        "Host=localhost;Port=5432;Database=internship_platform;Username=internship_user;Password=password";
+        "Host=localhost;Port=5432;Database=internship_platform;Username=internship_user;Password=chitanu123";
 
     public AppDbContext CreateDbContext(string[] args)
     {

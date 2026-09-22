@@ -147,8 +147,10 @@ export default function CreateOpportunity() {
     }))
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const [submittedStatus, setSubmittedStatus] = useState<'Open' | 'Draft'>('Open')
+
+  const handleSubmit = async (e?: React.FormEvent, statusToSet: 'Open' | 'Draft' = 'Open') => {
+    if (e) e.preventDefault()
     setIsSubmitting(true)
     setSubmitError(null)
 
@@ -172,9 +174,11 @@ export default function CreateOpportunity() {
         deadline: formData.deadline ? new Date(formData.deadline).toISOString() : new Date(Date.now() + 60 * 86400000).toISOString(),
         startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + 90 * 86400000).toISOString(),
+        status: statusToSet,
       }
 
       await createOpportunity(payload)
+      setSubmittedStatus(statusToSet)
       setIsSubmitted(true)
     } catch (err: any) {
       setSubmitError(err.message || 'Failed to create opportunity. Please check all fields.')
@@ -191,7 +195,7 @@ export default function CreateOpportunity() {
         </div>
         <div className="space-y-2">
           <h1 className="text-3xl font-bold text-[#0c382b]">
-            Opportunity Created Successfully!
+            {submittedStatus === 'Draft' ? 'Opportunity Saved as Draft!' : 'Opportunity Published Successfully!'}
           </h1>
           <p className="text-gray-600 max-w-lg mx-auto text-sm sm:text-base">
             Your internship opportunity for{' '}
@@ -202,7 +206,9 @@ export default function CreateOpportunity() {
             <span className="font-semibold text-gray-900">
               {mentorCompany.name}
             </span>{' '}
-            has been published.
+            {submittedStatus === 'Draft'
+              ? 'has been saved as a draft. It is only visible in your workspace until you publish it.'
+              : 'has been published and is now open for students to view and apply.'}
           </p>
         </div>
         <div className="pt-4 flex justify-center gap-4">
@@ -852,7 +858,7 @@ export default function CreateOpportunity() {
                 )}
 
                 {/* Step 2 Actions */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100 gap-3">
                   <button
                     type="button"
                     onClick={() => setCurrentStep(1)}
@@ -862,27 +868,39 @@ export default function CreateOpportunity() {
                     <span>Back</span>
                   </button>
 
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${
-                      isSubmitting
-                        ? 'bg-orange-300 cursor-not-allowed'
-                        : 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
-                    }`}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Publishing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Publish Opportunity</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => handleSubmit(undefined, 'Draft')}
+                      className="px-5 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer shadow-2xs"
+                    >
+                      Save as Draft
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={isSubmitting}
+                      onClick={() => handleSubmit(undefined, 'Open')}
+                      className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${
+                        isSubmitting
+                          ? 'bg-orange-300 cursor-not-allowed'
+                          : 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
+                      }`}
+                    >
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>Processing...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span>Publish Opportunity</span>
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
             </form>
           )}

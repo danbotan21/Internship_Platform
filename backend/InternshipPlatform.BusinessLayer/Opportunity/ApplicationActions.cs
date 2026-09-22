@@ -44,4 +44,13 @@ public class ApplicationActions(AppDbContext db)
         db.Applications.Update(application);
         await db.SaveChangesAsync();
     }
+
+    public async Task<OpportunityStatus?> GetOpportunityStatusAsync(Guid opportunityId)
+    {
+        var opp = await db.Opportunities.FirstOrDefaultAsync(o => o.Id == opportunityId);
+        return opp?.Status;
+    }
+
+    public async Task<InternshipPlatform.Domain.User?> GetUserByIdAsync(Guid userId)
+        => await db.Users.FirstOrDefaultAsync(u => u.Id == userId);
 }
