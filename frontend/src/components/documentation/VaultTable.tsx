@@ -132,7 +132,10 @@ export default function VaultTable({
         </div>
       ) : (
         <>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        <div
+          className="grid gap-4"
+          style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}
+        >
           {documents.filter(Boolean).slice(0, visibleCount).map((doc, idx) => {
             const isSelected = selectedDocIds.includes(doc?.id)
             const isPdf = doc?.fileType?.toLowerCase() === 'pdf'
@@ -143,11 +146,11 @@ export default function VaultTable({
               <div
                 key={doc?.id || idx.toString()}
                 onClick={() => { if (doc) onRowClick(doc); }}
-                className={`group relative flex flex-col rounded-2xl bg-white border border-white/50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${isSelected ? 'ring-2 ring-emerald-500 bg-emerald-50 shadow-md' : 'shadow-sm'
+                className={`group relative flex aspect-square min-w-0 flex-col overflow-hidden rounded-2xl border border-white/50 bg-white transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${isSelected ? 'cursor-pointer ring-2 ring-emerald-500 bg-emerald-50 shadow-md' : 'cursor-pointer shadow-sm'
                   }`}
               >
                 {/* Top Header: Icon, Title */}
-                <div className="flex items-center gap-3 p-4 z-10 bg-transparent relative">
+                <div className="relative z-10 flex items-center gap-2 p-3 bg-transparent">
                   {/* Icon or Checkbox */}
                   <div className="shrink-0 flex items-center justify-center w-6 h-6 relative" onClick={(e) => e.stopPropagation()}>
                     {/* Checkbox (Hover or Selected) */}
@@ -174,8 +177,8 @@ export default function VaultTable({
                     </div>
                   </div>
                   {/* Title */}
-                  <div className="flex-1 min-w-0 pr-6">
-                    <h4 className="text-sm font-semibold text-[#14211b] truncate" title={doc?.fileName}>
+                  <div className="min-w-0 flex-1 pr-5">
+                    <h4 className="truncate text-xs font-semibold text-[#14211b]" title={doc?.fileName}>
                       {doc?.fileName || 'Unknown Document'}
                     </h4>
                   </div>
@@ -212,7 +215,7 @@ export default function VaultTable({
                 </div>
 
                 {/* Preview Area (Middle) */}
-                <div className="mx-4 mt-0 mb-3 h-[180px] bg-white rounded-xl border border-gray-100 overflow-hidden flex items-center justify-center relative shadow-sm pointer-events-none group-hover:shadow-md transition-shadow">
+                <div className="relative mx-3 mb-2 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm pointer-events-none group-hover:shadow-md transition-shadow">
                   <ErrorBoundary fallback={
                     <div className="flex flex-col items-center justify-center bg-gray-50 w-full h-full p-4">
                       <div className="w-[70%] h-[90%] bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
@@ -226,12 +229,12 @@ export default function VaultTable({
                 </div>
 
                 {/* Footer (Avatar and Date) */}
-                <div className="flex items-center gap-3 px-4 pb-4">
-                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-[11px] font-bold flex items-center justify-center shrink-0 shadow-sm">
+                <div className="flex items-center gap-2 px-3 pb-3">
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-[11px] font-bold text-white shadow-sm">
                     {doc?.uploadedBy ? doc.uploadedBy.charAt(0).toUpperCase() : 'V'}
                   </div>
                   <div className="flex flex-col flex-1 min-w-0 justify-center">
-                    <span className="text-xs font-medium text-[#5d6b64] truncate">
+                    <span className="truncate text-[11px] font-medium text-[#5d6b64]">
                       Deschis de tine • {formatDate(doc?.createdAt)}
                     </span>
                   </div>

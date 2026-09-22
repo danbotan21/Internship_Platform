@@ -134,9 +134,9 @@ export default function TopBar() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
   }
 
-  const handleToggleRead = (id: string) => {
+  const handleMarkAsRead = (id: string) => {
     setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, read: !n.read } : n))
+      prev.map((n) => (n.id === id && !n.read ? { ...n, read: true } : n))
     )
   }
 
@@ -158,7 +158,7 @@ export default function TopBar() {
   }
 
   return (
-    <header className="relative flex items-center justify-between gap-6 bg-gradient-to-r from-[#eff4f1] via-[#e5ede9] to-[#d4e2dc] px-10 py-5">
+    <header className="relative z-[200] flex h-[88px] w-full shrink-0 items-center gap-4 bg-gradient-to-r from-[#eff4f1] via-[#e5ede9] to-[#d4e2dc] px-6 py-5 shadow-sm">
       {/* Abstract Background Waves (SVG) */}
       <svg className="absolute right-0 top-0 h-full w-[60%] pointer-events-none" preserveAspectRatio="none" viewBox="0 0 800 100" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path opacity="0.5" d="M800 0H200C350 20 450 100 800 100V0Z" fill="#B4CFC3" />
@@ -166,7 +166,7 @@ export default function TopBar() {
       </svg>
       
       {/* Search Bar - extended to get closer to notification icon */}
-      <div className="relative z-10 flex-1">
+      <div className="relative z-10 min-w-0 flex-1">
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-gray-400">
           <Search className="h-5 w-5" />
         </div>
@@ -180,7 +180,7 @@ export default function TopBar() {
       </div>
 
       {/* Right Controls: Notification bell & User avatar initials without photo */}
-      <div className="relative z-10 flex items-center gap-4 shrink-0">
+      <div className="relative z-20 flex shrink-0 items-center gap-4">
         {/* Interactive Notification Bell with Dropdown */}
         <div className="relative" ref={containerRef}>
           <button
@@ -201,7 +201,7 @@ export default function TopBar() {
 
           {/* Notifications Dropdown Card */}
           {isOpen && (
-            <div className="absolute right-0 z-50 mt-2 w-80 sm:w-96 rounded-2xl border border-gray-100 bg-white shadow-xl ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95 duration-150">
+            <div className="absolute right-0 z-[250] mt-2 w-80 sm:w-96 rounded-2xl border border-gray-100 bg-white shadow-xl ring-1 ring-black/5 animate-in fade-in-0 zoom-in-95 duration-150">
               {/* Header */}
               <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
                 <div className="flex items-center gap-2">
@@ -244,8 +244,10 @@ export default function TopBar() {
                   notifications.map((item) => (
                     <div
                       key={item.id}
-                      onClick={() => handleToggleRead(item.id)}
-                      className={`flex cursor-pointer items-start gap-3 p-3.5 text-xs transition-colors hover:bg-gray-50/80 ${
+                      onClick={item.read ? undefined : () => handleMarkAsRead(item.id)}
+                      className={`flex items-start gap-3 p-3.5 text-xs transition-colors hover:bg-gray-50/80 ${
+                        !item.read ? 'cursor-pointer' : 'cursor-default'
+                      } ${
                         !item.read ? 'bg-orange-50/20' : 'bg-white'
                       }`}
                     >

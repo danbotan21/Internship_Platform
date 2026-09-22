@@ -9,7 +9,25 @@ import type {
 
 const STORAGE_KEY_DOCS = 'internflow_vault_documents'
 const STORAGE_KEY_COMPLIANCE = 'internflow_compliance_signed'
+const FILE_DATABASE_NAME = 'internflow-document-files'
+const FILE_STORE_NAME = 'files'
+const LOCAL_DOCUMENT_URL_PREFIX = 'local-document://'
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5080'
+const dateFromToday = (days: number) => new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString()
+
+const STATIC_SAMPLE_FILE_URLS: Record<string, string> = {
+  'Spring_Milestone_2_Report.pdf': '/uploads/Spring_Milestone_2_Report.pdf',
+  'Institutional_Sign_Off_Agreement.docx': '/uploads/Institutional_Sign_Off_Agreement.docx',
+  'Completed_Practicum_Evaluation.xlsx': '/uploads/Completed_Practicum_Evaluation.xlsx',
+  'Health_Safety_Compliance_Form.pdf': '/uploads/Health_Safety_Compliance_Form.pdf',
+}
+
+const STATIC_SAMPLE_FILE_URLS_BY_ID: Record<string, string> = {
+  '11111111-1111-1111-1111-111111111111': '/uploads/Spring_Milestone_2_Report.pdf',
+  '22222222-2222-2222-2222-222222222222': '/uploads/Institutional_Sign_Off_Agreement.docx',
+  '33333333-3333-3333-3333-333333333333': '/uploads/Completed_Practicum_Evaluation.xlsx',
+  '44444444-4444-4444-4444-444444444444': '/uploads/Health_Safety_Compliance_Form.pdf',
+}
 
 const generateId = () => {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -156,7 +174,7 @@ const INITIAL_DOCUMENTS: VaultDocument[] = [
     completedSignatures: 2,
     visibilityRole: 'Public',
     isMandatory: true,
-    expiresAt: '2025-11-15T00:00:00Z',
+    expiresAt: dateFromToday(7),
     uploadedBy: 'Ana Popescu',
     createdAt: '2025-10-03T08:30:00Z',
     updatedAt: '2025-10-03T08:30:00Z',
@@ -178,6 +196,51 @@ const INITIAL_DOCUMENTS: VaultDocument[] = [
         timestamp: '2025-10-03T08:30:00Z',
       },
     ],
+  },
+  {
+    id: '55555555-5555-5555-5555-555555555555',
+    title: 'Completed Internship Agreement',
+    fileName: 'Completed_Internship_Agreement.pdf',
+    category: 'Agreements',
+    fileUrl: '/dummy.pdf',
+    fileType: 'pdf',
+    size: 624640,
+    version: 1,
+    status: 'Approved',
+    signingStatus: 'Complete',
+    totalSignatures: 3,
+    completedSignatures: 3,
+    visibilityRole: 'Public',
+    isMandatory: true,
+    approvedAt: dateFromToday(-2),
+    approvedBy: 'Dr. Michael Chen (Mentor)',
+    uploadedBy: 'Ana Popescu',
+    createdAt: dateFromToday(-7),
+    updatedAt: dateFromToday(-2),
+    audits: [],
+  },
+  {
+    id: '66666666-6666-6666-6666-666666666666',
+    title: 'Portfolio Certificate Renewal',
+    fileName: 'Portfolio_Certificate_Renewal.pdf',
+    category: 'Certificates',
+    fileUrl: '/dummy.pdf',
+    fileType: 'pdf',
+    size: 382976,
+    version: 1,
+    status: 'Approved',
+    signingStatus: 'Complete',
+    totalSignatures: 3,
+    completedSignatures: 3,
+    visibilityRole: 'Public',
+    isMandatory: true,
+    expiresAt: dateFromToday(12),
+    approvedAt: dateFromToday(-4),
+    approvedBy: 'Elena Vasilescu (Coordinator)',
+    uploadedBy: 'Ana Popescu',
+    createdAt: dateFromToday(-14),
+    updatedAt: dateFromToday(-4),
+    audits: [],
   },
 ]
 
@@ -213,6 +276,65 @@ export const INITIAL_ACTIVITY_LOGS: ActivityLogItem[] = [
 ]
 
 class DocumentationService {
+  private openFileDatabase(): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const request = window.indexedDB.open(FILE_DATABASE_NAME, 1)
+      request.onupgradeneeded = () => {
+        const database = request.result
+        if (!database.objectStoreNames.contains(FILE_STORE_NAME)) {
+          database.createObjectStore(FILE_STORE_NAME)
+        }
+      }
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+  }
+
+  private async saveLocalFile(id: string, file: File): Promise<boolean> {
+    try {
+      const database = await this.openFileDatabase()
+      await new Promise<void>((resolve, reject) => {
+        const transaction = database.transaction(FILE_STORE_NAME, 'readwrite')
+        transaction.objectStore(FILE_STORE_NAME).put(file, id)
+        transaction.oncomplete = () => resolve()
+        transaction.onerror = () => reject(transaction.error)
+      })
+      database.close()
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  private readFileAsDataUrl(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(String(reader.result))
+      reader.onerror = () => reject(reader.error)
+      reader.readAsDataURL(file)
+    })
+  }
+
+  private async restoreLocalFileUrl(document: VaultDocument): Promise<VaultDocument> {
+    if (!document.fileUrl.startsWith(LOCAL_DOCUMENT_URL_PREFIX)) return document
+
+    try {
+      const database = await this.openFileDatabase()
+      const blob = await new Promise<Blob | undefined>((resolve, reject) => {
+        const transaction = database.transaction(FILE_STORE_NAME, 'readonly')
+        const request = transaction.objectStore(FILE_STORE_NAME).get(document.id)
+        request.onsuccess = () => resolve(request.result as Blob | undefined)
+        request.onerror = () => reject(request.error)
+      })
+      database.close()
+      if (blob) return { ...document, fileUrl: URL.createObjectURL(blob) }
+    } catch {
+      // Use the inline copy below when IndexedDB is unavailable or the entry
+      // was removed by the browser.
+    }
+    return document.inlineDataUrl ? { ...document, fileUrl: document.inlineDataUrl } : document
+  }
+
   private getLocalDocs(): VaultDocument[] {
     const raw = localStorage.getItem(STORAGE_KEY_DOCS)
     if (!raw) {
@@ -220,7 +342,22 @@ class DocumentationService {
       return INITIAL_DOCUMENTS
     }
     try {
-      return JSON.parse(raw)
+      const storedDocuments = JSON.parse(raw) as VaultDocument[]
+      const missingSeedDocuments = INITIAL_DOCUMENTS.filter(
+        (seed) => !storedDocuments.some((document) => document.id === seed.id)
+      )
+      const documents = [...storedDocuments, ...missingSeedDocuments].map((document) => {
+        const fileUrl = document.fileUrl.startsWith('blob:')
+          ? STATIC_SAMPLE_FILE_URLS_BY_ID[document.id] ?? STATIC_SAMPLE_FILE_URLS[document.fileName] ?? document.fileUrl
+          : document.fileUrl
+        return document.id === '44444444-4444-4444-4444-444444444444'
+          ? { ...document, fileUrl, expiresAt: dateFromToday(7) }
+          : { ...document, fileUrl }
+      })
+      if (missingSeedDocuments.length > 0 || documents.some((document, index) => document !== storedDocuments[index])) {
+        this.saveLocalDocs(documents)
+      }
+      return documents
     } catch {
       return INITIAL_DOCUMENTS
     }
@@ -281,7 +418,7 @@ class DocumentationService {
       )
     }
 
-    return docs
+    return Promise.all(docs.map((document) => this.restoreLocalFileUrl(document)))
   }
 
   async uploadDocument(
@@ -319,12 +456,25 @@ class DocumentationService {
 
     const docs = this.getLocalDocs()
     const ext = file.name.split('.').pop() || 'pdf'
+    const id = generateId()
+    const savedLocally = await this.saveLocalFile(id, file)
+    let inlineDataUrl: string | undefined
+    // Keep the fallback below the usual localStorage quota; larger files stay
+    // in IndexedDB and are restored from there.
+    if (file.size <= 2 * 1024 * 1024) {
+      try {
+        inlineDataUrl = await this.readFileAsDataUrl(file)
+      } catch {
+        inlineDataUrl = undefined
+      }
+    }
     const newDoc: VaultDocument = {
-      id: generateId(),
+      id,
       title: metadata.title || file.name.replace(/\.[^/.]+$/, ''),
       fileName: file.name,
       category: metadata.category,
-      fileUrl: URL.createObjectURL(file),
+      fileUrl: savedLocally ? `${LOCAL_DOCUMENT_URL_PREFIX}${id}` : URL.createObjectURL(file),
+      inlineDataUrl,
       fileType: ext.toLowerCase(),
       size: file.size,
       version: 1,
@@ -351,7 +501,9 @@ class DocumentationService {
 
     docs.unshift(newDoc)
     this.saveLocalDocs(docs)
-    return newDoc
+    return savedLocally ? { ...newDoc, fileUrl: URL.createObjectURL(file) } : inlineDataUrl
+      ? { ...newDoc, fileUrl: inlineDataUrl }
+      : newDoc
   }
 
   async updateStatus(
@@ -501,30 +653,47 @@ class DocumentationService {
     return true
   }
 
-  async getStats(): Promise<VaultStats> {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/documents/stats`)
-      if (res.ok) {
-        return await res.json()
-      }
-    } catch {
-      // fallback
-    }
-
-    const docs = this.getLocalDocs()
-    const pendingCount = docs.filter((d) => d.status === 'Pending' || d.signingStatus !== 'Complete').length
+  async getStats(documents?: VaultDocument[]): Promise<VaultStats> {
+    // Keep the statistics and the vault list on the same data source. This makes
+    // storage usage update immediately after a local upload instead of showing
+    // stale values returned by an unrelated endpoint.
+    const docs = documents ?? this.getLocalDocs()
+    const pendingDocuments = docs.filter(
+      (d) => d.status === 'Pending' || d.signingStatus !== 'Complete'
+    )
+    const agreements = docs.filter((d) => d.category === 'Agreements')
+    const completedAgreements = agreements.filter(
+      (d) => d.status === 'Approved' || d.signingStatus === 'Complete'
+    )
+    const now = Date.now()
+    const fourteenDaysFromNow = now + 14 * 24 * 60 * 60 * 1000
+    const expiringDocuments = docs.filter((d) => {
+      if (!d.expiresAt) return false
+      const expiry = new Date(d.expiresAt).getTime()
+      return expiry >= now && expiry <= fourteenDaysFromNow
+    })
+    const mandatoryDocuments = docs.filter((d) => d.isMandatory)
+    const verifiedMandatoryDocuments = mandatoryDocuments.filter(
+      (d) => d.status === 'Approved' || d.signingStatus === 'Complete'
+    )
     const totalStorage = docs.reduce((acc, d) => acc + d.size, 0)
+    const completedAgreementsPercentage = agreements.length
+      ? Math.round((completedAgreements.length / agreements.length) * 100)
+      : 0
+    const verificationScore = mandatoryDocuments.length
+      ? Math.round((verifiedMandatoryDocuments.length / mandatoryDocuments.length) * 100)
+      : 0
 
     return {
-      pendingSignOffsCount: pendingCount || 4,
-      dueThisWeekCount: 2,
-      completedAgreementsPercentage: 86,
-      completedAgreementsTrend: '+6% vs last month',
-      expiringDocumentsCount: 2,
+      pendingSignOffsCount: pendingDocuments.length,
+      dueThisWeekCount: pendingDocuments.length,
+      completedAgreementsPercentage,
+      completedAgreementsTrend: `${completedAgreements.length}/${agreements.length} completed`,
+      expiringDocumentsCount: expiringDocuments.length,
       expiringDocumentsAlert: 'Within 14 days',
-      verificationScore: 92,
-      verificationScoreSubtitle: 'All required docs signed',
-      storageUsedBytes: totalStorage || 3900000,
+      verificationScore,
+      verificationScoreSubtitle: `${verifiedMandatoryDocuments.length}/${mandatoryDocuments.length} required docs verified`,
+      storageUsedBytes: totalStorage,
       storageTotalBytes: 50000000,
     }
   }
