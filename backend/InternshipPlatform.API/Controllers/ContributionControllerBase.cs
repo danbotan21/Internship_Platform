@@ -1,24 +1,15 @@
-using InternshipPlatform.API.Infrastructure;
+using InternshipPlatform.API;
 using InternshipPlatform.Domain.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InternshipPlatform.API.Controllers;
 
+[Authorize]
 // Shared helpers for the contribution controllers.
 public abstract class ContributionControllerBase : ControllerBase
 {
-    // TEMPORARY: the preview switcher in the frontend sends the demo user id.
-    // When the Authentication Epic is merged this becomes the JWT "sub" claim.
-    protected Guid CurrentUserId
-    {
-        get
-        {
-            var value = Request.Headers["X-Demo-User-Id"].FirstOrDefault();
-            return Guid.TryParse(value, out var userId) && userId != Guid.Empty
-                ? userId
-                : DemoInternshipDirectory.DefaultStudentId;
-        }
-    }
+    protected Guid CurrentUserId => User.GetUserId();
 
     protected IActionResult ToActionResult<T>(ServiceResult<T> result)
     {

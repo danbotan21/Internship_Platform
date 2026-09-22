@@ -3,8 +3,7 @@ using InternshipPlatform.Domain.Models;
 namespace InternshipPlatform.BusinessLayer.Interfaces;
 
 // Who takes part in the internship and which mentor each student belongs to.
-// Temporary seam: the real data comes from the Authentication and internship
-// Epics; only the implementation registered in Program.cs changes then.
+// The implementation resolves these values from the real application database.
 public interface IInternshipDirectoryAction
 {
     Task<IReadOnlyList<InternshipMemberDto>> GetMembersAsync(CancellationToken ct = default);

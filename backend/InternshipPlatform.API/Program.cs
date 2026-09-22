@@ -1,10 +1,14 @@
+using System.IO;
 using System.Text;
 using System.Text.Json.Serialization;
 using InternshipPlatform.API.Infrastructure;
 using InternshipPlatform.BusinessLayer.Auth;
+using InternshipPlatform.BusinessLayer.Messaging;
+using InternshipPlatform.BusinessLayer.Services;
 using InternshipPlatform.BusinessLayer.Opportunity;
 using InternshipPlatform.BusinessLayer.Users;
 using InternshipPlatform.BusinessLayer.Interfaces;
+using InternshipPlatform.BusinessLayer.Internship;
 using InternshipPlatform.BusinessLayer.Progress;
 using InternshipPlatform.BusinessLayer.Structure;
 using InternshipPlatform.DataAccess.Context;
@@ -30,6 +34,9 @@ builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        // The frontend types mark absent fields as optional, so null is omitted
+        // rather than sent as an explicit null.
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
     });
 
 builder.Services.AddCors(options =>
@@ -44,8 +51,7 @@ builder.Services.AddCors(options =>
 });
 
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection")
-    ?? throw new InvalidOperationException(
-        "Connection string 'DefaultConnection' was not found.");
+    ?? "Host=localhost;Port=5432;Database=internship_platform;Username=internship_user;Password=password1234";
 
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
@@ -59,12 +65,17 @@ builder.Services.AddScoped<ICompanyAdminService, CompanyAdminService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 
 
+// Register business services
+builder.Services.AddScoped<IDocumentService, DocumentService>();
+
+// Auth / JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
     ?? throw new InvalidOperationException("Jwt configuration section was not found.");
 
 builder.Services.AddSingleton(jwtSettings);
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IMessagingService, MessagingService>();
 
 // Opportunity module
 builder.Services.AddScoped<OpportunityActions>();
@@ -85,7 +96,10 @@ builder.Services.AddScoped<IProgressService, ProgressService>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
+        // Keep "sub" as "sub" instead of letting the handler rename it to the
+        // legacy nameidentifier claim, so controllers can read it by its JWT name.
         options.MapInboundClaims = false;
+
         options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
@@ -104,9 +118,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<IContributionAction, ContributionActionExecution>();
 builder.Services.AddScoped<IContributionFileStorageAction, LocalContributionFileStorage>();
 
-// TEMPORARY: Contribution Management still uses its demo internship directory
-// until authenticated users are connected to mentor/student assignments.
-builder.Services.AddSingleton<IInternshipDirectoryAction, DemoInternshipDirectory>();
+builder.Services.AddScoped<IInternshipDirectoryAction, DatabaseInternshipDirectory>();
 
 builder.Services.AddMemoryCache();
 builder.Services.Configure<GitHubOptions>(builder.Configuration.GetSection("GitHub"));
@@ -117,20 +129,31 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Ensure uploads folder exists
+var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "uploads");
+if (!Directory.Exists(uploadsPath))
+{
+    Directory.CreateDirectory(uploadsPath);
+}
+
+// Configure the HTTP request pipeline.
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
     await db.Database.MigrateAsync();
 }
-
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Internflow API v1");
+    });
 }
 
 app.UseCors("AllowAll");
 app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

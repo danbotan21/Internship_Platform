@@ -1,10 +1,12 @@
 using InternshipPlatform.BusinessLayer.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InternshipPlatform.API.Controllers;
 
 // What the student can pick from when attaching GitHub evidence.
 [ApiController]
+[Authorize(Roles = "Student")]
 [Route("api/contributions/github")]
 public sealed class ContributionGitHubController : ContributionControllerBase
 {

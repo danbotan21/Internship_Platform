@@ -6,8 +6,8 @@ public class ContributionCollaborator
 
     public Guid ContributionId { get; set; }
 
-    // Team member chosen from the internship directory. The User entity belongs
-    // to the Authentication module, so the id is kept as a scalar.
+    // Team member chosen from the real internship directory. The id remains
+    // scalar so the Contribution module does not expose User navigation graphs.
     public Guid UserId { get; set; }
 
     // Snapshot of the member's name and email when they were added.

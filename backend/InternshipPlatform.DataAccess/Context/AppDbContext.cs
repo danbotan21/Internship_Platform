@@ -1,6 +1,13 @@
+using System;
 using InternshipPlatform.Domain;
 using InternshipPlatform.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+
+// Two features ship a type called Notification: the messaging one lives in
+// InternshipPlatform.Domain, the resource one in InternshipPlatform.Domain.Entities.
+// Both namespaces are imported here, so each is referred to by an alias.
+using MessagingNotification = InternshipPlatform.Domain.Notification;
+using ResourceNotification = InternshipPlatform.Domain.Entities.Notification;
 
 namespace InternshipPlatform.DataAccess.Context;
 
@@ -12,9 +19,10 @@ public partial class AppDbContext : DbContext
     {
     }
 
+    // Auth entities
     public DbSet<Resource> Resources => Set<Resource>();
     public DbSet<ResourceFavorite> ResourceFavorites => Set<ResourceFavorite>();
-    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<ResourceNotification> Notifications => Set<ResourceNotification>();
     public DbSet<User> Users => Set<User>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<Opportunity> Opportunities => Set<Opportunity>();
@@ -25,6 +33,21 @@ public partial class AppDbContext : DbContext
     public DbSet<Milestone> Milestones => Set<Milestone>();
     public DbSet<TaskLogEntry> TaskLogEntries => Set<TaskLogEntry>();
     public DbSet<SupervisorFeedback> SupervisorFeedback => Set<SupervisorFeedback>();
+
+    // Document entities
+    public DbSet<Document> Documents => Set<Document>();
+    public DbSet<DocumentAudit> DocumentAudits => Set<DocumentAudit>();
+
+    // Messaging entities
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<ConversationMember> ConversationMembers => Set<ConversationMember>();
+    public DbSet<Message> Messages => Set<Message>();
+    public DbSet<MessageDelivery> MessageDeliveries => Set<MessageDelivery>();
+    public DbSet<MessageRead> MessageReads => Set<MessageRead>();
+    // Named apart from the resource Notifications set above; this also keeps the
+    // two features on separate tables.
+    public DbSet<MessagingNotification> MessagingNotifications => Set<MessagingNotification>();
+    public DbSet<NotificationRecipient> NotificationRecipients => Set<NotificationRecipient>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -54,7 +77,7 @@ public partial class AppDbContext : DbContext
                 .HasColumnType("timestamp with time zone");
         });
 
-        modelBuilder.Entity<Notification>(entity =>
+        modelBuilder.Entity<ResourceNotification>(entity =>
         {
             entity.HasKey(notification => notification.Id);
             entity.HasIndex(notification => new { notification.RecipientUserId, notification.IsRead });
@@ -72,105 +95,267 @@ public partial class AppDbContext : DbContext
                 .HasForeignKey(favorite => favorite.ResourceId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
-        modelBuilder.Entity<User>(entity =>
-        {
-            entity.HasIndex(user => user.Email).IsUnique();
-            entity.Property(user => user.Email).IsRequired();
-            entity.Property(user => user.PasswordHash).IsRequired();
-            entity.Property(user => user.Role).HasConversion<string>();
-        });
 
-        // ── RefreshToken ─────────────────────────────────────────────────
         modelBuilder.Entity<RefreshToken>(entity =>
         {
-            entity.HasIndex(token => token.Token).IsUnique();
-            entity.HasOne(token => token.User)
-                .WithMany(user => user.RefreshTokens)
-                .HasForeignKey(token => token.UserId)
+            entity.HasIndex(rt => rt.Token).IsUnique();
+
+            entity.HasOne(rt => rt.User)
+                .WithMany(u => u.RefreshTokens)
+                .HasForeignKey(rt => rt.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
         });
 
-        // ── Opportunity ──────────────────────────────────────────────────
-        modelBuilder.Entity<Opportunity>(entity =>
+        // ── Messaging configuration ──
+        modelBuilder.Entity<Conversation>(entity =>
         {
-            entity.Property(o => o.Status).HasConversion<string>();
-            entity.Property(o => o.Type).HasConversion<string>();
-            entity.Property(o => o.LocationType).HasConversion<string>();
+            entity.Property(c => c.Type).HasConversion<string>().IsRequired();
+            entity.Property(c => c.Kind).HasConversion<string>();
+            entity.Property(c => c.Visibility).HasConversion<string>();
 
-            // JSON columns for string arrays (PostgreSQL jsonb)
-            entity.Property(o => o.Responsibilities).HasColumnType("jsonb");
-            entity.Property(o => o.Requirements).HasColumnType("jsonb");
-            entity.Property(o => o.Technologies).HasColumnType("jsonb");
-            entity.Property(o => o.Tags).HasColumnType("jsonb");
+            entity.HasOne(c => c.Owner)
+                .WithMany()
+                .HasForeignKey(c => c.OwnerId)
+                .OnDelete(DeleteBehavior.SetNull);
 
-            // Mentor → Opportunities (one-to-many)
-            entity.HasOne(o => o.Mentor)
-                .WithMany(u => u.Opportunities)
-                .HasForeignKey(o => o.MentorId)
+            entity.HasIndex(c => c.Type);
+        });
+
+        modelBuilder.Entity<ConversationMember>(entity =>
+        {
+            entity.HasKey(cm => new { cm.ConversationId, cm.UserId });
+
+            entity.HasOne(cm => cm.Conversation)
+                .WithMany(c => c.Members)
+                .HasForeignKey(cm => cm.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(cm => cm.User)
+                .WithMany(u => u.ConversationMemberships)
+                .HasForeignKey(cm => cm.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(cm => cm.UserId);
+        });
+
+        modelBuilder.Entity<Message>(entity =>
+        {
+            entity.Property(m => m.Body).IsRequired();
+
+            entity.HasOne(m => m.Conversation)
+                .WithMany(c => c.Messages)
+                .HasForeignKey(m => m.ConversationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Deleting an account must not silently erase the conversation
+            // history other members can still see.
+            entity.HasOne(m => m.Author)
+                .WithMany(u => u.Messages)
+                .HasForeignKey(m => m.AuthorId)
                 .OnDelete(DeleteBehavior.Restrict);
-        });
 
-        // ── Application ──────────────────────────────────────────────────
-        modelBuilder.Entity<Application>(entity =>
-        {
-            entity.Property(a => a.Status).HasConversion<string>();
-            entity.Property(a => a.AdditionalFilePaths).HasColumnType("jsonb");
-
-            // Student → Applications
-            entity.HasOne(a => a.Student)
-                .WithMany(u => u.Applications)
-                .HasForeignKey(a => a.StudentId)
-                .OnDelete(DeleteBehavior.Restrict);
-
-            // Opportunity → Applications
-            entity.HasOne(a => a.Opportunity)
-                .WithMany(o => o.Applications)
-                .HasForeignKey(a => a.OpportunityId)
+            entity.HasOne(m => m.Parent)
+                .WithMany(m => m.Replies)
+                .HasForeignKey(m => m.ParentId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // One application per student per opportunity
-            entity.HasIndex(a => new { a.StudentId, a.OpportunityId }).IsUnique();
+            entity.HasIndex(m => new { m.ConversationId, m.CreatedAt });
+            entity.HasIndex(m => m.ParentId);
+            entity.HasIndex(m => m.AuthorId);
         });
 
-        // ── SavedOpportunities (many-to-many join table) ─────────────────
-        modelBuilder.Entity<User>()
-            .HasMany(u => u.SavedOpportunities)
-            .WithMany()
-            .UsingEntity(j => j.ToTable("UserSavedOpportunities"));
-
-        modelBuilder.Entity<Milestone>(entity =>
+        modelBuilder.Entity<MessageDelivery>(entity =>
         {
-            entity.Property(milestone => milestone.Status).HasConversion<string>();
-            entity.HasOne(milestone => milestone.StudentUser)
-                .WithMany()
-                .HasForeignKey(milestone => milestone.StudentUserId)
+            entity.HasKey(md => new { md.MessageId, md.UserId });
+
+            entity.HasOne(md => md.Message)
+                .WithMany(m => m.Deliveries)
+                .HasForeignKey(md => md.MessageId)
                 .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(milestone => milestone.ReviewedByUser)
+
+            entity.HasOne(md => md.User)
                 .WithMany()
-                .HasForeignKey(milestone => milestone.ReviewedByUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasForeignKey(md => md.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(md => md.UserId);
         });
 
-        modelBuilder.Entity<TaskLogEntry>(entity =>
+        modelBuilder.Entity<MessageRead>(entity =>
         {
-            entity.HasOne(task => task.StudentUser)
-                .WithMany()
-                .HasForeignKey(task => task.StudentUserId)
+            entity.HasKey(mr => new { mr.MessageId, mr.UserId });
+
+            entity.HasOne(mr => mr.Message)
+                .WithMany(m => m.Reads)
+                .HasForeignKey(mr => mr.MessageId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(mr => mr.User)
+                .WithMany()
+                .HasForeignKey(mr => mr.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(mr => mr.UserId);
         });
 
-        modelBuilder.Entity<SupervisorFeedback>(entity =>
+        modelBuilder.Entity<MessagingNotification>(entity =>
         {
-            entity.HasOne(feedback => feedback.StudentUser)
+            entity.Property(n => n.Category).HasConversion<string>().IsRequired();
+            entity.Property(n => n.Source).HasConversion<string>().IsRequired();
+            entity.Property(n => n.Title).IsRequired();
+            entity.Property(n => n.Body).IsRequired();
+
+            entity.HasOne(n => n.Sender)
                 .WithMany()
-                .HasForeignKey(feedback => feedback.StudentUserId)
-                .OnDelete(DeleteBehavior.Cascade);
-            entity.HasOne(feedback => feedback.SupervisorUser)
+                .HasForeignKey(n => n.SenderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne(n => n.Conversation)
                 .WithMany()
-                .HasForeignKey(feedback => feedback.SupervisorUserId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .HasForeignKey(n => n.ConversationId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(n => n.CreatedAt);
         });
 
+        modelBuilder.Entity<NotificationRecipient>(entity =>
+        {
+            entity.HasKey(nr => new { nr.NotificationId, nr.UserId });
+
+            entity.HasOne(nr => nr.Notification)
+                .WithMany(n => n.Recipients)
+                .HasForeignKey(nr => nr.NotificationId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(nr => nr.User)
+                .WithMany()
+                .HasForeignKey(nr => nr.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(nr => nr.UserId);
+        });
+
+        // ── Document configuration ──
+        modelBuilder.Entity<Document>(entity =>
+        {
+            entity.HasKey(d => d.Id);
+            entity.Property(d => d.Title).IsRequired().HasMaxLength(256);
+            entity.Property(d => d.FileName).IsRequired().HasMaxLength(256);
+            entity.Property(d => d.Category).IsRequired().HasMaxLength(64);
+            entity.Property(d => d.FileType).IsRequired().HasMaxLength(32);
+            entity.Property(d => d.Status).IsRequired().HasMaxLength(64);
+            entity.Property(d => d.SigningStatus).IsRequired().HasMaxLength(64);
+            entity.Property(d => d.VisibilityRole).IsRequired().HasMaxLength(64);
+            entity.Property(d => d.FileUrl).HasMaxLength(1024);
+            entity.Property(d => d.UploadedBy).HasMaxLength(128);
+
+            entity.HasMany(d => d.Audits)
+                  .WithOne(a => a.Document)
+                  .HasForeignKey(a => a.DocumentId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DocumentAudit>(entity =>
+        {
+            entity.HasKey(a => a.Id);
+            entity.Property(a => a.Action).IsRequired().HasMaxLength(64);
+            entity.Property(a => a.PerformedBy).IsRequired().HasMaxLength(128);
+            entity.Property(a => a.Details).HasMaxLength(1024);
+        });
+
+        // Seed initial documents matching the screenshot
+        var doc1Id = Guid.Parse("11111111-1111-1111-1111-111111111111");
+        var doc2Id = Guid.Parse("22222222-2222-2222-2222-222222222222");
+        var doc3Id = Guid.Parse("33333333-3333-3333-3333-333333333333");
+        var doc4Id = Guid.Parse("44444444-4444-4444-4444-444444444444");
+
+        modelBuilder.Entity<Document>().HasData(
+            new Document
+            {
+                Id = doc1Id,
+                Title = "Spring Milestone 2 Report",
+                FileName = "Spring_Milestone_2_Report.pdf",
+                Category = "Report",
+                FileUrl = "/uploads/Spring_Milestone_2_Report.pdf",
+                FileType = "pdf",
+                Size = 1468006, // 1.4 MB
+                Version = 3,
+                Status = "Approved",
+                SigningStatus = "Complete",
+                TotalSignatures = 3,
+                CompletedSignatures = 3,
+                VisibilityRole = "Public",
+                IsMandatory = true,
+                ApprovedAt = new DateTime(2025, 10, 24, 14, 0, 0, DateTimeKind.Utc),
+                ApprovedBy = "Dr. Michael Chen (Mentor)",
+                UploadedBy = "Ana Popescu",
+                CreatedAt = new DateTime(2025, 10, 24, 10, 30, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 10, 24, 14, 0, 0, DateTimeKind.Utc)
+            },
+            new Document
+            {
+                Id = doc2Id,
+                Title = "Institutional Sign Off Agreement",
+                FileName = "Institutional_Sign_Off_Agreement.docx",
+                Category = "Agreement",
+                FileUrl = "/uploads/Institutional_Sign_Off_Agreement.docx",
+                FileType = "docx",
+                Size = 430080, // 420 KB
+                Version = 1,
+                Status = "Pending",
+                SigningStatus = "SignedByMentor",
+                TotalSignatures = 3,
+                CompletedSignatures = 2,
+                VisibilityRole = "Public",
+                IsMandatory = true,
+                UploadedBy = "Ana Popescu",
+                CreatedAt = new DateTime(2025, 10, 19, 11, 15, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 10, 19, 11, 15, 0, DateTimeKind.Utc)
+            },
+            new Document
+            {
+                Id = doc3Id,
+                Title = "Completed Practicum Evaluation",
+                FileName = "Completed_Practicum_Evaluation.xlsx",
+                Category = "Report",
+                FileUrl = "/uploads/Completed_Practicum_Evaluation.xlsx",
+                FileType = "xlsx",
+                Size = 2202009, // 2.1 MB
+                Version = 2,
+                Status = "Approved",
+                SigningStatus = "Complete",
+                TotalSignatures = 3,
+                CompletedSignatures = 3,
+                VisibilityRole = "MentorOnly",
+                IsMandatory = false,
+                ApprovedAt = new DateTime(2025, 10, 14, 16, 20, 0, DateTimeKind.Utc),
+                ApprovedBy = "Elena Vasilescu (Coordinator)",
+                UploadedBy = "Ana Popescu",
+                CreatedAt = new DateTime(2025, 10, 14, 9, 45, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 10, 14, 16, 20, 0, DateTimeKind.Utc)
+            },
+            new Document
+            {
+                Id = doc4Id,
+                Title = "Health & Safety Compliance Form",
+                FileName = "Health_Safety_Compliance_Form.pdf",
+                Category = "Agreement",
+                FileUrl = "/uploads/Health_Safety_Compliance_Form.pdf",
+                FileType = "pdf",
+                Size = 317440, // 310 KB
+                Version = 1,
+                Status = "Pending",
+                SigningStatus = "SignedByStudent",
+                TotalSignatures = 3,
+                CompletedSignatures = 2,
+                VisibilityRole = "Public",
+                IsMandatory = true,
+                ExpiresAt = new DateTime(2025, 11, 15, 0, 0, 0, DateTimeKind.Utc),
+                UploadedBy = "Ana Popescu",
+                CreatedAt = new DateTime(2025, 10, 3, 8, 30, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2025, 10, 3, 8, 30, 0, DateTimeKind.Utc)
+            }
+        );
         ConfigureContributionModule(modelBuilder);
     }
 }

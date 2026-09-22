@@ -1,5 +1,6 @@
 using InternshipPlatform.BusinessLayer.Interfaces;
 using InternshipPlatform.Domain.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Net.Http.Headers;
 
@@ -7,6 +8,7 @@ namespace InternshipPlatform.API.Controllers;
 
 // Student endpoints: drafts, evidence and submission.
 [ApiController]
+[Authorize(Roles = "Student")]
 [Route("api/contributions")]
 public sealed class ContributionsController : ContributionControllerBase
 {

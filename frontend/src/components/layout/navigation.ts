@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Upload,
   Box,
+  Pencil,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { UserRole } from '../../types/auth'
@@ -55,6 +56,7 @@ const studentSections: NavSection[] = [
     items: [
       { label: 'Messages', to: '/messages', icon: MessageSquare },
       { label: 'Calendar', to: '/calendar', icon: Calendar },
+      { label: 'Documentation', to: '/documentation', icon: FileText },
       { label: 'Resources', to: '/resources', icon: FolderOpen },
     ],
   },
@@ -71,6 +73,7 @@ const mentorSections: NavSection[] = [
       { label: 'Overview', to: '/', icon: LayoutGrid },
       { label: 'Internship progress', to: '/internship-progress', icon: TrendingUp },
       { label: 'Review queue', to: '/contributions', icon: Upload },
+      { label: 'Custom Quizzes', to: '/custom-quizzes', icon: Pencil },
       { label: 'Reports', to: '/reports', icon: FileText },
       { label: 'Evaluation', to: '/evaluation', icon: Star },
       { label: 'Opportunities', to: '/opportunities', icon: Briefcase },
@@ -82,6 +85,7 @@ const mentorSections: NavSection[] = [
     items: [
       { label: 'Messages', to: '/messages', icon: MessageSquare },
       { label: 'Calendar', to: '/calendar', icon: Calendar },
+      { label: 'Documentation', to: '/documentation', icon: FileText },
       { label: 'Resources', to: '/resources', icon: FolderOpen },
     ],
   },
@@ -107,8 +111,10 @@ const pageTitles: Record<string, string> = {
   '/my-applications': 'My Applications',
   '/my-opportunities': 'My Opportunities',
   '/quizzes': 'Quizzes',
+  '/custom-quizzes': 'Custom Quizzes',
   '/messages': 'Messages',
   '/calendar': 'Calendar',
+  '/documentation': 'Documentation',
   '/resources': 'Resources',
   '/skills': 'Skills',
   '/audit-log': 'Audit log',

@@ -1,11 +1,13 @@
 using InternshipPlatform.BusinessLayer.Interfaces;
 using InternshipPlatform.Domain.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InternshipPlatform.API.Controllers;
 
 // The author manages who shared the work and what each person did.
 [ApiController]
+[Authorize(Roles = "Student")]
 [Route("api/contributions/{contributionId:guid}/collaborators")]
 public sealed class ContributionCollaboratorsController : ContributionControllerBase
 {

@@ -3,7 +3,11 @@ import type { ContributionDetails, ContributionReview, DraftInput } from '../../
 export type EditorStep = 'details' | 'evidence' | 'team' | 'submit'
 
 export const editorSteps: { value: EditorStep; label: string; checks: string[] }[] = [
-  { value: 'details', label: 'Details', checks: ['title', 'description', 'ownRole', 'workPeriod'] },
+  {
+    value: 'details',
+    label: 'Details',
+    checks: ['mentor', 'title', 'description', 'ownRole', 'workPeriod'],
+  },
   { value: 'evidence', label: 'Evidence', checks: ['evidence'] },
   { value: 'team', label: 'Team', checks: ['collaborators'] },
   { value: 'submit', label: 'Review & submit', checks: ['feedback', 'revisionNote', 'changed'] },
