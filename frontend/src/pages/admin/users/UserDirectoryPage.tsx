@@ -8,7 +8,8 @@ import TableMessage from '../../../components/admin/TableMessage'
 import { useSearchParamsUpdater } from '../../../hooks/useSearchParamsUpdater'
 import { fetchUserDirectory } from '../../../api/adminUsers'
 import type {
-  DirectoryRole,
+  CompanyRole,
+  PlatformRole,
   UserDirectoryCounts,
   UserDirectoryQuery,
   UserDirectoryResult,
@@ -16,7 +17,7 @@ import type {
   UserDirectorySort,
   UserStatus,
 } from '../../../types/adminUsers'
-import { directoryRoleLabels, formatLastActive } from '../format'
+import { companyRoleLabels, formatLastActive, platformRoleLabels } from '../format'
 
 const PAGE_SIZE = 20
 const SEARCH_DEBOUNCE_MS = 300
@@ -27,8 +28,21 @@ const scopes: { value: UserDirectoryScope; label: string; count: keyof UserDirec
   { value: 'Admins', label: 'Admins', count: 'admins' },
 ]
 
-const roles: DirectoryRole[] = ['User', 'Admin', 'Owner', 'Recruiter', 'Mentor']
+const platformRoles: PlatformRole[] = ['Student', 'Mentor', 'Company', 'Admin']
+const companyRoles: CompanyRole[] = ['Owner', 'Recruiter', 'Mentor']
 const statuses: UserStatus[] = ['Active', 'Deactivated']
+
+// One dropdown covers both kinds of role, so the option value has to say which it is.
+const roleOptions = [
+  {
+    group: 'Platform role',
+    options: platformRoles.map((value) => ({ value: `p:${value}`, label: platformRoleLabels[value] })),
+  },
+  {
+    group: 'Role in company',
+    options: companyRoles.map((value) => ({ value: `c:${value}`, label: companyRoleLabels[value] })),
+  },
+]
 
 function pick<T extends string>(value: string | null, allowed: readonly T[]): T | undefined {
   return allowed.find((item) => item === value)
@@ -43,7 +57,8 @@ export default function UserDirectoryPage() {
 
   // The URL is the source of truth, so filters survive a reload and the back button.
   const scope = pick(searchParams.get('scope'), scopes.map((s) => s.value)) ?? 'All'
-  const role = pick(searchParams.get('role'), roles)
+  const platformRole = pick(searchParams.get('platformRole'), platformRoles)
+  const companyRole = pick(searchParams.get('companyRole'), companyRoles)
   const status = pick(searchParams.get('status'), statuses)
   const sort: UserDirectorySort = searchParams.get('sort') === 'NameDesc' ? 'NameDesc' : 'NameAsc'
   const search = searchParams.get('search') ?? ''
@@ -53,8 +68,17 @@ export default function UserDirectoryPage() {
   const [response, setResponse] = useState<Response | null>(null)
 
   const query = useMemo<UserDirectoryQuery>(
-    () => ({ scope, search: search || undefined, role, status, sort, page, pageSize: PAGE_SIZE }),
-    [scope, search, role, status, sort, page],
+    () => ({
+      scope,
+      search: search || undefined,
+      platformRole,
+      companyRole,
+      status,
+      sort,
+      page,
+      pageSize: PAGE_SIZE,
+    }),
+    [scope, search, platformRole, companyRole, status, sort, page],
   )
   const requestKey = JSON.stringify(query)
 
@@ -138,9 +162,15 @@ export default function UserDirectoryPage() {
 
           <FilterSelect
             label="Role"
-            value={role ?? ''}
-            onChange={(value) => updateParams({ role: value || undefined })}
-            options={roles.map((value) => ({ value, label: directoryRoleLabels[value] }))}
+            value={platformRole ? `p:${platformRole}` : companyRole ? `c:${companyRole}` : ''}
+            onChange={(value) => {
+              const [kind, name] = value.split(':')
+              updateParams({
+                platformRole: kind === 'p' ? name : undefined,
+                companyRole: kind === 'c' ? name : undefined,
+              })
+            }}
+            groups={roleOptions}
           />
 
           <FilterSelect
@@ -182,12 +212,15 @@ export default function UserDirectoryPage() {
                   <td className="px-4 py-3.5">
                     <StatusBadge status={user.status} />
                   </td>
-                  <td
-                    className={`px-4 py-3.5 text-[11px] font-medium ${
-                      user.role === 'Admin' ? 'text-[#a54a00]' : 'text-[#718078]'
-                    }`}
-                  >
-                    {directoryRoleLabels[user.role]}
+                  <td className="px-4 py-3.5 text-[11px] font-medium">
+                    <span className={user.platformRole === 'Admin' ? 'text-[#a54a00]' : 'text-[#718078]'}>
+                      {platformRoleLabels[user.platformRole]}
+                    </span>
+                    {user.companyRole && (
+                      <span className="block text-[10px] text-[#718078]">
+                        {companyRoleLabels[user.companyRole]}
+                      </span>
+                    )}
                   </td>
                   <td className="truncate px-4 py-3.5 text-[11px] font-medium text-[#718078]">
                     {user.organisation ?? '—'}
@@ -228,14 +261,17 @@ export default function UserDirectoryPage() {
   )
 }
 
+type Option = { value: string; label: string }
+
 type FilterSelectProps = {
   label: string
   value: string
-  options: { value: string; label: string }[]
+  options?: Option[]
+  groups?: { group: string; options: Option[] }[]
   onChange: (value: string) => void
 }
 
-function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
+function FilterSelect({ label, value, options, groups, onChange }: FilterSelectProps) {
   return (
     <label className="flex h-10.5 items-center gap-1 rounded-[9px] bg-white pl-4 pr-2 text-[13px] font-bold">
       <span>{label}:</span>
@@ -245,10 +281,19 @@ function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
         className="h-full cursor-pointer rounded-[9px] bg-transparent pr-1 font-bold outline-none"
       >
         <option value="">All</option>
-        {options.map((option) => (
+        {options?.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}
           </option>
+        ))}
+        {groups?.map((group) => (
+          <optgroup key={group.group} label={group.group}>
+            {group.options.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </optgroup>
         ))}
       </select>
     </label>

@@ -12,6 +12,8 @@ using InternshipPlatform.BusinessLayer.Internship;
 using InternshipPlatform.BusinessLayer.Progress;
 using InternshipPlatform.BusinessLayer.Structure;
 using InternshipPlatform.DataAccess.Context;
+using InternshipPlatform.Domain;
+using InternshipPlatform.Domain.Enums;
 using InternshipPlatform.BusinessLayer.Resources;
 using InternshipPlatform.DataAccess.Resources;
 using InternshipPlatform.Domain.Entities;
@@ -165,6 +167,7 @@ if (app.Environment.IsDevelopment())
     await SeedData.EnsureSeededAsync(context);
 }
 await SeedResourcesAsync(app.Services);
+await EnsureAdminAsync(app.Services, app.Configuration);
 
 app.Run();
 
@@ -188,6 +191,45 @@ static async Task SeedResourcesAsync(IServiceProvider services)
 
     if (demoResources.Count > 0)
         db.Resources.RemoveRange(demoResources);
+
+    await db.SaveChangesAsync();
+}
+
+// Makes sure the platform always has an admin to sign in with, including after the
+// database is recreated. Credentials come from configuration, never from source.
+static async Task EnsureAdminAsync(IServiceProvider services, IConfiguration config)
+{
+    var email = config["Bootstrap:AdminEmail"];
+    var password = config["Bootstrap:AdminPassword"];
+    if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
+    {
+        return;
+    }
+
+    using var scope = services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+    var normalized = email.Trim().ToLowerInvariant();
+    var user = await db.Users.FirstOrDefaultAsync(u => u.Email == normalized);
+
+    if (user is null)
+    {
+        db.Users.Add(new User
+        {
+            Id = Guid.NewGuid(),
+            Email = normalized,
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(password),
+            FullName = "Platform administrator",
+            Role = UserRole.Admin,
+            Status = UserStatus.Active,
+            EmailVerified = true,
+            CreatedAt = DateTimeOffset.UtcNow,
+        });
+    }
+    else if (user.Role != UserRole.Admin)
+    {
+        user.Role = UserRole.Admin;
+    }
 
     await db.SaveChangesAsync();
 }

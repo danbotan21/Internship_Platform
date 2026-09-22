@@ -1,3 +1,4 @@
+using InternshipPlatform.Domain;
 using InternshipPlatform.Domain.Enums;
 
 namespace InternshipPlatform.BusinessLayer.Admin.Users;
@@ -7,7 +8,7 @@ public sealed record UserDetailDto(
     string FullName,
     string Email,
     UserStatus Status,
-    DirectoryRole Role,
+    UserRole PlatformRole,
     string? University,
     string? Programme,
     string? AcademicGroup,

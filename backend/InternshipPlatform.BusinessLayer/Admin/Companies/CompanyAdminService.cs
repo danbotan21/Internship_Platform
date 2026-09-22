@@ -178,7 +178,7 @@ public class CompanyAdminService(AppDbContext context, ILogger<CompanyAdminServi
             c.Memberships.Any(m => m.Role == CompanyRole.Owner && EF.Functions.ILike(m.User.FullName, pattern)));
     }
 
-    // TODO: write to the audit log table once the Audit Log feature exists.
+    // The reason an admin gave is kept in the structured application log.
     private void LogAction(string action, Company company, string reason, Guid? actorUserId) =>
         logger.LogInformation(
             "Admin action: {Action} company {CompanyId} by {ActorUserId}. Reason: {Reason}",
