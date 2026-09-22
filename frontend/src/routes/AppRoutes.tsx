@@ -55,6 +55,7 @@ export default function AppRoutes() {
         <Route path='/my-opportunities/applications' element={<OpportunityApplications />} />
         <Route path='/my-opportunities/review' element={<ApplicantReview />} />
         <Route path='/quizzes' element={<Quizzes />} />
+        <Route path='/custom-quizzes' element={<Quizzes />} />
         <Route path='/messages' element={<Messages />} />
         <Route path='/calendar' element={<Calendar />} />
         <Route path='/resources' element={<Resources />} />

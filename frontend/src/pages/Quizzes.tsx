@@ -7,6 +7,7 @@ import QuizDetail from '../components/quizzes/QuizDetail'
 import QuizActive from '../components/quizzes/QuizActive'
 import QuestionBuilder from '../components/quizzes/QuestionBuilder'
 import QuizAnalyticsDashboard from '../components/quizzes/QuizAnalyticsDashboard'
+import { useAuth } from '../hooks/authContext'
 import type { QuizCatalogItem } from '../types/quiz'
 
 const CUSTOM_QUIZZES_KEY = 'internflow_custom_quizzes'
@@ -25,6 +26,10 @@ function loadSavedCustomQuizzes(): QuizCatalogItem[] {
 }
 
 export default function Quizzes() {
+  const { session } = useAuth()
+  const role = session?.role ?? 'Student'
+  const isMentor = role === 'Mentor' || role === 'Admin' || role === 'Company'
+
   const [searchParams, setSearchParams] = useSearchParams()
   const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null)
   const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null)
@@ -193,6 +198,11 @@ export default function Quizzes() {
 
   // 2. Custom Question Builder Screen
   if (view === 'custom') {
+    if (!isMentor) {
+      handleBackToCatalog()
+      return null
+    }
+
     return (
       <QuestionBuilder
         initialQuiz={editingQuiz}
@@ -220,61 +230,69 @@ export default function Quizzes() {
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            {activeTab === 'catalog' ? 'Skill Assessments' : 'Performance Analytics'}
+            {isMentor
+              ? activeTab === 'catalog'
+                ? 'Custom Assessments & Quizzes'
+                : 'Performance Analytics'
+              : 'Skill Assessments'}
           </h1>
           <p className="mt-1.5 text-sm text-gray-500">
-            {activeTab === 'catalog'
-              ? `${allQuizzes.length} quizzes available — browse or manage custom assessments`
-              : 'Real-time cohort performance, score evolution, pass rates, and error-prone topics'}
+            {isMentor
+              ? activeTab === 'catalog'
+                ? `${allQuizzes.length} assessments available — author, configure, and monitor custom quizzes`
+                : 'Real-time cohort performance, score evolution, pass rates, and error-prone topics'
+              : `${allQuizzes.length} quizzes available — complete your assigned evaluations`}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Tab Switcher */}
-          <div className="flex items-center rounded-xl bg-gray-100 p-1 border border-gray-200/80 shadow-2xs">
-            <button
-              type="button"
-              onClick={() => setActiveTab('catalog')}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'catalog'
-                  ? 'bg-white text-gray-900 shadow-xs'
-                  : 'text-gray-500 hover:text-gray-900'
-              }`}
-            >
-              <LayoutGrid className="h-3.5 w-3.5" />
-              Assessments Catalog
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab('analytics')}
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
-                activeTab === 'analytics'
-                  ? 'bg-white text-gray-900 shadow-xs'
-                  : 'text-gray-500 hover:text-gray-900'
-              }`}
-            >
-              <BarChart2 className="h-3.5 w-3.5" />
-              Performance Analytics
-            </button>
-          </div>
+        {isMentor && (
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Tab Switcher */}
+            <div className="flex items-center rounded-xl bg-gray-100 p-1 border border-gray-200/80 shadow-2xs">
+              <button
+                type="button"
+                onClick={() => setActiveTab('catalog')}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'catalog'
+                    ? 'bg-white text-gray-900 shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                Assessments Catalog
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('analytics')}
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                  activeTab === 'analytics'
+                    ? 'bg-white text-gray-900 shadow-xs'
+                    : 'text-gray-500 hover:text-gray-900'
+                }`}
+              >
+                <BarChart2 className="h-3.5 w-3.5" />
+                Performance Analytics
+              </button>
+            </div>
 
-          {activeTab === 'catalog' && (
-            <button
-              type="button"
-              onClick={() => {
-                setEditingQuiz(null)
-                setSearchParams({ view: 'custom' })
-              }}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#1e3a2c] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#162d22] transition-colors cursor-pointer"
-            >
-              <SquarePen className="h-3.5 w-3.5" />
-              Create Quiz
-            </button>
-          )}
-        </div>
+            {activeTab === 'catalog' && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingQuiz(null)
+                  setSearchParams({ view: 'custom' })
+                }}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#1e3a2c] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#162d22] transition-colors cursor-pointer"
+              >
+                <SquarePen className="h-3.5 w-3.5" />
+                Create Quiz
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      {activeTab === 'analytics' ? (
+      {isMentor && activeTab === 'analytics' ? (
         <QuizAnalyticsDashboard
           allQuizzes={allQuizzes}
           customQuizzes={customQuizzes}
@@ -290,8 +308,8 @@ export default function Quizzes() {
                 quiz={quiz}
                 isCustom={isCustom}
                 onSelect={handleSelectQuiz}
-                onEdit={isCustom ? (e) => handleEditQuiz(e, quiz) : undefined}
-                onDelete={isCustom ? (e) => promptDeleteQuiz(e, quiz) : undefined}
+                onEdit={isMentor && isCustom ? (e) => handleEditQuiz(e, quiz) : undefined}
+                onDelete={isMentor && isCustom ? (e) => promptDeleteQuiz(e, quiz) : undefined}
               />
             )
           })}

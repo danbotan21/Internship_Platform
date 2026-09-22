@@ -15,6 +15,7 @@ import {
   TrendingUp,
   Upload,
   Box,
+  Pencil,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { UserRole } from '../../types/auth'
@@ -71,6 +72,7 @@ const mentorSections: NavSection[] = [
       { label: 'Overview', to: '/', icon: LayoutGrid },
       { label: 'Internship progress', to: '/internship-progress', icon: TrendingUp },
       { label: 'Review queue', to: '/contributions', icon: Upload },
+      { label: 'Custom Quizzes', to: '/custom-quizzes', icon: Pencil },
       { label: 'Reports', to: '/reports', icon: FileText },
       { label: 'Evaluation', to: '/evaluation', icon: Star },
       { label: 'Opportunities', to: '/opportunities', icon: Briefcase },
@@ -107,6 +109,7 @@ const pageTitles: Record<string, string> = {
   '/my-applications': 'My Applications',
   '/my-opportunities': 'My Opportunities',
   '/quizzes': 'Quizzes',
+  '/custom-quizzes': 'Custom Quizzes',
   '/messages': 'Messages',
   '/calendar': 'Calendar',
   '/resources': 'Resources',
