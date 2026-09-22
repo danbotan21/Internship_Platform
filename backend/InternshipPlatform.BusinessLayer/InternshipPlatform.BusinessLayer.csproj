@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -7,6 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\InternshipPlatform.DataAccess\InternshipPlatform.DataAccess.csproj" />
     <ProjectReference Include="..\InternshipPlatform.Domain\InternshipPlatform.Domain.csproj" />
     <ProjectReference Include="..\InternshipPlatform.DataAccess\InternshipPlatform.DataAccess.csproj" />
   </ItemGroup>

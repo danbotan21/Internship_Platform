@@ -90,3 +90,31 @@ export async function apiSend<T>(method: string, path: string, body?: unknown): 
   // 204 responses carry no body.
   return response.status === 204 ? (undefined as T) : (response.json() as Promise<T>)
 }
+
+/**
+ * Plain one-shot fetch without the refresh retry, kept for the callers that
+ * pass their own access token (auth endpoints, progress).
+ */
+export async function apiFetch<T>(path: string, options: RequestInit & { accessToken?: string } = {}): Promise<T> {
+  const { accessToken, headers, ...rest } = options
+
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...rest,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      ...headers,
+    },
+  })
+
+  if (!response.ok) {
+    const body = await response.json().catch(() => null)
+    throw new ApiError(body?.message ?? 'Something went wrong. Please try again.', response.status)
+  }
+
+  if (response.status === 204) {
+    return undefined as T
+  }
+
+  return response.json()
+}

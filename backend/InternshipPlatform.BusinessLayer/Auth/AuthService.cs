@@ -1,3 +1,4 @@
+using InternshipPlatform.BusinessLayer.Progress;
 using InternshipPlatform.DataAccess.Context;
 using InternshipPlatform.Domain;
 using Microsoft.EntityFrameworkCore;
@@ -21,11 +22,13 @@ public class AuthService(AppDbContext db, ITokenService tokenService, JwtSetting
             Email = email,
             PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
             FullName = request.FullName,
-            Role = request.Role,
+            Role = UserRole.Student,
             CreatedAt = DateTime.UtcNow,
         };
 
         db.Users.Add(user);
+                db.Milestones.AddRange(MilestoneTemplates.CreateFor(user.Id, DateOnly.FromDateTime(user.CreatedAt.UtcDateTime)));
+
         await db.SaveChangesAsync();
 
         return await IssueTokensAsync(user);

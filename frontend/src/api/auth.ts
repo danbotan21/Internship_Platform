@@ -1,30 +1,14 @@
+import { apiFetch } from './client'
 import type { AuthResult, LoginPayload, RegisterPayload } from '../types/auth'
-import { API_BASE_URL } from './client'
-
-async function handleAuthResponse(response: Response): Promise<AuthResult> {
-  if (!response.ok) {
-    const body = await response.json().catch(() => null)
-    throw new Error(body?.message ?? 'Something went wrong. Please try again.')
-  }
-  return response.json()
-}
-
-function post(path: string, body: unknown) {
-  return fetch(`${API_BASE_URL}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-}
 
 export function login(payload: LoginPayload): Promise<AuthResult> {
-  return post('/api/auth/login', payload).then(handleAuthResponse)
+  return apiFetch<AuthResult>('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) })
 }
 
 export function register(payload: RegisterPayload): Promise<AuthResult> {
-  return post('/api/auth/register', payload).then(handleAuthResponse)
+  return apiFetch<AuthResult>('/api/auth/register', { method: 'POST', body: JSON.stringify(payload) })
 }
 
 export function logout(refreshToken: string): Promise<void> {
-  return post('/api/auth/logout', { refreshToken }).then(() => undefined)
+  return apiFetch<void>('/api/auth/logout', { method: 'POST', body: JSON.stringify({ refreshToken }) })
 }

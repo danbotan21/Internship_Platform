@@ -1,19 +1,13 @@
-import { createContext, useCallback, useContext, useMemo, useSyncExternalStore } from 'react'
+/* eslint-disable react-refresh/only-export-components */
+import { useCallback, useMemo, useSyncExternalStore } from 'react'
 import type { ReactNode } from 'react'
 import * as authApi from '../api/auth'
 import { getSession, sessionFromAuthResult, setSession, subscribeToSession } from '../api/session'
-import type { StoredSession } from '../api/session'
 import type { AuthResult, LoginPayload, RegisterPayload } from '../types/auth'
-
-interface AuthContextValue {
-  session: StoredSession | null
-  isAuthenticated: boolean
-  login: (payload: LoginPayload) => Promise<void>
-  register: (payload: RegisterPayload) => Promise<void>
-  logout: () => Promise<void>
-}
-
-const AuthContext = createContext<AuthContextValue | null>(null)
+// The context itself lives in authContext so both import paths resolve to one
+// provider; the session store in ../api/session is the single source of truth.
+import { AuthContext } from './authContext'
+import type { AuthContextValue } from './authContext'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   // The session lives in the API layer, which also refreshes it behind a 401.
@@ -53,10 +47,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
+export { useAuth } from './authContext'

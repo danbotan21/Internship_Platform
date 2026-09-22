@@ -74,7 +74,7 @@ public static class MessagingMapper
 
     public static UserDto ToDto(User user, User viewer, DateTime now)
     {
-        var lastSeen = user.LastSeenAt ?? user.CreatedAt;
+        var lastSeen = user.LastSeenAt ?? user.CreatedAt.UtcDateTime;
         var contact = CanViewContact(viewer, user) ? user.Contact : new ContactInfo();
 
         return new UserDto(

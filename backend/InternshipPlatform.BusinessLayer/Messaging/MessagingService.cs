@@ -48,7 +48,7 @@ public class MessagingService(AppDbContext db) : IMessagingService
             message.Deliveries.Add(new MessageDelivery { MessageId = message.Id, UserId = userId, DeliveredAt = now });
         }
 
-        var notifications = await db.Notifications
+        var notifications = await db.MessagingNotifications
             .Include(n => n.Recipients)
             .Where(n => n.SenderId == userId || n.Recipients.Any(r => r.UserId == userId))
             .OrderByDescending(n => n.CreatedAt)
@@ -375,7 +375,7 @@ public class MessagingService(AppDbContext db) : IMessagingService
             Recipients = recipientIds.Select(id => new NotificationRecipient { UserId = id }).ToList(),
         };
 
-        db.Notifications.Add(notification);
+        db.MessagingNotifications.Add(notification);
         await db.SaveChangesAsync();
 
         return MessagingMapper.ToDto(notification);

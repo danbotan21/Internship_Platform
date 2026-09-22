@@ -52,11 +52,8 @@ namespace InternshipPlatform.DataAccess.Migrations
                 type: "timestamp with time zone",
                 nullable: true);
 
-            migrationBuilder.AddColumn<Guid>(
-                name: "MentorId",
-                table: "Users",
-                type: "uuid",
-                nullable: true);
+            // Users.MentorId, its index and self-referencing foreign key are
+            // created by ConnectContributionToUsers, which runs after this one.
 
             migrationBuilder.AddColumn<string>(
                 name: "Organization",
@@ -152,7 +149,7 @@ namespace InternshipPlatform.DataAccess.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Notifications",
+                name: "MessagingNotifications",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -167,15 +164,15 @@ namespace InternshipPlatform.DataAccess.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Notifications", x => x.Id);
+                    table.PrimaryKey("PK_MessagingNotifications", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Notifications_Conversations_ConversationId",
+                        name: "FK_MessagingNotifications_Conversations_ConversationId",
                         column: x => x.ConversationId,
                         principalTable: "Conversations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.SetNull);
                     table.ForeignKey(
-                        name: "FK_Notifications_Users_SenderId",
+                        name: "FK_MessagingNotifications_Users_SenderId",
                         column: x => x.SenderId,
                         principalTable: "Users",
                         principalColumn: "Id",
@@ -244,9 +241,9 @@ namespace InternshipPlatform.DataAccess.Migrations
                 {
                     table.PrimaryKey("PK_NotificationRecipients", x => new { x.NotificationId, x.UserId });
                     table.ForeignKey(
-                        name: "FK_NotificationRecipients_Notifications_NotificationId",
+                        name: "FK_NotificationRecipients_MessagingNotifications_NotificationId",
                         column: x => x.NotificationId,
-                        principalTable: "Notifications",
+                        principalTable: "MessagingNotifications",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
@@ -256,11 +253,6 @@ namespace InternshipPlatform.DataAccess.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Users_MentorId",
-                table: "Users",
-                column: "MentorId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ConversationMembers_UserId",
@@ -308,36 +300,24 @@ namespace InternshipPlatform.DataAccess.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Notifications_ConversationId",
-                table: "Notifications",
+                name: "IX_MessagingNotifications_ConversationId",
+                table: "MessagingNotifications",
                 column: "ConversationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Notifications_CreatedAt",
-                table: "Notifications",
+                name: "IX_MessagingNotifications_CreatedAt",
+                table: "MessagingNotifications",
                 column: "CreatedAt");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Notifications_SenderId",
-                table: "Notifications",
+                name: "IX_MessagingNotifications_SenderId",
+                table: "MessagingNotifications",
                 column: "SenderId");
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_Users_Users_MentorId",
-                table: "Users",
-                column: "MentorId",
-                principalTable: "Users",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.SetNull);
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_Users_Users_MentorId",
-                table: "Users");
-
             migrationBuilder.DropTable(
                 name: "ConversationMembers");
 
@@ -354,14 +334,10 @@ namespace InternshipPlatform.DataAccess.Migrations
                 name: "Messages");
 
             migrationBuilder.DropTable(
-                name: "Notifications");
+                name: "MessagingNotifications");
 
             migrationBuilder.DropTable(
                 name: "Conversations");
-
-            migrationBuilder.DropIndex(
-                name: "IX_Users_MentorId",
-                table: "Users");
 
             migrationBuilder.DropColumn(
                 name: "ContactAvailability",
@@ -385,10 +361,6 @@ namespace InternshipPlatform.DataAccess.Migrations
 
             migrationBuilder.DropColumn(
                 name: "LastSeenAt",
-                table: "Users");
-
-            migrationBuilder.DropColumn(
-                name: "MentorId",
                 table: "Users");
 
             migrationBuilder.DropColumn(
