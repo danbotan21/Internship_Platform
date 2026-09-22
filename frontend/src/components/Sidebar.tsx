@@ -8,6 +8,7 @@ import {
   Upload,
   Star,
   Briefcase,
+  FileCheck,
   Timer,
   TrendingUp,
   MessageSquare,
@@ -15,11 +16,14 @@ import {
   FolderOpen,
   Box,
   History,
+  FolderKanban,
+  UserCheck,
   LogOut,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import ConfirmLogoutModal from './ConfirmLogoutModal'
+import { useUserRole } from '../hooks/useUserRole'
 
 type NavItem = {
   label: string
@@ -32,39 +36,6 @@ type NavSection = {
   items: NavItem[]
 }
 
-const sections: NavSection[] = [
-  {
-    title: 'Work',
-    items: [
-      { label: 'Overview', to: '/', icon: LayoutGrid },
-      { label: 'Internship progress', to: '/internship-progress', icon: TrendingUp },
-      { label: 'Tasks', to: '/tasks', icon: ListChecks },
-      { label: 'Attendance', to: '/attendance', icon: Clock },
-      { label: 'Reports', to: '/reports', icon: FileText },
-      { label: 'Contributions', to: '/contributions', icon: Upload },
-      { label: 'Evaluation', to: '/evaluation', icon: Star },
-      { label: 'Opportunities', to: '/opportunities', icon: Briefcase },
-      { label: 'Quizzes', to: '/quizzes', icon: Timer },
-    ],
-  },
-  {
-    title: 'Connect',
-    items: [
-      { label: 'Messages', to: '/messages', icon: MessageSquare },
-      { label: 'Calendar', to: '/calendar', icon: Calendar },
-      { label: 'Documentation', to: '/documentation', icon: FileText },
-      { label: 'Resources', to: '/resources', icon: FolderOpen },
-    ],
-  },
-  {
-    title: 'Manage',
-    items: [
-      { label: 'Skills', to: '/skills', icon: Box },
-      { label: 'Audit log', to: '/audit-log', icon: History },
-    ],
-  },
-]
-
 function getInitials(fullName: string) {
   const parts = fullName.trim().split(/\s+/)
   return parts
@@ -74,8 +45,45 @@ function getInitials(fullName: string) {
 }
 
 export default function Sidebar() {
+  const { role, setRole } = useUserRole()
   const { session, logout } = useAuth()
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false)
+
+  const sections: NavSection[] = [
+    {
+      title: 'Work',
+      items: [
+        { label: 'Overview', to: '/', icon: LayoutGrid },
+        { label: 'Internship progress', to: '/internship-progress', icon: TrendingUp },
+        { label: 'Tasks', to: '/tasks', icon: ListChecks },
+        { label: 'Attendance', to: '/attendance', icon: Clock },
+        { label: 'Reports', to: '/reports', icon: FileText },
+        { label: 'Contributions', to: '/contributions', icon: Upload },
+        { label: 'Evaluation', to: '/evaluation', icon: Star },
+        { label: 'Opportunities', to: '/opportunities', icon: Briefcase },
+        role === 'Intern'
+          ? { label: 'My Applications', to: '/my-applications', icon: FileCheck }
+          : { label: 'My Opportunities', to: '/my-opportunities', icon: FolderKanban },
+        { label: 'Quizzes', to: '/quizzes', icon: Timer },
+      ],
+    },
+    {
+      title: 'Connect',
+      items: [
+        { label: 'Messages', to: '/messages', icon: MessageSquare },
+        { label: 'Calendar', to: '/calendar', icon: Calendar },
+        { label: 'Documentation', to: '/documentation', icon: FileText },
+        { label: 'Resources', to: '/resources', icon: FolderOpen },
+      ],
+    },
+    {
+      title: 'Manage',
+      items: [
+        { label: 'Skills', to: '/skills', icon: Box },
+        { label: 'Audit log', to: '/audit-log', icon: History },
+      ],
+    },
+  ]
 
   return (
     <>
@@ -92,7 +100,9 @@ export default function Sidebar() {
           {/* Workspace Card */}
           <div className="mb-6 rounded-xl bg-white/5 px-4 py-4">
             <p className="text-base font-medium text-white">internflow</p>
-            <p className="text-sm text-white/50">Student workspace</p>
+            <p className="text-sm text-white/50">
+              {role === 'Intern' ? 'Student workspace' : 'Mentor workspace'}
+            </p>
           </div>
 
           {/* Navigation Sections */}
@@ -125,24 +135,34 @@ export default function Sidebar() {
           </nav>
         </div>
 
-        {/* User Footer matching screenshot */}
-        <div className="flex items-center gap-3 border-t border-white/10 px-3 pt-5">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-medium text-white">
+        {/* User Footer with Role Toggle & Logout */}
+        <div className="flex items-center gap-3 border-t border-white/10 px-3 pt-5 mt-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-medium text-white shrink-0">
             {session ? getInitials(session.fullName) : ''}
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-base font-medium text-white">{session?.fullName}</p>
-            <p className="text-sm text-white/50">{session?.role}</p>
+            <p className="text-sm text-white/50 truncate">{role}</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setIsLogoutModalOpen(true)}
-            className="flex h-10 w-10 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white transition-colors"
-            aria-label="Log out"
-            title="Sign out"
-          >
-            <LogOut className="h-5 w-5" strokeWidth={1.75} />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => setRole(role === 'Intern' ? 'Mentor' : 'Intern')}
+              title={`Switch to ${role === 'Intern' ? 'Mentor' : 'Intern'} view`}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+            >
+              <UserCheck className="h-4.5 w-4.5" strokeWidth={1.75} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsLogoutModalOpen(true)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-white/50 hover:bg-white/10 hover:text-white transition-colors"
+              aria-label="Log out"
+              title="Sign out"
+            >
+              <LogOut className="h-4.5 w-4.5" strokeWidth={1.75} />
+            </button>
+          </div>
         </div>
       </aside>
 
