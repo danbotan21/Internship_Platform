@@ -12,6 +12,7 @@ import {
   INITIAL_CHECKLISTS,
   INITIAL_ACTIVITY_LOGS,
 } from '../services/documentationService'
+import { useSearchParams } from 'react-router-dom'
 
 const generateId = () => {
   return typeof crypto !== 'undefined' && crypto.randomUUID
@@ -55,7 +56,8 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
     Complete: false,
   })
   const [mandatoryOnly, setMandatoryOnly] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const searchQuery = searchParams.get('q') || ''
 
   // Selection & modal state
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([])
@@ -335,7 +337,16 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
     statusFilters,
     mandatoryOnly,
     searchQuery,
-    setSearchQuery,
+    setSearchQuery: (val: string) => {
+      setSearchParams(
+        (prev) => {
+          if (val) prev.set('q', val)
+          else prev.delete('q')
+          return prev
+        },
+        { replace: true }
+      )
+    },
     selectedDocIds,
     selectedDoc,
     isRejectModalOpen,

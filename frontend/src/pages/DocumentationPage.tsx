@@ -1,7 +1,6 @@
 import { useAuth } from '../hooks/useAuth'
 import { useUserRole } from '../hooks/useUserRole'
 import { useDocumentation } from '../hooks/useDocumentation'
-import TopBar from '../components/documentation/TopBar'
 import MetricHeader from '../components/documentation/MetricHeader'
 import FilterSidebar from '../components/documentation/FilterSidebar'
 import UploadDropzone from '../components/documentation/UploadDropzone'
@@ -18,14 +17,9 @@ export default function DocumentationPage() {
   const docState = useDocumentation(role, session?.fullName)
 
   return (
-    <div className="w-full pb-12 overflow-x-hidden min-h-screen bg-gradient-to-br from-[#f5f7f6] via-white to-[#e8f0ec]">
-      {/* Top Header Navigation matching screenshot */}
-      <TopBar
-        searchQuery={docState.searchQuery}
-        onSearchChange={docState.setSearchQuery}
-      />
+    <div className="w-full pb-8 overflow-x-hidden animate-in fade-in duration-500">
 
-      <div className="mx-auto max-w-[1600px] px-10 pt-8">
+      <div className="w-full px-6 md:px-10 pt-8">
         {/* Page Title & Subtitle */}
         <div className="mb-8 relative">
           <div className="absolute -left-4 top-1 h-12 w-1.5 rounded-full bg-gradient-to-b from-[#1e3a2c] to-emerald-500"></div>
