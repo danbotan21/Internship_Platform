@@ -84,8 +84,8 @@ export const TEAM_SEED_ATTEMPTS: UserQuizAttempt[] = [
     userId: 'user-daniel-chigaianu',
     userName: 'Daniel Chigaianu',
     userEmail: 'dan.chigaianu@gmail.com',
-    quizId: 'typescript-essentials',
-    quizTitle: 'TypeScript Essentials',
+    quizId: 'react-frontend',
+    quizTitle: 'React & Frontend',
     category: 'Frontend',
     difficulty: 'MEDIUM',
     score: 8,
@@ -105,8 +105,8 @@ export const TEAM_SEED_ATTEMPTS: UserQuizAttempt[] = [
     userId: 'user-daniel-chitanu',
     userName: 'Daniel Chitanu',
     userEmail: 'dk7999357@gmail.com',
-    quizId: 'typescript-essentials',
-    quizTitle: 'TypeScript Essentials',
+    quizId: 'react-frontend',
+    quizTitle: 'React & Frontend',
     category: 'Frontend',
     difficulty: 'MEDIUM',
     score: 8,
@@ -147,9 +147,9 @@ export const TEAM_SEED_ATTEMPTS: UserQuizAttempt[] = [
     userId: 'user-mihail-goncearov',
     userName: 'Mihail Goncearov',
     userEmail: 'forprogramm11@gmail.com',
-    quizId: 'backend-architecture-sql',
-    quizTitle: 'Backend Architecture & SQL',
-    category: 'Backend',
+    quizId: 'sql-databases',
+    quizTitle: 'SQL & Databases',
+    category: 'Database',
     difficulty: 'HARD',
     score: 8,
     totalQuestions: 10,
@@ -168,9 +168,9 @@ export const TEAM_SEED_ATTEMPTS: UserQuizAttempt[] = [
     userId: 'user-sergiu-negara',
     userName: 'Sergiu Negara',
     userEmail: 'negara.sergiu2@gmail.com',
-    quizId: 'backend-architecture-sql',
-    quizTitle: 'Backend Architecture & SQL',
-    category: 'Backend',
+    quizId: 'sql-databases',
+    quizTitle: 'SQL & Databases',
+    category: 'Database',
     difficulty: 'HARD',
     score: 4,
     totalQuestions: 10,
@@ -190,8 +190,8 @@ export const TEAM_SEED_ATTEMPTS: UserQuizAttempt[] = [
     userId: 'user-valeriu-bulgaru',
     userName: 'Valeriu Bulgaru',
     userEmail: 'valeri.bulgaru06@gmail.com',
-    quizId: 'typescript-essentials',
-    quizTitle: 'TypeScript Essentials',
+    quizId: 'react-frontend',
+    quizTitle: 'React & Frontend',
     category: 'Frontend',
     difficulty: 'MEDIUM',
     score: 7,
@@ -211,8 +211,8 @@ export const TEAM_SEED_ATTEMPTS: UserQuizAttempt[] = [
     userId: 'user-veaceslav-nagorneac',
     userName: 'Veaceslav Nagorneac',
     userEmail: 'slavik@internflow.dev',
-    quizId: 'typescript-essentials',
-    quizTitle: 'TypeScript Essentials',
+    quizId: 'react-frontend',
+    quizTitle: 'React & Frontend',
     category: 'Frontend',
     difficulty: 'MEDIUM',
     score: 7,
@@ -233,9 +233,9 @@ export const TEAM_SEED_ATTEMPTS: UserQuizAttempt[] = [
     userId: 'user-valeriu-bulgaru-2',
     userName: 'Valeriu Bulgaru',
     userEmail: 'valeri.bulgaru06@gmail.com',
-    quizId: 'backend-architecture-sql',
-    quizTitle: 'Backend Architecture & SQL',
-    category: 'Backend',
+    quizId: 'sql-databases',
+    quizTitle: 'SQL & Databases',
+    category: 'Database',
     difficulty: 'HARD',
     score: 6,
     totalQuestions: 10,
@@ -277,8 +277,8 @@ export const TEAM_SEED_ATTEMPTS: UserQuizAttempt[] = [
     userId: 'user-gicu-caraman-2',
     userName: 'Gicu Caraman',
     userEmail: 'caramangicu25@gmail.com',
-    quizId: 'typescript-essentials',
-    quizTitle: 'TypeScript Essentials',
+    quizId: 'react-frontend',
+    quizTitle: 'React & Frontend',
     category: 'Frontend',
     difficulty: 'MEDIUM',
     score: 6,
@@ -299,9 +299,9 @@ export const TEAM_SEED_ATTEMPTS: UserQuizAttempt[] = [
     userId: 'user-sergiu-negara-2',
     userName: 'Sergiu Negara',
     userEmail: 'negara.sergiu2@gmail.com',
-    quizId: 'backend-architecture-sql',
-    quizTitle: 'Backend Architecture & SQL',
-    category: 'Backend',
+    quizId: 'sql-databases',
+    quizTitle: 'SQL & Databases',
+    category: 'Database',
     difficulty: 'HARD',
     score: 5,
     totalQuestions: 10,
@@ -392,6 +392,20 @@ export function getQuizAttempts(): UserQuizAttempt[] {
     if (raw) {
       const parsed = JSON.parse(raw) as UserQuizAttempt[]
       if (Array.isArray(parsed) && parsed.length > 0) {
+        // Migrate legacy quiz IDs if any exist in stored attempts
+        let idMigrated = false
+        parsed.forEach((a) => {
+          if (a.quizId === 'typescript-essentials') {
+            a.quizId = 'react-frontend'
+            a.quizTitle = 'React & Frontend'
+            idMigrated = true
+          } else if (a.quizId === 'backend-architecture-sql') {
+            a.quizId = 'sql-databases'
+            a.quizTitle = 'SQL & Databases'
+            idMigrated = true
+          }
+        })
+
         // Filter out old random placeholder names and preserve real user submissions
         const realCustomSubmissions = parsed.filter((a) => !isRandomPlaceholderName(a.userName))
 
@@ -403,6 +417,10 @@ export function getQuizAttempts(): UserQuizAttempt[] {
           const merged = [...userOnly, ...TEAM_SEED_ATTEMPTS]
           localStorage.setItem(STORAGE_KEY, JSON.stringify(merged))
           return merged
+        }
+
+        if (idMigrated) {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))
         }
 
         return parsed
@@ -510,6 +528,8 @@ export function calculateAnalyticsSummary(
   const avgDurationSeconds = Math.round(sumDuration / totalAssessments)
   const avgDurationFormatted = formatDuration(avgDurationSeconds)
 
+  const isGlobal = !quizIdFilter || quizIdFilter === 'ALL'
+
   // 1. Calculate weekly score evolution (W1 - W8)
   const baselineWeeks = [
     { weekLabel: 'W1', weekNumber: 1, baseTop: 68, baseAvg: 52, baseBottom: 35 },
@@ -528,9 +548,9 @@ export function calculateAnalyticsSummary(
       return {
         weekLabel: bw.weekLabel,
         weekNumber: bw.weekNumber,
-        top10: bw.baseTop,
-        avg: bw.baseAvg,
-        bottom10: bw.baseBottom,
+        top10: isGlobal ? bw.baseTop : 0,
+        avg: isGlobal ? bw.baseAvg : 0,
+        bottom10: isGlobal ? bw.baseBottom : 0,
         attemptCount: 0,
       }
     }
@@ -540,8 +560,8 @@ export function calculateAnalyticsSummary(
     const max = scores[scores.length - 1]
     const min = scores[0]
 
-    const top10 = Math.round((max + bw.baseTop) / 2)
-    const bottom10 = Math.round((min + bw.baseBottom) / 2)
+    const top10 = isGlobal ? Math.round((max + bw.baseTop) / 2) : max
+    const bottom10 = isGlobal ? Math.round((min + bw.baseBottom) / 2) : min
 
     return {
       weekLabel: bw.weekLabel,
@@ -554,24 +574,26 @@ export function calculateAnalyticsSummary(
   })
 
   // 2. Highest error-rate topics calculation
-  const topicErrorCounts: Record<string, { errors: number; tested: number }> = {
-    'Async/Await': { errors: 14, tested: 20 },
-    'Big-O Notation': { errors: 12, tested: 19 },
-    'SQL Joins': { errors: 11, tested: 20 },
-    'React Hooks': { errors: 9, tested: 19 },
-    'REST Semantics': { errors: 8, tested: 19 },
-    'Git Workflow': { errors: 6, tested: 20 },
-  }
+  // For global view, include cohort benchmark topics; for a specific quiz, isolate its own topics
+  const topicErrorCounts: Record<string, { errors: number; tested: number }> = isGlobal
+    ? {
+        'Async/Await': { errors: 14, tested: 20 },
+        'Big-O Notation': { errors: 12, tested: 19 },
+        'SQL Joins': { errors: 11, tested: 20 },
+        'React Hooks': { errors: 9, tested: 19 },
+        'REST Semantics': { errors: 8, tested: 19 },
+        'Git Workflow': { errors: 6, tested: 20 },
+      }
+    : {}
 
   // Factor in actual missed topics from user attempts
   filtered.forEach((attempt) => {
     if (attempt.missedTopics && attempt.missedTopics.length > 0) {
       attempt.missedTopics.forEach((t) => {
         if (!topicErrorCounts[t]) {
-          topicErrorCounts[t] = { errors: 0, tested: 0 }
+          topicErrorCounts[t] = { errors: 0, tested: Math.max(1, attempt.totalQuestions) }
         }
         topicErrorCounts[t].errors += 1
-        topicErrorCounts[t].tested += 1
       })
     }
   })

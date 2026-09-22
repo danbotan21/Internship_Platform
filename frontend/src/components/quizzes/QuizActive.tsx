@@ -595,18 +595,56 @@ const getSupportedMimeTypeAndExt = (): { mimeType: string; ext: 'mp4' | 'webm' }
       const total = questions.length
       const percentage = total > 0 ? Math.round((correctCount / total) * 100) : 0
 
+      const missedTopics: string[] = []
+      questions.forEach((q) => {
+        if (!q.correctOptionId || answers[q.id] !== q.correctOptionId) {
+          missedTopics.push(q.category || 'General')
+        }
+      })
+
+      const durationSec = Math.max(
+        1,
+        Math.round((Date.now() - sessionStartTimeRef.current.getTime()) / 1000)
+      )
+
+      const reloadAttempt: UserQuizAttempt = {
+        id: `att_${Date.now()}_reload`,
+        userId: studentId,
+        userName: studentName,
+        userEmail: studentEmail,
+        quizId: quiz.id,
+        quizTitle: quiz.title,
+        category: quiz.category || 'General',
+        difficulty: quiz.difficulty,
+        score: correctCount,
+        totalQuestions: total,
+        percentage,
+        passingScore: quiz.passingScore,
+        status: 'FAILED',
+        timeSpentSeconds: durationSec,
+        timeSpentFormatted: formatDuration(durationSec),
+        isFlagged: true,
+        flagReason: 'Page reload violation (F5 / refreshed during proctored exam)',
+        completedAt: new Date().toISOString(),
+        cohortWeek: 8,
+        missedTopics,
+        answersSummary: {
+          correctCount,
+          incorrectCount: total - correctCount,
+        },
+      }
+
+      saveQuizAttempt(reloadAttempt).catch(() => undefined)
+
       const metadata: SessionMetadata = {
         sessionId: `sess_${Date.now()}`,
-        studentId: 'ion-popescu',
-        studentName: 'Ion Popescu',
+        studentId,
+        studentName,
         quizId: quiz.id,
         quizTitle: quiz.title,
         startedAt: sessionStartTimeRef.current.toISOString(),
         finishedAt: new Date().toISOString(),
-        durationSeconds: Math.max(
-          1,
-          Math.round((Date.now() - sessionStartTimeRef.current.getTime()) / 1000)
-        ),
+        durationSeconds: durationSec,
         score: correctCount,
         totalQuestions: total,
         percentage,
@@ -626,7 +664,7 @@ const getSupportedMimeTypeAndExt = (): { mimeType: string; ext: 'mp4' | 'webm' }
         console.log('[RecordingService] Compromised session metadata archived successfully:', res)
       })
     }
-  }, [isReloadViolation, answers, questions, quiz.id, quiz.title, violations])
+  }, [answers, isReloadViolation, questions, quiz.category, quiz.difficulty, quiz.id, quiz.passingScore, quiz.title, studentEmail, studentId, studentName, violations])
 
   // Detect screen share stop: if student clicks "Stop sharing" in the browser bar,
   // immediately compromise and auto-submit the assessment

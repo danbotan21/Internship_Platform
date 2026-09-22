@@ -357,6 +357,7 @@ export default function QuestionBuilder({ onCancel, onSaveQuiz, initialQuiz }: Q
       id: initialQuiz ? initialQuiz.id : `custom-${Date.now()}`,
       title: title.trim(),
       description: description.trim(),
+      category: (category.trim() || 'General').toUpperCase(),
       questionCount: formattedQuestions.length,
       durationMinutes: Number(durationMinutes) || 20,
       passingScore: Number(passingScore) || 70,
