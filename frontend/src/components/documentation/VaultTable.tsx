@@ -77,9 +77,9 @@ export default function VaultTable({
                 onTabChange(tab)
                 setVisibleCount(10)
               }}
-              className={`rounded-lg px-4 py-2 text-sm font-medium transition-colors ${activeTab === tab
-                ? 'bg-[#1B4332] text-white shadow-xs'
-                : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
+              className={`rounded-xl px-5 py-2.5 text-sm font-semibold transition-all duration-300 ${activeTab === tab
+                ? 'bg-gradient-to-r from-emerald-600 to-emerald-500 text-white shadow-md border-transparent'
+                : 'bg-white/60 text-[#5d6b64] border border-white/40 hover:bg-white hover:text-[#14211b] hover:shadow-sm'
                 }`}
             >
               {tab}
@@ -88,12 +88,12 @@ export default function VaultTable({
         </div>
         {/* Select All Toggle */}
         <div className="flex items-center gap-3">
-          <label className="flex items-center gap-2 cursor-pointer text-sm font-medium text-gray-700 bg-white px-3 py-1.5 rounded-lg border border-gray-200 shadow-xs hover:bg-gray-50">
+          <label className="flex items-center gap-2 cursor-pointer text-sm font-semibold text-[#5d6b64] bg-white/60 px-4 py-2.5 rounded-xl border border-white/40 shadow-sm hover:bg-white hover:text-[#14211b] transition-all duration-300">
             <input
               type="checkbox"
               checked={isAllSelected}
               onChange={onSelectAll}
-              className="h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+              className="h-4.5 w-4.5 rounded-md border-gray-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer shadow-sm"
             />
             Select All
           </label>
@@ -149,39 +149,39 @@ export default function VaultTable({
               <div
                 key={doc?.id || idx.toString()}
                 onClick={() => { if (doc) onRowClick(doc); }}
-                className={`group relative flex flex-col rounded-[12px] bg-[#f0f4f9] hover:bg-[#e4e9f1] transition-colors cursor-pointer overflow-hidden ${isSelected ? 'ring-2 ring-blue-500 bg-[#e8f0fe]' : ''
+                className={`group relative flex flex-col rounded-2xl bg-white/70 border border-white/50 backdrop-blur-sm hover:bg-white hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${isSelected ? 'ring-2 ring-emerald-500 bg-emerald-50/80 shadow-md' : 'shadow-sm'
                   }`}
               >
                 {/* Top Header: Icon, Title */}
-                <div className="flex items-center gap-2 p-3 pl-3 pr-2 z-10 bg-transparent relative">
+                <div className="flex items-center gap-3 p-4 z-10 bg-transparent relative">
                   {/* Icon or Checkbox */}
-                  <div className="shrink-0 flex items-center justify-center w-5 h-5 relative" onClick={(e) => e.stopPropagation()}>
+                  <div className="shrink-0 flex items-center justify-center w-6 h-6 relative" onClick={(e) => e.stopPropagation()}>
                     {/* Checkbox (Hover or Selected) */}
-                    <div className={`absolute inset-0 flex items-center justify-center bg-[#f0f4f9] group-hover:bg-[#e4e9f1] ${isSelected ? 'opacity-100 bg-[#e8f0fe] group-hover:bg-[#e8f0fe] z-20' : 'opacity-0 group-hover:opacity-100 z-20'} transition-opacity`}>
+                    <div className={`absolute inset-0 flex items-center justify-center bg-white/50 group-hover:bg-white/80 rounded-md ${isSelected ? 'opacity-100 bg-emerald-50 z-20' : 'opacity-0 group-hover:opacity-100 z-20'} transition-all`}>
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => onToggleSelectRow(doc.id)}
-                        className="h-4 w-4 rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer shadow-sm"
+                        className="h-4.5 w-4.5 rounded-md border-gray-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 cursor-pointer shadow-sm"
                       />
                     </div>
                     
                     {/* Icon (Hidden when hovered/selected) */}
                     <div className={`${isSelected ? 'opacity-0' : 'group-hover:opacity-0'} transition-opacity flex items-center justify-center w-full h-full`}>
                       {isPdf ? (
-                        <div className="w-5 h-5 rounded bg-red-500 flex items-center justify-center text-[8px] font-bold text-white uppercase tracking-tighter shadow-xs">PDF</div>
+                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center text-[9px] font-bold text-white uppercase tracking-tighter shadow-sm">PDF</div>
                       ) : isDocx ? (
-                        <div className="w-5 h-5 rounded bg-blue-600 flex items-center justify-center text-[8px] font-bold text-white uppercase tracking-tighter shadow-xs">DOC</div>
+                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-[9px] font-bold text-white uppercase tracking-tighter shadow-sm">DOC</div>
                       ) : isExcel ? (
-                        <div className="w-5 h-5 rounded bg-emerald-600 flex items-center justify-center text-[8px] font-bold text-white uppercase tracking-tighter shadow-xs">XLS</div>
+                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center text-[9px] font-bold text-white uppercase tracking-tighter shadow-sm">XLS</div>
                       ) : (
-                        <div className="w-5 h-5 rounded bg-gray-500 flex items-center justify-center text-[8px] font-bold text-white uppercase tracking-tighter shadow-xs">FILE</div>
+                        <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-gray-400 to-gray-500 flex items-center justify-center text-[9px] font-bold text-white uppercase tracking-tighter shadow-sm">FILE</div>
                       )}
                     </div>
                   </div>
                   {/* Title */}
                   <div className="flex-1 min-w-0 pr-6">
-                    <h4 className="text-[13px] font-medium text-gray-800 truncate" title={doc?.fileName}>
+                    <h4 className="text-sm font-semibold text-[#14211b] truncate" title={doc?.fileName}>
                       {doc?.fileName || 'Unknown Document'}
                     </h4>
                   </div>
@@ -218,12 +218,12 @@ export default function VaultTable({
                 </div>
 
                 {/* Preview Area (Middle) */}
-                <div className="mx-3 mt-1 mb-2 h-[160px] bg-white rounded-lg border border-gray-200/60 overflow-hidden flex items-center justify-center relative shadow-sm pointer-events-none group-hover:shadow transition-shadow">
+                <div className="mx-4 mt-0 mb-3 h-[180px] bg-white rounded-xl border border-gray-100 overflow-hidden flex items-center justify-center relative shadow-sm pointer-events-none group-hover:shadow-md transition-shadow">
                   <ErrorBoundary fallback={
                     <div className="flex flex-col items-center justify-center bg-gray-50 w-full h-full p-4">
-                      <div className="w-[70%] h-[90%] bg-white rounded shadow-sm border border-gray-200 flex flex-col items-center justify-center gap-2">
-                        <AlertCircle className="w-8 h-8 text-red-300" />
-                        <span className="text-[10px] font-medium uppercase text-red-400">Preview Error</span>
+                      <div className="w-[70%] h-[90%] bg-white rounded-lg shadow-sm border border-gray-100 flex flex-col items-center justify-center gap-2">
+                        <AlertCircle className="w-8 h-8 text-red-400" />
+                        <span className="text-[10px] font-bold uppercase text-red-500 tracking-wider">Preview Error</span>
                       </div>
                     </div>
                   }>
@@ -232,12 +232,12 @@ export default function VaultTable({
                 </div>
 
                 {/* Footer (Avatar and Date) */}
-                <div className="flex items-center gap-2 px-3 pb-3">
-                  <div className="w-5 h-5 rounded-full bg-teal-600 text-white text-[10px] font-medium flex items-center justify-center shrink-0">
+                <div className="flex items-center gap-3 px-4 pb-4">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 text-white text-[11px] font-bold flex items-center justify-center shrink-0 shadow-sm">
                     {doc?.uploadedBy ? doc.uploadedBy.charAt(0).toUpperCase() : 'V'}
                   </div>
                   <div className="flex flex-col flex-1 min-w-0 justify-center">
-                    <span className="text-[11px] text-gray-500 truncate">
+                    <span className="text-xs font-medium text-[#5d6b64] truncate">
                       Deschis de tine • {formatDate(doc?.createdAt)}
                     </span>
                   </div>

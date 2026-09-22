@@ -53,10 +53,10 @@ export default function UploadDropzone({ onUpload, activeCategory }: UploadDropz
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`relative mb-5 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed p-7 text-center transition-all ${
+      className={`relative mb-6 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed p-8 text-center transition-all duration-300 backdrop-blur-sm ${
         isDragging
-          ? 'border-[#FF7A00] bg-orange-50/70 scale-[1.005]'
-          : 'border-[#FFB877]/60 bg-[#FFFAF5]/70 hover:border-[#FF7A00]/80'
+          ? 'border-emerald-500 bg-emerald-50/80 scale-[1.01] shadow-emerald-500/10 shadow-lg'
+          : 'border-emerald-200/60 bg-white/40 hover:border-emerald-400 hover:bg-white/60 hover:shadow-md'
       }`}
     >
       <input
@@ -68,8 +68,8 @@ export default function UploadDropzone({ onUpload, activeCategory }: UploadDropz
       />
 
       {/* Upload Icon inside soft circle/square */}
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#FFEAD6] text-[#FF7A00] shadow-xs">
-        <Upload className="h-6 w-6" strokeWidth={2.2} />
+      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 text-emerald-600 shadow-inner group-hover:scale-110 transition-transform duration-300">
+        <Upload className="h-8 w-8" strokeWidth={2} />
       </div>
 
       <h4 className="text-base font-semibold text-gray-800">
@@ -83,7 +83,7 @@ export default function UploadDropzone({ onUpload, activeCategory }: UploadDropz
         type="button"
         disabled={isUploading}
         onClick={() => fileInputRef.current?.click()}
-        className="mt-5 inline-flex items-center justify-center rounded-lg bg-[#FF7A00] px-6 py-2.5 text-sm font-semibold text-white shadow-xs transition-all hover:bg-[#E86E00] hover:shadow-md active:scale-95 disabled:opacity-50"
+        className="mt-6 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-600 to-emerald-500 px-8 py-3 text-sm font-bold tracking-wide text-white shadow-md transition-all hover:from-emerald-700 hover:to-emerald-600 hover:shadow-lg hover:-translate-y-0.5 active:scale-95 disabled:opacity-50"
       >
         {isUploading ? 'Processing...' : 'Browse Files'}
       </button>

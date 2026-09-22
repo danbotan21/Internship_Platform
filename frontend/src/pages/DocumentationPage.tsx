@@ -18,7 +18,7 @@ export default function DocumentationPage() {
   const docState = useDocumentation(role, session?.fullName)
 
   return (
-    <div className="w-full pb-12 overflow-x-hidden bg-gray-50/30 min-h-screen">
+    <div className="w-full pb-12 overflow-x-hidden min-h-screen bg-gradient-to-br from-[#f5f7f6] via-white to-[#e8f0ec]">
       {/* Top Header Navigation matching screenshot */}
       <TopBar
         searchQuery={docState.searchQuery}
@@ -27,14 +27,15 @@ export default function DocumentationPage() {
 
       <div className="mx-auto max-w-[1600px] px-10 pt-8">
         {/* Page Title & Subtitle */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            Documentation
+        <div className="mb-8 relative">
+          <div className="absolute -left-4 top-1 h-12 w-1.5 rounded-full bg-gradient-to-b from-[#1e3a2c] to-emerald-500"></div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-[#14211b]">
+            Documentation Vault
           </h1>
-        <p className="mt-1.5 text-sm text-gray-500">
-          Upload and manage institutional logs, evaluations, and certifications
-        </p>
-      </div>
+          <p className="mt-2 text-sm font-medium text-[#5d6b64]">
+            Securely upload, manage, and track institutional logs, evaluations, and certifications.
+          </p>
+        </div>
 
       {/* US 730: Compliance Access Gate Overlay */}
       <ComplianceGateOverlay

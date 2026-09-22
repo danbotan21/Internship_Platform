@@ -29,7 +29,7 @@ export default function FilterSidebar({
   onToggleMandatory,
 }: FilterSidebarProps) {
   return (
-    <aside className="w-full xl:w-64 shrink-0 rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs">
+    <aside className="w-full xl:w-64 shrink-0 rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md">
       {/* Category Section */}
       <div className="mb-6">
         <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -47,9 +47,9 @@ export default function FilterSidebar({
                   type="checkbox"
                   checked={isChecked}
                   onChange={() => onToggleCategory(cat)}
-                  className="h-4.5 w-4.5 rounded-sm border-gray-300 text-[#FF7A00] focus:ring-[#FF7A00] accent-[#FF7A00]"
+                  className="h-4.5 w-4.5 rounded-md border-gray-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 shadow-sm"
                 />
-                <span className="font-normal select-none">{cat}</span>
+                <span className="font-medium select-none">{cat}</span>
               </label>
             )
           })}
@@ -73,9 +73,9 @@ export default function FilterSidebar({
                   type="checkbox"
                   checked={isChecked}
                   onChange={() => onToggleStatus(status)}
-                  className="h-4.5 w-4.5 rounded-sm border-gray-300 text-[#FF7A00] focus:ring-[#FF7A00] accent-[#FF7A00]"
+                  className="h-4.5 w-4.5 rounded-md border-gray-300 text-emerald-600 focus:ring-emerald-500 accent-emerald-600 shadow-sm"
                 />
-                <span className="font-normal select-none">{status}</span>
+                <span className="font-medium select-none">{status}</span>
               </label>
             )
           })}
@@ -91,8 +91,8 @@ export default function FilterSidebar({
             role="switch"
             aria-checked={mandatoryOnly}
             onClick={onToggleMandatory}
-            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-              mandatoryOnly ? 'bg-[#FF7A00]' : 'bg-gray-200'
+            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none shadow-inner ${
+              mandatoryOnly ? 'bg-emerald-500' : 'bg-gray-200'
             }`}
           >
             <span

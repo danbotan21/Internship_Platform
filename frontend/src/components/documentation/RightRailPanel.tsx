@@ -28,12 +28,12 @@ export default function RightRailPanel({
   return (
     <aside className="w-full xl:w-72 shrink-0 space-y-5">
       {/* 1. Vault Storage Card */}
-      <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs">
+      <div className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md">
         <h3 className="mb-3 text-sm font-semibold text-gray-900">Vault Storage</h3>
         {/* Storage Bar */}
-        <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+        <div className="h-2 w-full rounded-full bg-emerald-100 overflow-hidden shadow-inner">
           <div
-            className="h-full rounded-full bg-[#FF7A00] transition-all duration-300"
+            className="h-full rounded-full bg-gradient-to-r from-emerald-600 to-emerald-400 transition-all duration-300 shadow-sm"
             style={{ width: `${percentage || 8}%` }}
           />
         </div>
@@ -46,7 +46,7 @@ export default function RightRailPanel({
       </div>
 
       {/* 2. Mandatory Checklists Card */}
-      <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs">
+      <div className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md">
         <h3 className="mb-3 text-sm font-semibold text-gray-900">Mandatory Checklists</h3>
         <div className="space-y-3.5">
           {checklists.map((item) => (
@@ -56,9 +56,9 @@ export default function RightRailPanel({
               className="group flex cursor-pointer items-center gap-3 text-sm text-gray-700 hover:text-gray-900 transition-colors select-none"
             >
               {item.completed ? (
-                <CheckCircle2 className="h-5 w-5 shrink-0 text-[#1E7E34]" />
+                <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600 drop-shadow-sm" />
               ) : (
-                <Circle className="h-5 w-5 shrink-0 text-gray-300 group-hover:text-gray-400" />
+                <Circle className="h-5 w-5 shrink-0 text-emerald-200 group-hover:text-emerald-400 transition-colors" />
               )}
               <span
                 className={`text-sm ${
@@ -73,7 +73,7 @@ export default function RightRailPanel({
       </div>
 
       {/* 3. Recent Actions & Logs Card */}
-      <div className="rounded-2xl border border-gray-200/80 bg-white p-5 shadow-xs">
+      <div className="rounded-2xl border border-white/40 bg-white/60 p-5 shadow-sm backdrop-blur-md">
         <h3 className="mb-3 text-sm font-semibold text-gray-900">Recent Actions & Logs</h3>
         <div className="space-y-4 max-h-[280px] overflow-y-auto pr-2" style={{ scrollbarWidth: 'thin' }}>
           {activityLogs.map((log) => (
