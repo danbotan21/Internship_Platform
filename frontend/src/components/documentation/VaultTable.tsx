@@ -6,6 +6,7 @@ import type {
 } from '../../types/documentation'
 import DocumentThumbnail from './DocumentThumbnail'
 import { ErrorBoundary } from '../ErrorBoundary'
+import { triggerFileDownload } from '../../utils/downloadHelper'
 
 interface VaultTableProps {
   documents: VaultDocument[]
@@ -55,14 +56,7 @@ export default function VaultTable({
 
   const handleDownload = (e: React.MouseEvent, doc: VaultDocument) => {
     e.stopPropagation()
-    if (doc?.fileUrl) {
-      const a = document.createElement('a')
-      a.href = doc.fileUrl
-      a.download = doc.fileName || 'download'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-    }
+    triggerFileDownload(doc?.fileUrl, doc?.fileName)
   }
 
   return (
@@ -149,7 +143,7 @@ export default function VaultTable({
               <div
                 key={doc?.id || idx.toString()}
                 onClick={() => { if (doc) onRowClick(doc); }}
-                className={`group relative flex flex-col rounded-2xl bg-white/70 border border-white/50 backdrop-blur-sm hover:bg-white hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${isSelected ? 'ring-2 ring-emerald-500 bg-emerald-50/80 shadow-md' : 'shadow-sm'
+                className={`group relative flex flex-col rounded-2xl bg-white border border-white/50 hover:-translate-y-1 hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${isSelected ? 'ring-2 ring-emerald-500 bg-emerald-50 shadow-md' : 'shadow-sm'
                   }`}
               >
                 {/* Top Header: Icon, Title */}
