@@ -1,9 +1,11 @@
 using InternshipPlatform.BusinessLayer.Admin.Verification;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InternshipPlatform.API.Controllers;
 
 [ApiController]
+[Authorize(Roles = "Admin")]
 [Route("api/admin/verification-requests")]
 public class AdminVerificationController(ICompanyVerificationService verification) : ControllerBase
 {
@@ -31,8 +33,7 @@ public class AdminVerificationController(ICompanyVerificationService verificatio
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Approve(Guid id, CancellationToken cancellationToken)
     {
-        // TODO: pass the signed-in admin's id once the Authentication epic is merged.
-        var result = await verification.ApproveAsync(id, decidedByUserId: null, cancellationToken);
+        var result = await verification.ApproveAsync(id, decidedByUserId: User.GetUserId(), cancellationToken);
 
         return ToActionResult(result);
     }
@@ -47,7 +48,7 @@ public class AdminVerificationController(ICompanyVerificationService verificatio
         RejectVerificationRequestDto body,
         CancellationToken cancellationToken)
     {
-        var result = await verification.RejectAsync(id, body.Reason, decidedByUserId: null, cancellationToken);
+        var result = await verification.RejectAsync(id, body.Reason, decidedByUserId: User.GetUserId(), cancellationToken);
 
         return ToActionResult(result);
     }

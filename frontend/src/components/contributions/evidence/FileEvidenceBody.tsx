@@ -1,7 +1,7 @@
 import { FileText, LoaderCircle, SquareArrowOutUpRight } from 'lucide-react'
 import { useState } from 'react'
 import type { Evidence } from '../../../types/contribution'
-import Modal from '../../ui/Modal'
+import ContributionModal from '../ContributionModal'
 import { useEvidenceFileUrl } from './useEvidenceFileUrl'
 
 function formatSize(bytes?: number | null) {
@@ -55,9 +55,15 @@ export default function FileEvidenceBody({ evidence }: { evidence: Evidence }) {
         ) : null}
       </div>
       {previewOpen && objectUrl ? (
-        <Modal title={evidence.name} description={evidence.caption ?? undefined} onClose={() => setPreviewOpen(false)} wide>
-          <img src={objectUrl} alt={evidence.caption ?? evidence.name} className='mx-auto max-h-[70vh] rounded-lg' />
-        </Modal>
+        <ContributionModal title={evidence.name} description={evidence.caption ?? undefined} onClose={() => setPreviewOpen(false)} wide>
+          <div className='flex items-center justify-center'>
+            <img
+              src={objectUrl}
+              alt={evidence.caption ?? evidence.name}
+              className='max-h-[calc(90vh-10rem)] max-w-full object-contain'
+            />
+          </div>
+        </ContributionModal>
       ) : null}
     </div>
   )

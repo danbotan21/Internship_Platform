@@ -24,31 +24,76 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react'
-import { MOCK_OPPORTUNITIES } from '../types/opportunities'
 import type { Opportunity } from '../types/opportunities'
 import { CustomSelect } from '../components/CustomSelect'
 import { getOpportunityById, applyToOpportunity } from '../api/opportunities'
 
+const EMPTY_OPPORTUNITY: Opportunity = {
+  id: '',
+  title: '',
+  company: '',
+  location: '',
+  type: 'Full-time',
+  locationType: 'Hybrid',
+  duration: '3–6 months',
+  durationCategory: '3-6 months',
+  field: 'Software Engineering',
+  tags: [],
+  logoBg: 'bg-[#1b5e3a]',
+  logoType: 'leaf',
+  aboutCompany: '',
+  aboutInternship: '',
+  responsibilities: [],
+  requirements: [],
+  technologies: [],
+  status: 'Open',
+}
+
 export default function OpportunityApply() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const opportunityId = searchParams.get('id') || '1'
+  const opportunityId = searchParams.get('id') || ''
 
-  const [opportunity, setOpportunity] = useState<Opportunity>(() => {
-    return (
-      MOCK_OPPORTUNITIES.find((opp) => opp.id === opportunityId) ||
-      MOCK_OPPORTUNITIES[0]
-    )
-  })
+  const session = (() => {
+    try {
+      const raw = localStorage.getItem('internflow.session')
+      return raw ? JSON.parse(raw) : null
+    } catch {
+      return null
+    }
+  })()
+
+  const nameParts = (session?.fullName || '').trim().split(' ')
+  const defaultFirstName = nameParts[0] || ''
+  const defaultLastName = nameParts.slice(1).join(' ') || ''
+  const defaultEmail = session?.email || ''
+
+  const [opportunity, setOpportunity] = useState<Opportunity>(EMPTY_OPPORTUNITY)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!opportunityId) return
+    if (!opportunityId) {
+      setIsLoading(false)
+      setLoadError('No opportunity specified. Please select an opportunity to apply.')
+      return
+    }
+    setIsLoading(true)
+    setLoadError(null)
     getOpportunityById(opportunityId)
       .then((opp) => {
-        if (opp) setOpportunity(opp)
+        if (opp) {
+          setOpportunity(opp)
+        } else {
+          setLoadError('Opportunity not found.')
+        }
       })
-      .catch(() => {
-        // keep fallback
+      .catch((err) => {
+        console.error('Failed to load opportunity:', err)
+        setLoadError(err.message || 'Failed to load opportunity details.')
+      })
+      .finally(() => {
+        setIsLoading(false)
       })
   }, [opportunityId])
 
@@ -56,20 +101,21 @@ export default function OpportunityApply() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [stepError, setStepError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   // Step 1: Personal & Additional Info
   const [formData, setFormData] = useState({
-    firstName: 'Daniel',
-    lastName: 'Chițanu',
-    email: 'daniel.chitanu@example.com',
+    firstName: defaultFirstName,
+    lastName: defaultLastName,
+    email: defaultEmail,
     phoneCountryCode: '+373',
-    phoneNumber: '68 123 456',
+    phoneNumber: '',
     educationLevel: "Bachelor's Degree",
-    fieldOfStudy: 'Computer Science',
-    expectedGraduation: 'June 2026',
+    fieldOfStudy: '',
+    expectedGraduation: '',
     availability: 'Full-time',
-    motivation:
-      'I am passionate about software development and want to gain hands-on experience in a company that builds innovative and sustainable solutions.',
+    motivation: '',
   })
 
   // Step 2: Documents
@@ -79,9 +125,9 @@ export default function OpportunityApply() {
     transcript: File | { name: string; size: string } | null
     certificates: File | { name: string; size: string } | null
   }>({
-    resume: { name: 'Resume_Daniel_Chitanu.pdf', size: '245 KB' },
-    coverLetter: { name: 'Cover_Letter.pdf', size: '180 KB' },
-    transcript: { name: 'Transcript.pdf', size: '350 KB' },
+    resume: null,
+    coverLetter: null,
+    transcript: null,
     certificates: null,
   })
 
@@ -98,17 +144,93 @@ export default function OpportunityApply() {
   })
 
   // Step 3: Confirmation
-  const [isConfirmed, setIsConfirmed] = useState(true)
+  const [isConfirmed, setIsConfirmed] = useState(false)
+
+  const validateStep1 = (): boolean => {
+    const errors: Record<string, string> = {}
+
+    if (!formData.firstName.trim()) {
+      errors.firstName = 'First name is required'
+    }
+    if (!formData.lastName.trim()) {
+      errors.lastName = 'Last name is required'
+    }
+    if (!formData.email.trim()) {
+      errors.email = 'Email address is required'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      errors.email = 'Please enter a valid email address'
+    }
+    if (!formData.phoneNumber.trim()) {
+      errors.phoneNumber = 'Phone number is required'
+    }
+    if (!formData.educationLevel.trim()) {
+      errors.educationLevel = 'Education level is required'
+    }
+    if (!formData.fieldOfStudy.trim()) {
+      errors.fieldOfStudy = 'Field of study is required'
+    }
+    if (!formData.expectedGraduation.trim()) {
+      errors.expectedGraduation = 'Expected graduation date is required'
+    }
+    if (!formData.availability.trim()) {
+      errors.availability = 'Availability is required'
+    }
+    if (!formData.motivation.trim()) {
+      errors.motivation = 'Please describe why you are interested in this internship'
+    }
+
+    setFieldErrors(errors)
+
+    if (Object.keys(errors).length > 0) {
+      setStepError('Please complete all required fields marked with * before continuing.')
+      return false
+    }
+
+    setStepError(null)
+    return true
+  }
+
+  const handleStep1Next = () => {
+    if (validateStep1()) {
+      setStepError(null)
+      setCurrentStep(2)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
+
+  const handleStep2Next = () => {
+    if (!files.resume && !rawFiles.resume) {
+      setStepError('Please upload your Resume / CV before continuing.')
+      return
+    }
+    setStepError(null)
+    setCurrentStep(3)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev }
+        delete next[name]
+        return next
+      })
+    }
   }
 
   const handleCustomSelectChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
   }
 
   const handleFileUpload = (
@@ -126,6 +248,9 @@ export default function OpportunityApply() {
         ...prev,
         [docType]: selectedFile,
       }))
+      if (docType === 'resume') {
+        setStepError(null)
+      }
     }
   }
 
@@ -138,21 +263,40 @@ export default function OpportunityApply() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSubmitting(true)
     setSubmitError(null)
+
+    if (!validateStep1()) {
+      setCurrentStep(1)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
+    if (!files.resume && !rawFiles.resume) {
+      setCurrentStep(2)
+      setStepError('Please upload your Resume / CV before submitting.')
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
+    if (!isConfirmed) {
+      setSubmitError('Please confirm that the information provided is accurate.')
+      return
+    }
+
+    setIsSubmitting(true)
 
     try {
       const form = new FormData()
-      form.append('FirstName', formData.firstName)
-      form.append('LastName', formData.lastName)
-      form.append('Email', formData.email)
-      form.append('PhoneCountryCode', formData.phoneCountryCode)
-      form.append('PhoneNumber', formData.phoneNumber)
-      form.append('EducationLevel', formData.educationLevel)
-      form.append('FieldOfStudy', formData.fieldOfStudy)
-      form.append('ExpectedGraduation', formData.expectedGraduation)
-      form.append('Availability', formData.availability)
-      form.append('Motivation', formData.motivation)
+      form.append('FirstName', formData.firstName.trim())
+      form.append('LastName', formData.lastName.trim())
+      form.append('Email', formData.email.trim())
+      form.append('PhoneCountryCode', formData.phoneCountryCode.trim())
+      form.append('PhoneNumber', formData.phoneNumber.trim())
+      form.append('EducationLevel', formData.educationLevel.trim())
+      form.append('FieldOfStudy', formData.fieldOfStudy.trim())
+      form.append('ExpectedGraduation', formData.expectedGraduation.trim())
+      form.append('Availability', formData.availability.trim())
+      form.append('Motivation', formData.motivation.trim())
 
       if (rawFiles.resume) {
         form.append('resume', rawFiles.resume)
@@ -222,6 +366,86 @@ export default function OpportunityApply() {
     )
   }
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-8 h-8 text-[#ff5500] animate-spin" />
+      </div>
+    )
+  }
+
+  if (loadError || !opportunity.id) {
+    return (
+      <div className="max-w-xl mx-auto py-16 px-4 text-center space-y-4">
+        <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto shadow-xs">
+          <AlertCircle className="w-7 h-7" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold text-gray-900">Unable to Open Application</h2>
+          <p className="text-sm text-gray-500">
+            {loadError || 'The requested opportunity could not be found or no ID was provided.'}
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/opportunities')}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#ff5500] hover:bg-[#e64d00] text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Opportunities</span>
+        </button>
+      </div>
+    )
+  }
+
+  if (opportunity.status === 'Closed') {
+    return (
+      <div className="max-w-xl mx-auto py-16 px-4 text-center space-y-4">
+        <div className="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mx-auto shadow-xs">
+          <AlertCircle className="w-7 h-7" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold text-gray-900">Applications Closed</h2>
+          <p className="text-sm text-gray-500">
+            This internship opportunity ({opportunity.title} at {opportunity.company}) is closed and is no longer accepting new applications.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/opportunities')}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#ff5500] hover:bg-[#e64d00] text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Opportunities</span>
+        </button>
+      </div>
+    )
+  }
+
+  if (opportunity.status === 'Draft') {
+    return (
+      <div className="max-w-xl mx-auto py-16 px-4 text-center space-y-4">
+        <div className="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mx-auto shadow-xs">
+          <AlertCircle className="w-7 h-7" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold text-gray-900">Opportunity Not Published</h2>
+          <p className="text-sm text-gray-500">
+            This opportunity is currently saved as a draft and is not accepting applications.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/opportunities')}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#ff5500] hover:bg-[#e64d00] text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Opportunities</span>
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="max-w-6xl mx-auto pb-12 space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -230,7 +454,7 @@ export default function OpportunityApply() {
           {/* Logo & Basic Info */}
           <div className="space-y-4">
             <div
-              className={`w-14 h-14 rounded-2xl ${opportunity.logoBg} flex items-center justify-center text-white shadow-sm`}
+              className={`w-14 h-14 rounded-2xl ${opportunity.logoBg || 'bg-[#1b5e3a]'} flex items-center justify-center text-white shadow-sm`}
             >
               {opportunity.logoType === 'leaf' && <Leaf className="w-7 h-7" />}
               {opportunity.logoType === 'code' && <Code2 className="w-7 h-7" />}
@@ -252,7 +476,7 @@ export default function OpportunityApply() {
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {opportunity.tags.map((tag, idx) => (
+              {(opportunity.tags || []).map((tag, idx) => (
                 <span
                   key={idx}
                   className="px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-600 rounded-md"
@@ -293,7 +517,7 @@ export default function OpportunityApply() {
               About the Company
             </h3>
             <p className="text-xs text-gray-600 leading-relaxed">
-              {opportunity.aboutCompany}
+              {opportunity.aboutCompany || 'No company description provided.'}
             </p>
           </div>
 
@@ -303,7 +527,7 @@ export default function OpportunityApply() {
               About the Internship
             </h3>
             <p className="text-xs text-gray-600 leading-relaxed">
-              {opportunity.aboutInternship}
+              {opportunity.aboutInternship || 'No internship details provided.'}
             </p>
           </div>
         </div>
@@ -326,20 +550,18 @@ export default function OpportunityApply() {
             {/* Step 1 */}
             <div className="flex items-center gap-2.5">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  currentStep === 1
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${currentStep === 1
                     ? 'bg-[#1b5e3a] text-white ring-4 ring-emerald-800/10'
                     : currentStep > 1
-                    ? 'bg-emerald-600 text-white'
-                    : 'border-2 border-gray-300 text-gray-500'
-                }`}
+                      ? 'bg-emerald-600 text-white'
+                      : 'border-2 border-gray-300 text-gray-500'
+                  }`}
               >
                 {currentStep > 1 ? <Check className="w-4 h-4" /> : '1'}
               </div>
               <span
-                className={`text-xs sm:text-sm font-medium ${
-                  currentStep === 1 ? 'text-gray-900 font-bold' : 'text-gray-600'
-                }`}
+                className={`text-xs sm:text-sm font-medium ${currentStep === 1 ? 'text-gray-900 font-bold' : 'text-gray-600'
+                  }`}
               >
                 Your Information
               </span>
@@ -347,29 +569,26 @@ export default function OpportunityApply() {
 
             <div className="h-0.5 flex-1 mx-3 bg-gray-200">
               <div
-                className={`h-full bg-[#1b5e3a] transition-all duration-300 ${
-                  currentStep > 1 ? 'w-full' : 'w-0'
-                }`}
+                className={`h-full bg-[#1b5e3a] transition-all duration-300 ${currentStep > 1 ? 'w-full' : 'w-0'
+                  }`}
               />
             </div>
 
             {/* Step 2 */}
             <div className="flex items-center gap-2.5">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  currentStep === 2
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${currentStep === 2
                     ? 'bg-[#1b5e3a] text-white ring-4 ring-emerald-800/10'
                     : currentStep > 2
-                    ? 'bg-emerald-600 text-white'
-                    : 'border-2 border-gray-300 text-gray-500'
-                }`}
+                      ? 'bg-emerald-600 text-white'
+                      : 'border-2 border-gray-300 text-gray-500'
+                  }`}
               >
                 {currentStep > 2 ? <Check className="w-4 h-4" /> : '2'}
               </div>
               <span
-                className={`text-xs sm:text-sm font-medium ${
-                  currentStep === 2 ? 'text-gray-900 font-bold' : 'text-gray-600'
-                }`}
+                className={`text-xs sm:text-sm font-medium ${currentStep === 2 ? 'text-gray-900 font-bold' : 'text-gray-600'
+                  }`}
               >
                 Documents
               </span>
@@ -377,27 +596,24 @@ export default function OpportunityApply() {
 
             <div className="h-0.5 flex-1 mx-3 bg-gray-200">
               <div
-                className={`h-full bg-[#1b5e3a] transition-all duration-300 ${
-                  currentStep > 2 ? 'w-full' : 'w-0'
-                }`}
+                className={`h-full bg-[#1b5e3a] transition-all duration-300 ${currentStep > 2 ? 'w-full' : 'w-0'
+                  }`}
               />
             </div>
 
             {/* Step 3 */}
             <div className="flex items-center gap-2.5">
               <div
-                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  currentStep === 3
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${currentStep === 3
                     ? 'bg-[#1b5e3a] text-white ring-4 ring-emerald-800/10'
                     : 'border-2 border-gray-300 text-gray-500'
-                }`}
+                  }`}
               >
                 3
               </div>
               <span
-                className={`text-xs sm:text-sm font-medium ${
-                  currentStep === 3 ? 'text-gray-900 font-bold' : 'text-gray-600'
-                }`}
+                className={`text-xs sm:text-sm font-medium ${currentStep === 3 ? 'text-gray-900 font-bold' : 'text-gray-600'
+                  }`}
               >
                 Review & Submit
               </span>
@@ -407,6 +623,22 @@ export default function OpportunityApply() {
           {/* STEP 1 CONTENT: Personal Information */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-in fade-in duration-200">
+              {stepError && (
+                <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs sm:text-sm flex items-start gap-2.5 animate-in fade-in duration-200">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="font-semibold">{stepError}</p>
+                    {Object.values(fieldErrors).length > 0 && (
+                      <ul className="list-disc list-inside text-xs space-y-0.5 text-red-600">
+                        {Object.values(fieldErrors).map((msg, i) => (
+                          <li key={i}>{msg}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Personal Information Section */}
               <div className="space-y-4">
                 <div>
@@ -426,8 +658,16 @@ export default function OpportunityApply() {
                       name="firstName"
                       value={formData.firstName}
                       onChange={handleInputChange}
-                      className="w-full bg-gray-50/70 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15 transition-all"
+                      placeholder="e.g. John"
+                      className={`w-full rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none transition-all ${
+                        fieldErrors.firstName
+                          ? 'border border-red-500 bg-red-50/20 focus:border-red-600 focus:ring-2 focus:ring-red-200/60'
+                          : 'border border-gray-200 bg-gray-50/70 focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15'
+                      }`}
                     />
+                    {fieldErrors.firstName && (
+                      <p className="text-xs text-red-500 font-medium">{fieldErrors.firstName}</p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -439,8 +679,16 @@ export default function OpportunityApply() {
                       name="lastName"
                       value={formData.lastName}
                       onChange={handleInputChange}
-                      className="w-full bg-gray-50/70 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15 transition-all"
+                      placeholder="e.g. Doe"
+                      className={`w-full rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none transition-all ${
+                        fieldErrors.lastName
+                          ? 'border border-red-500 bg-red-50/20 focus:border-red-600 focus:ring-2 focus:ring-red-200/60'
+                          : 'border border-gray-200 bg-gray-50/70 focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15'
+                      }`}
                     />
+                    {fieldErrors.lastName && (
+                      <p className="text-xs text-red-500 font-medium">{fieldErrors.lastName}</p>
+                    )}
                   </div>
                 </div>
 
@@ -454,8 +702,16 @@ export default function OpportunityApply() {
                       name="email"
                       value={formData.email}
                       onChange={handleInputChange}
-                      className="w-full bg-gray-50/70 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15 transition-all"
+                      placeholder="e.g. student@example.com"
+                      className={`w-full rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none transition-all ${
+                        fieldErrors.email
+                          ? 'border border-red-500 bg-red-50/20 focus:border-red-600 focus:ring-2 focus:ring-red-200/60'
+                          : 'border border-gray-200 bg-gray-50/70 focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15'
+                      }`}
                     />
+                    {fieldErrors.email && (
+                      <p className="text-xs text-red-500 font-medium">{fieldErrors.email}</p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -472,9 +728,17 @@ export default function OpportunityApply() {
                         name="phoneNumber"
                         value={formData.phoneNumber}
                         onChange={handleInputChange}
-                        className="w-full bg-gray-50/70 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15 transition-all"
+                        placeholder="60123456"
+                        className={`w-full rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none transition-all ${
+                          fieldErrors.phoneNumber
+                            ? 'border border-red-500 bg-red-50/20 focus:border-red-600 focus:ring-2 focus:ring-red-200/60'
+                            : 'border border-gray-200 bg-gray-50/70 focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15'
+                        }`}
                       />
                     </div>
+                    {fieldErrors.phoneNumber && (
+                      <p className="text-xs text-red-500 font-medium">{fieldErrors.phoneNumber}</p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -505,6 +769,9 @@ export default function OpportunityApply() {
                         { value: 'PhD', label: 'PhD' },
                       ]}
                     />
+                    {fieldErrors.educationLevel && (
+                      <p className="text-xs text-red-500 font-medium">{fieldErrors.educationLevel}</p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -522,6 +789,9 @@ export default function OpportunityApply() {
                         { value: 'Other', label: 'Other' },
                       ]}
                     />
+                    {fieldErrors.fieldOfStudy && (
+                      <p className="text-xs text-red-500 font-medium">{fieldErrors.fieldOfStudy}</p>
+                    )}
                   </div>
                 </div>
 
@@ -537,10 +807,17 @@ export default function OpportunityApply() {
                         value={formData.expectedGraduation}
                         onChange={handleInputChange}
                         placeholder="June 2026"
-                        className="w-full bg-gray-50/70 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15 transition-all"
+                        className={`w-full rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none transition-all ${
+                          fieldErrors.expectedGraduation
+                            ? 'border border-red-500 bg-red-50/20 focus:border-red-600 focus:ring-2 focus:ring-red-200/60'
+                            : 'border border-gray-200 bg-gray-50/70 focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15'
+                        }`}
                       />
                       <CalendarIcon className="w-4 h-4 text-gray-400 absolute right-3.5 top-3 pointer-events-none" />
                     </div>
+                    {fieldErrors.expectedGraduation && (
+                      <p className="text-xs text-red-500 font-medium">{fieldErrors.expectedGraduation}</p>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -556,6 +833,9 @@ export default function OpportunityApply() {
                         { value: 'Flexible', label: 'Flexible' },
                       ]}
                     />
+                    {fieldErrors.availability && (
+                      <p className="text-xs text-red-500 font-medium">{fieldErrors.availability}</p>
+                    )}
                   </div>
                 </div>
 
@@ -570,10 +850,17 @@ export default function OpportunityApply() {
                     value={formData.motivation}
                     onChange={handleInputChange}
                     placeholder={`Tell us why you want to join ${opportunity.company} and what you hope to gain from this experience...`}
-                    className="w-full bg-gray-50/70 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15 transition-all resize-none"
+                    className={`w-full rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-gray-900 outline-none transition-all resize-none ${
+                      fieldErrors.motivation
+                        ? 'border border-red-500 bg-red-50/20 focus:border-red-600 focus:ring-2 focus:ring-red-200/60'
+                        : 'border border-gray-200 bg-gray-50/70 focus:border-emerald-600 focus:bg-white focus:ring-2 focus:ring-emerald-800/15'
+                    }`}
                   />
-                  <div className="text-right text-[11px] text-gray-400">
-                    {formData.motivation.length}/500
+                  <div className="flex justify-between items-center text-[11px]">
+                    {fieldErrors.motivation ? (
+                      <span className="text-red-500 font-medium">{fieldErrors.motivation}</span>
+                    ) : <span />}
+                    <span className="text-gray-400">{formData.motivation.length}/500</span>
                   </div>
                 </div>
               </div>
@@ -590,7 +877,7 @@ export default function OpportunityApply() {
 
                 <button
                   type="button"
-                  onClick={() => setCurrentStep(2)}
+                  onClick={handleStep1Next}
                   className="bg-[#ff5500] hover:bg-[#e64d00] text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors cursor-pointer flex items-center gap-2 shadow-xs"
                 >
                   <span>Continue to Documents</span>
@@ -603,6 +890,13 @@ export default function OpportunityApply() {
           {/* STEP 2 CONTENT: Documents */}
           {currentStep === 2 && (
             <div className="space-y-6 animate-in fade-in duration-200">
+              {stepError && (
+                <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs sm:text-sm flex items-center gap-2 animate-in fade-in duration-200">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+                  <span>{stepError}</span>
+                </div>
+              )}
+
               <div>
                 <h3 className="text-base font-bold text-gray-900">Documents</h3>
                 <p className="text-xs text-gray-500">
@@ -838,13 +1132,11 @@ export default function OpportunityApply() {
 
                 <button
                   type="button"
-                  disabled={!files.resume}
-                  onClick={() => setCurrentStep(3)}
-                  className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${
-                    files.resume
+                  onClick={handleStep2Next}
+                  className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${files.resume || rawFiles.resume
                       ? 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
-                      : 'bg-gray-300 cursor-not-allowed'
-                  }`}
+                      : 'bg-[#ff5500] opacity-80 hover:bg-[#e64d00] cursor-pointer'
+                    }`}
                 >
                   <span>Continue to Review</span>
                   <ArrowRight className="w-4 h-4" />
@@ -1075,46 +1367,47 @@ export default function OpportunityApply() {
                 </div>
               </div>
 
-                {submitError && (
-                  <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs sm:text-sm flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
-                    <span>{submitError}</span>
+              {submitError && (
+                <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs sm:text-sm flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
+                  <div className="whitespace-pre-line font-medium leading-relaxed">
+                    {submitError}
                   </div>
-                )}
-
-                {/* Step 3 Actions */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStep(2)}
-                    className="px-6 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center gap-2"
-                  >
-                    <ArrowLeft className="w-4 h-4" />
-                    <span>Back</span>
-                  </button>
-
-                  <button
-                    type="submit"
-                    disabled={!isConfirmed || isSubmitting}
-                    className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${
-                      isConfirmed && !isSubmitting
-                        ? 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
-                        : 'bg-gray-300 cursor-not-allowed'
-                    }`}
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Submitting...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span>Submit Application</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
                 </div>
+              )}
+
+              {/* Step 3 Actions */}
+              <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setCurrentStep(2)}
+                  className="px-6 py-2.5 border border-gray-200 hover:bg-gray-50 text-gray-700 text-xs sm:text-sm font-semibold rounded-xl transition-colors cursor-pointer flex items-center gap-2"
+                >
+                  <ArrowLeft className="w-4 h-4" />
+                  <span>Back</span>
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={!isConfirmed || isSubmitting}
+                  className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${isConfirmed && !isSubmitting
+                      ? 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
+                      : 'bg-gray-300 cursor-not-allowed'
+                    }`}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Submitting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>Submit Application</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </div>
             </form>
           )}
         </div>

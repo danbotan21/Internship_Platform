@@ -1,4 +1,6 @@
 import { Award, Download, X, CheckCircle } from 'lucide-react'
+import { createPortal } from 'react-dom'
+import { triggerFileDownload } from '../../utils/downloadHelper'
 
 interface CertificateModalProps {
   isOpen: boolean
@@ -13,8 +15,8 @@ export default function CertificateModal({
 }: CertificateModalProps) {
   if (!isOpen) return null
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4">
       <div className="relative w-full max-w-2xl rounded-2xl bg-white p-6 sm:p-8 shadow-2xl border border-gray-100">
         <button
           type="button"
@@ -94,17 +96,18 @@ export default function CertificateModal({
           </button>
           <button
             type="button"
-            onClick={() => {
-              alert('Downloading Certificate PDF (IF-2025-0894.pdf)...')
+            onClick={async () => {
+              await triggerFileDownload('/dummy.pdf', 'Certificate_IF-2025-0894.pdf')
               onClose()
             }}
-            className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF7A00] px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#E86E00] transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#FF7A00] px-5 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#E86E00] transition-colors cursor-pointer"
           >
             <Download className="h-3.5 w-3.5" />
             Download Certificate (PDF)
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    window.document.body
   )
 }

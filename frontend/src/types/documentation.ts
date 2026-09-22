@@ -38,6 +38,8 @@ export interface VaultDocument {
   fileName: string
   category: DocumentCategory
   fileUrl: string
+  /** Inline fallback for small locally-uploaded files when IndexedDB is unavailable. */
+  inlineDataUrl?: string
   fileType: 'pdf' | 'docx' | 'xlsx' | string
   size: number // in bytes
   version: number

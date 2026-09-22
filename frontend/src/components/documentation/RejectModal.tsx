@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AlertCircle, X } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import type { VaultDocument } from '../../types/documentation'
 
 interface RejectModalProps {
@@ -37,8 +38,8 @@ export default function RejectModal({
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-2 text-red-600">
@@ -97,6 +98,7 @@ export default function RejectModal({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    window.document.body
   )
 }

@@ -18,6 +18,7 @@ import {
 import { Document, Page, pdfjs } from 'react-pdf';
 import * as docx from 'docx-preview';
 import type { VaultDocument, UserRoleCapabilities } from '../../types/documentation';
+import { triggerFileDownload } from '../../utils/downloadHelper';
 
 // Setup pdf.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -162,14 +163,14 @@ export default function DocumentViewerModal({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <a
-              href={document.fileUrl}
-              download={document.fileName}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors text-sm font-medium"
+            <button
+              type="button"
+              onClick={() => triggerFileDownload(document.fileUrl, document.fileName)}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-800 hover:bg-gray-700 transition-colors text-sm font-medium text-white cursor-pointer"
             >
               <Download className="w-4 h-4" />
               Download
-            </a>
+            </button>
           </div>
         </div>
 

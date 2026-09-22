@@ -9,7 +9,7 @@ public class OpportunityActions(AppDbContext db)
 {
     public async Task<List<Domain.Entities.Opportunity>> GetOpenOpportunitiesAsync()
         => await db.Opportunities
-            .Where(o => o.Status == OpportunityStatus.Open)
+            .Where(o => o.Status != OpportunityStatus.Draft)
             .Include(o => o.Mentor)
             .OrderByDescending(o => o.CreatedAt)
             .ToListAsync();

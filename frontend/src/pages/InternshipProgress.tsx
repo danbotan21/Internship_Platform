@@ -30,7 +30,7 @@ function StudentProgressView() {
   const loadProgress = useCallback(async () => {
     if (!session) return
     try {
-      const data = await progressApi.getMyProgress(session.accessToken)
+      const data = await progressApi.getMyProgress()
       setError(null)
       setProgress(data)
     } catch (err) {
@@ -52,7 +52,7 @@ function StudentProgressView() {
     setPendingMilestoneId(milestoneId)
     setProgress({ ...progress, milestones: progress.milestones.map((m) => (m.id === milestoneId ? { ...m, status } : m)) })
     try {
-      await progressApi.updateMilestone(session.accessToken, milestoneId, status)
+      await progressApi.updateMilestone(milestoneId, status)
     } catch (err) {
       handleApiError(err)
     } finally {
@@ -65,7 +65,7 @@ function StudentProgressView() {
     if (!session) return
     setIsLoggingTask(true)
     try {
-      await progressApi.logTask(session.accessToken, { description, hours, date })
+      await progressApi.logTask({ description, hours, date })
       await loadProgress()
     } catch (err) {
       handleApiError(err)
@@ -149,7 +149,7 @@ function MentorProgressView() {
 
   useEffect(() => {
     if (!session) return
-    progressApi.getStudents(session.accessToken)
+    progressApi.getStudents()
       .then((data) => { setStudents(data); setIsLoading(false) })
       .catch((err: unknown) => { handleApiError(err); setIsLoading(false) })
   }, [session, handleApiError])
@@ -160,7 +160,7 @@ function MentorProgressView() {
     setSelected(null)
     setSelectedName(summary.studentName)
     try {
-      const data = await progressApi.getStudentProgress(session.accessToken, summary.studentId)
+      const data = await progressApi.getStudentProgress(summary.studentId)
       setSelected(data)
     } catch (err) {
       handleApiError(err)
@@ -277,6 +277,6 @@ function MentorProgressView() {
 
 export default function InternshipProgress() {
   const { session } = useAuth()
-  if (session?.role === 'Mentor') return <MentorProgressView />
-  return <StudentProgressView />
+  if (!session) return null
+  return session.role === 'Student' ? <StudentProgressView /> : <MentorProgressView />
 }

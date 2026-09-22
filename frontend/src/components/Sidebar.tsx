@@ -3,7 +3,6 @@ import { NavLink } from 'react-router-dom'
 import {
   LayoutGrid,
   ListChecks,
-  Clock,
   FileText,
   Upload,
   Star,
@@ -56,7 +55,6 @@ export default function Sidebar() {
         { label: 'Overview', to: '/', icon: LayoutGrid },
         { label: 'Internship progress', to: '/internship-progress', icon: TrendingUp },
         { label: 'Tasks', to: '/tasks', icon: ListChecks },
-        { label: 'Attendance', to: '/attendance', icon: Clock },
         { label: 'Reports', to: '/reports', icon: FileText },
         { label: 'Contributions', to: '/contributions', icon: Upload },
         { label: 'Evaluation', to: '/evaluation', icon: Star },
@@ -87,8 +85,9 @@ export default function Sidebar() {
 
   return (
     <>
-      <aside className="flex h-screen w-72 shrink-0 flex-col justify-between bg-[#1e3a2c] px-4 py-6 select-none">
-        <div className="overflow-y-auto pr-1">
+      <aside id="app-sidebar" className="flex h-screen w-72 shrink-0 flex-col bg-[#1e3a2c] select-none">
+        <div id="sidebar-navigation" className="min-h-0 flex-1 overflow-y-auto">
+          <div className="px-4 py-6">
           {/* Logo and Brand */}
           <div className="flex items-center gap-2 px-2 pb-5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white p-1.5 shadow-xs">
@@ -133,10 +132,11 @@ export default function Sidebar() {
               </div>
             ))}
           </nav>
+          </div>
         </div>
 
         {/* User Footer with Role Toggle & Logout */}
-        <div className="flex items-center gap-3 border-t border-white/10 px-3 pt-5 mt-4">
+        <div className="mx-4 mt-4 flex items-center gap-3 border-t border-white/10 px-3 pt-5 pb-6">
           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-sm font-medium text-white shrink-0">
             {session ? getInitials(session.fullName) : ''}
           </div>

@@ -1,19 +1,16 @@
-import { CircleDot } from 'lucide-react'
 import { categories, categoryMeta } from '../../../components/contributions/contributionLabels'
 import Field from '../../../components/ui/Field'
 import { todayIso } from '../../../components/ui/formatDateTime'
 import { card, inputBase, sectionTitle, textareaBase } from '../../../components/ui/styles'
-import type { ContributionDetails, DraftInput } from '../../../types/contribution'
+import type { DraftInput } from '../../../types/contribution'
 
 type EditorDetailsStepProps = {
   form: DraftInput
-  contribution: ContributionDetails | null
   onChange: (changes: Partial<DraftInput>) => void
 }
 
-export default function EditorDetailsStep({ form, contribution, onChange }: EditorDetailsStepProps) {
+export default function EditorDetailsStep({ form, onChange }: EditorDetailsStepProps) {
   const today = todayIso()
-  const linkedIssue = contribution?.currentRevision.linkedIssue
   const periodError =
     form.workStartDate && form.workEndDate && form.workEndDate < form.workStartDate
       ? 'The end date is before the start date.'
@@ -136,25 +133,6 @@ export default function EditorDetailsStep({ form, contribution, onChange }: Edit
             onChange={(event) => onChange({ ownRole: event.target.value })}
           />
         </Field>
-        <Field
-          label='Linked task (GitHub issue)'
-          htmlFor='linked-issue'
-          hint='Optional. An issue of the team repository, e.g. https://github.com/owner/repo/issues/12.'
-        >
-          <input
-            id='linked-issue'
-            className={inputBase}
-            value={form.linkedIssueUrl ?? ''}
-            onChange={(event) => onChange({ linkedIssueUrl: event.target.value || null })}
-            placeholder='https://github.com/…/issues/…'
-          />
-        </Field>
-        {linkedIssue && form.linkedIssueUrl === linkedIssue.url ? (
-          <p className='-mt-3 inline-flex items-center gap-1.5 text-[12px] text-[#17603f]'>
-            <CircleDot className='size-3.5' aria-hidden='true' />
-            Verified: #{linkedIssue.number} {linkedIssue.title} ({linkedIssue.state})
-          </p>
-        ) : null}
       </section>
     </div>
   )

@@ -196,7 +196,7 @@ export default function ContributionEditorPage() {
       <div className='grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px]'>
         <div className='min-w-0'>
           {step === 'details' ? (
-            <EditorDetailsStep form={form} contribution={contribution} onChange={update} />
+            <EditorDetailsStep form={form} onChange={update} />
           ) : step === 'evidence' && contribution ? (
             <EditorEvidenceStep
               contribution={contribution}

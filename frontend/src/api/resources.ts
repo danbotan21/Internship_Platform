@@ -1,19 +1,5 @@
-const apiBaseUrl = import.meta.env.VITE_API_URL ?? 'http://localhost:5080'
-const sessionStorageKey = 'internflow.session'
-
-function getStoredSession() {
-  if (typeof window === 'undefined') return null
-
-  try {
-    return JSON.parse(window.localStorage.getItem(sessionStorageKey) ?? 'null') as {
-      accessToken?: string
-      userId?: string
-      role?: string
-    } | null
-  } catch {
-    return null
-  }
-}
+import { apiRequest } from './client'
+import { getSession } from './session'
 
 export type Resource = {
   id: string
@@ -51,46 +37,15 @@ export type CreateResourceRequest = {
 export type UpdateResourceRequest = CreateResourceRequest
 
 export function getUserId() {
-  if (typeof window === 'undefined') return ''
-
-  try {
-    const session = JSON.parse(window.localStorage.getItem(sessionStorageKey) ?? 'null')
-    return typeof session?.userId === 'string' ? session.userId : ''
-  } catch {
-    return ''
-  }
+  return getSession()?.userId ?? ''
 }
 
 export function getUserRole() {
-  if (typeof window === 'undefined') return ''
-
-  try {
-    const session = JSON.parse(window.localStorage.getItem(sessionStorageKey) ?? 'null')
-    return typeof session?.role === 'string' ? session.role : ''
-  } catch {
-    return ''
-  }
+  return getSession()?.role ?? ''
 }
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const session = getStoredSession()
-
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : {}),
-      ...(session?.userId ? { 'X-User-Id': session.userId } : {}),
-      ...(session?.role ? { 'X-User-Role': session.role } : {}),
-      ...options?.headers,
-    },
-  })
-
-  if (!response.ok) {
-    const message = await response.text()
-    throw new Error(message || `Request failed with status ${response.status}`)
-  }
-
+  const response = await apiRequest(path, options)
   if (response.status === 204) return undefined as T
   return response.json() as Promise<T>
 }

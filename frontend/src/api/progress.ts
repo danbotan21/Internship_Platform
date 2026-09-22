@@ -1,4 +1,4 @@
-import { apiFetch } from './client'
+import { requestJson } from './http'
 import type {
   Feedback,
   LogTaskPayload,
@@ -10,38 +10,35 @@ import type {
   TaskLogEntry,
 } from '../types/progress'
 
-export function getMyProgress(accessToken: string): Promise<StudentProgress> {
-  return apiFetch<StudentProgress>('/api/progress/me', { accessToken })
+export function getMyProgress(): Promise<StudentProgress> {
+  return requestJson<StudentProgress>('/api/progress/me')
 }
 
-export function getStudents(accessToken: string): Promise<StudentSummary[]> {
-  return apiFetch<StudentSummary[]>('/api/progress/students', { accessToken })
+export function getStudents(): Promise<StudentSummary[]> {
+  return requestJson<StudentSummary[]>('/api/progress/students')
 }
 
-export function getStudentProgress(accessToken: string, studentId: string): Promise<StudentProgress> {
-  return apiFetch<StudentProgress>(`/api/progress/students/${studentId}`, { accessToken })
+export function getStudentProgress(studentId: string): Promise<StudentProgress> {
+  return requestJson<StudentProgress>(`/api/progress/students/${studentId}`)
 }
 
-export function logTask(accessToken: string, payload: LogTaskPayload): Promise<TaskLogEntry> {
-  return apiFetch<TaskLogEntry>('/api/progress/tasks', {
+export function logTask(payload: LogTaskPayload): Promise<TaskLogEntry> {
+  return requestJson<TaskLogEntry>('/api/progress/tasks', {
     method: 'POST',
-    accessToken,
     body: JSON.stringify(payload),
   })
 }
 
-export function updateMilestone(accessToken: string, milestoneId: string, status: MilestoneStatus): Promise<Milestone> {
-  return apiFetch<Milestone>(`/api/progress/milestones/${milestoneId}`, {
+export function updateMilestone(milestoneId: string, status: MilestoneStatus): Promise<Milestone> {
+  return requestJson<Milestone>(`/api/progress/milestones/${milestoneId}`, {
     method: 'PATCH',
-    accessToken,
     body: JSON.stringify({ status }),
   })
 }
 
-export function submitFeedback(accessToken: string, studentId: string, payload: SubmitFeedbackPayload): Promise<Feedback> {
-  return apiFetch<Feedback>(`/api/progress/students/${studentId}/feedback`, {
+export function submitFeedback(studentId: string, payload: SubmitFeedbackPayload): Promise<Feedback> {
+  return requestJson<Feedback>(`/api/progress/students/${studentId}/feedback`, {
     method: 'POST',
-    accessToken,
     body: JSON.stringify(payload),
   })
 }
