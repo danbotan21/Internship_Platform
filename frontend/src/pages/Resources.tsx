@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Bookmark, ChevronDown, Plus, Search } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import Topbar from '../components/Topbar'
 import FluidBackground from '../components/FluidBackground'
 import { useAuth } from '../hooks/authContext'
 import {
@@ -15,7 +14,6 @@ import {
 export default function Resources() {
   return (
     <div className="-m-8">
-      <Topbar />
       <ResourceLibrary />
     </div>
   )
@@ -234,7 +232,6 @@ function ResourceLibrary() {
             {filteredResources.map((draft) => (
               <article key={draft.id} className="group relative isolate mx-auto flex h-[360px] w-full max-w-4xl overflow-hidden rounded-xl border border-white/20 bg-[#10201b] shadow-lg transition duration-300 hover:border-white/50 hover:shadow-2xl">
                   <FluidBackground
-                    animated={false}
                     variant={
                       draft.type.toLowerCase() === 'template'
                         ? 'template'
@@ -279,7 +276,6 @@ function ResourceLibrary() {
               className="group relative isolate mx-auto flex h-[360px] w-full max-w-4xl cursor-pointer overflow-hidden rounded-xl border border-white/20 bg-[#10201b] shadow-lg transition duration-300 hover:border-white/50 hover:shadow-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-[#164c3a]"
             >
               <FluidBackground
-                    animated={false}
                 variant={
                   resource.type.toLowerCase() === 'template'
                     ? 'template'
@@ -335,4 +331,3 @@ function ResourceLibrary() {
     </section>
   )
 }
-

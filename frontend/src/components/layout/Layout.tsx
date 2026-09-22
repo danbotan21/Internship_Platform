@@ -41,16 +41,16 @@ function DocumentationScrollButton() {
 export default function Layout() {
   const { pathname } = useLocation()
   const { session } = useAuth()
-  const isResourceFullPage = pathname.startsWith('/resources/')
+  const isResourcePage = pathname === '/resources' || pathname.startsWith('/resources/')
   const isDocumentationPage = pathname.startsWith('/documentation')
   const roleLabel = session?.role ?? 'Student'
 
   return (
     <div className='flex h-screen w-full overflow-hidden bg-[#f5f7f6] text-[#14211b]'>
-      {!isResourceFullPage && <Sidebar />}
+      <Sidebar />
       <div className='flex min-w-0 flex-1 flex-col'>
         {isDocumentationPage && <TopBar />}
-        {!isDocumentationPage && (
+        {!isDocumentationPage && !isResourcePage && (
           <header className='flex min-h-16 flex-wrap items-center justify-between gap-3 border-b border-[#e6ebe8] bg-white px-5 py-3 md:px-8'>
             <p className='text-[13px] text-[#5d6b64]'>
               {roleLabel} / {pageTitleFor(pathname)}
