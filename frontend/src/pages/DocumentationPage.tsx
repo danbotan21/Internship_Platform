@@ -18,14 +18,14 @@ export default function DocumentationPage() {
   const docState = useDocumentation(role, session?.fullName)
 
   return (
-    <div className="w-full pb-12 overflow-x-hidden min-h-screen bg-gradient-to-br from-[#f5f7f6] via-white to-[#e8f0ec]">
+    <div className="w-full pb-8 animate-in fade-in duration-500">
       {/* Top Header Navigation matching screenshot */}
       <TopBar
         searchQuery={docState.searchQuery}
         onSearchChange={docState.setSearchQuery}
       />
 
-      <div className="mx-auto max-w-[1600px] px-10 pt-8">
+      <div className="w-full pt-4">
         {/* Page Title & Subtitle */}
         <div className="mb-8 relative">
           <div className="absolute -left-4 top-1 h-12 w-1.5 rounded-full bg-gradient-to-b from-[#1e3a2c] to-emerald-500"></div>

@@ -61,6 +61,10 @@
   font-synthesis: none;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 button {
   cursor: pointer;
 }

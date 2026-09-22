@@ -18,8 +18,8 @@ export default function Layout() {
             {roleLabel} / {pageTitleFor(pathname)}
           </p>
         </header>
-        <main className='min-w-0 flex-1 overflow-y-auto'>
-          <div className='mx-auto max-w-[1240px] px-5 py-7 md:px-8'>
+        <main className='min-w-0 flex-1 overflow-y-auto hardware-scroll scroll-smooth'>
+          <div className='mx-auto max-w-[1240px] px-5 py-7 md:px-8 relative'>
             <Outlet />
           </div>
         </main>
