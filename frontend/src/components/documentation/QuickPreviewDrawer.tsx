@@ -1,4 +1,5 @@
 import { X, CheckCircle2 } from 'lucide-react'
+import { createPortal } from 'react-dom'
 import type { VaultDocument } from '../../types/documentation'
 
 interface QuickPreviewDrawerProps {
@@ -16,8 +17,8 @@ export default function QuickPreviewDrawer({
 }: QuickPreviewDrawerProps) {
   if (!document) return null
 
-  return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-sm bg-white shadow-2xl border-l border-blue-500 overflow-y-auto flex flex-col transition-transform transform translate-x-0">
+  return createPortal(
+    <div className="fixed inset-y-0 right-0 z-[100] w-full max-w-sm bg-white shadow-2xl border-l border-emerald-500 overflow-y-auto flex flex-col transition-transform transform translate-x-0">
       {/* Header */}
       <div className="p-4 border-b border-gray-100 flex items-center justify-between">
         <div className="pr-2">
@@ -150,6 +151,7 @@ export default function QuickPreviewDrawer({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    window.document.body
   )
 }
