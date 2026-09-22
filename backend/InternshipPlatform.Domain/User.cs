@@ -34,6 +34,7 @@ public class User
     // Navigation properties
     public List<RefreshToken> RefreshTokens { get; set; } = [];
 
+    [System.ComponentModel.DataAnnotations.Schema.InverseProperty("Mentor")]
     public List<Opportunity> Opportunities { get; set; } = [];
 
     public List<Application> Applications { get; set; } = [];
