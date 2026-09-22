@@ -213,4 +213,7 @@ export default defineConfig({
       '/uploads': 'http://localhost:5080',
     },
   },
+  optimizeDeps: {
+    include: ['xlsx', 'docx-preview'],
+  },
 })

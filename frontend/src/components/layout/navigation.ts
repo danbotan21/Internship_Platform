@@ -1,7 +1,6 @@
 import {
   Briefcase,
   Calendar,
-  Clock,
   FileCheck,
   FileText,
   FolderKanban,

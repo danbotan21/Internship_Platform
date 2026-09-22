@@ -1,4 +1,5 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import {
   Flag,
   ArrowUpRight,
@@ -10,6 +11,8 @@ import {
   Check,
   Award,
   Layers,
+  ChevronDown,
+  BookOpen,
 } from 'lucide-react'
 import {
   getQuizAttempts,
@@ -51,6 +54,21 @@ export default function QuizAnalyticsDashboard({
   const [hoveredWeek, setHoveredWeek] = useState<WeekScoreEvolution | null>(null)
   const [showResetModal, setShowResetModal] = useState(false)
   const [resetToast, setResetToast] = useState<string | null>(null)
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false)
+  const filterDropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        filterDropdownRef.current &&
+        !filterDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsFilterDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   useEffect(() => {
     // 1. Keep in sync with local quiz submissions
@@ -126,6 +144,15 @@ export default function QuizAnalyticsDashboard({
     return filterQuizList.find((q) => q.id === selectedQuizFilter) || null
   }, [filterQuizList, selectedQuizFilter])
 
+  // Selected quiz display label
+  const selectedQuizLabel = useMemo(() => {
+    if (selectedQuizFilter === 'ALL') {
+      return `All Assessments (${attempts.length} total records)`
+    }
+    const found = filterQuizList.find((q) => q.id === selectedQuizFilter)
+    return found ? `${found.title} (${found.attemptCount} submissions)` : selectedQuizFilter
+  }, [selectedQuizFilter, attempts.length, filterQuizList])
+
   // Dynamic calculations from database
   const summary = useMemo(
     () => calculateAnalyticsSummary(attempts, selectedQuizFilter),
@@ -191,48 +218,143 @@ export default function QuizAnalyticsDashboard({
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
       {/* Controls Bar: Filter by Quiz & Reset Seed */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-gray-200/80 shadow-2xs">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Filter className="h-4 w-4 text-gray-500" />
-          <span className="text-xs font-semibold text-gray-700">Filter by Assessment:</span>
-          <select
-            value={selectedQuizFilter}
-            onChange={(e) => setSelectedQuizFilter(e.target.value)}
-            className="rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-1.5 text-xs font-medium text-gray-800 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 cursor-pointer max-w-xs sm:max-w-md truncate"
-          >
-            <option value="ALL">All Assessments ({attempts.length} total records)</option>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#e6ebe8] shadow-xs">
+        <div className="flex items-center gap-2 flex-wrap" ref={filterDropdownRef}>
+          <Filter className="h-4 w-4 text-[#5d6b64]" />
+          <span className="text-xs font-semibold text-[#14211b]">Filter by Assessment:</span>
 
-            {/* Custom Created Quizzes Group */}
-            {customQuizOptions.length > 0 && (
-              <optgroup label="Custom Created Assessments">
-                {customQuizOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    ★ {opt.title} ({opt.attemptCount} {opt.attemptCount === 1 ? 'submission' : 'submissions'})
-                  </option>
-                ))}
-              </optgroup>
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsFilterDropdownOpen((prev) => !prev)}
+              className={`flex items-center justify-between gap-2.5 rounded-xl border px-3.5 py-2 text-xs font-medium transition-all cursor-pointer shadow-2xs ${
+                isFilterDropdownOpen
+                  ? 'border-[#1e3a2c] bg-white ring-2 ring-[#1e3a2c]/10 text-[#14211b]'
+                  : 'border-[#e6ebe8] bg-[#f5f7f6] hover:bg-white text-[#14211b]'
+              }`}
+            >
+              <span className="font-semibold">{selectedQuizLabel}</span>
+              <ChevronDown
+                className={`h-3.5 w-3.5 text-[#71817a] transition-transform duration-200 ${
+                  isFilterDropdownOpen ? 'rotate-180 text-[#1e3a2c]' : ''
+                }`}
+              />
+            </button>
+
+            {isFilterDropdownOpen && (
+              <div className="absolute top-full left-0 mt-1.5 z-50 w-72 sm:w-84 rounded-2xl border border-[#e6ebe8] bg-white p-1.5 shadow-xl animate-in fade-in slide-in-from-top-1 duration-150 max-h-72 overflow-y-auto hardware-scroll">
+                {/* All Assessments Option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedQuizFilter('ALL')
+                    setIsFilterDropdownOpen(false)
+                  }}
+                  className={`w-full text-left px-3 py-2 text-xs rounded-xl font-medium transition-colors cursor-pointer flex items-center justify-between ${
+                    selectedQuizFilter === 'ALL'
+                      ? 'bg-[#e9f3ee] text-[#164c3a] font-semibold'
+                      : 'text-[#14211b] hover:bg-[#f5f7f6]'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-3.5 w-3.5 text-[#164c3a]" />
+                    <span>All Assessments</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#f0f4f1] text-[#5d6b64]">
+                      {attempts.length} records
+                    </span>
+                    {selectedQuizFilter === 'ALL' && (
+                      <Check className="h-3.5 w-3.5 text-[#164c3a]" />
+                    )}
+                  </div>
+                </button>
+
+                {/* Custom Created Quizzes */}
+                {customQuizOptions.length > 0 && (
+                  <div className="pt-2 border-t border-[#f0f4f1] mt-1.5">
+                    <div className="px-2.5 py-1 text-[10px] font-bold text-[#71817a] uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="h-3 w-3 text-[#ff5500]" />
+                      Custom Created Assessments
+                    </div>
+                    {customQuizOptions.map((opt) => {
+                      const isSelected = selectedQuizFilter === opt.id
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedQuizFilter(opt.id)
+                            setIsFilterDropdownOpen(false)
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs rounded-xl font-medium transition-colors cursor-pointer flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-[#e9f3ee] text-[#164c3a] font-semibold'
+                              : 'text-[#14211b] hover:bg-[#f5f7f6]'
+                          }`}
+                        >
+                          <span className="truncate pr-2">{opt.title}</span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] text-[#71817a]">
+                              {opt.attemptCount} {opt.attemptCount === 1 ? 'sub' : 'subs'}
+                            </span>
+                            {isSelected && <Check className="h-3.5 w-3.5 text-[#164c3a]" />}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Standard Catalog Quizzes */}
+                {catalogQuizOptions.length > 0 && (
+                  <div className="pt-2 border-t border-[#f0f4f1] mt-1.5">
+                    <div className="px-2.5 py-1 text-[10px] font-bold text-[#71817a] uppercase tracking-wider flex items-center gap-1.5">
+                      <BookOpen className="h-3 w-3 text-[#164c3a]" />
+                      Standard Catalog Assessments
+                    </div>
+                    {catalogQuizOptions.map((opt) => {
+                      const isSelected = selectedQuizFilter === opt.id
+                      return (
+                        <button
+                          key={opt.id}
+                          type="button"
+                          onClick={() => {
+                            setSelectedQuizFilter(opt.id)
+                            setIsFilterDropdownOpen(false)
+                          }}
+                          className={`w-full text-left px-3 py-2 text-xs rounded-xl font-medium transition-colors cursor-pointer flex items-center justify-between ${
+                            isSelected
+                              ? 'bg-[#e9f3ee] text-[#164c3a] font-semibold'
+                              : 'text-[#14211b] hover:bg-[#f5f7f6]'
+                          }`}
+                        >
+                          <span className="truncate pr-2">{opt.title}</span>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-[10px] text-[#71817a]">
+                              {opt.attemptCount} {opt.attemptCount === 1 ? 'sub' : 'subs'}
+                            </span>
+                            {isSelected && <Check className="h-3.5 w-3.5 text-[#164c3a]" />}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             )}
-
-            {/* Standard Catalog Quizzes Group */}
-            <optgroup label="Standard Catalog Assessments">
-              {catalogQuizOptions.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.title} ({opt.attemptCount} {opt.attemptCount === 1 ? 'submission' : 'submissions'})
-                </option>
-              ))}
-            </optgroup>
-          </select>
+          </div>
 
           {currentFilteredQuiz && (
             <span
-              className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-bold border ${
+              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold border shadow-2xs ${
                 currentFilteredQuiz.isCustom
-                  ? 'bg-purple-50 text-purple-700 border-purple-200'
-                  : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  ? 'bg-[#fff2ea] text-[#ff5500] border-[#ffd8c4]'
+                  : 'bg-[#e9f3ee] text-[#164c3a] border-[#cde0d5]'
               }`}
             >
-              {currentFilteredQuiz.isCustom && <Sparkles className="h-3 w-3 text-purple-500" />}
-              {currentFilteredQuiz.isCustom ? 'CUSTOM QUIZ' : 'CATALOG QUIZ'}
+              {currentFilteredQuiz.isCustom && <Sparkles className="h-3 w-3 text-[#ff5500]" />}
+              {currentFilteredQuiz.isCustom ? 'Custom Assessment' : 'Catalog Assessment'}
             </span>
           )}
         </div>
@@ -669,163 +791,167 @@ export default function QuizAnalyticsDashboard({
       )}
 
       {/* Detail Modal for Selected Student */}
-      {selectedStudent && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setSelectedStudent(null)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in cursor-pointer"
-        >
+      {selectedStudent &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-in zoom-in-95 cursor-default"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setSelectedStudent(null)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in cursor-pointer"
           >
-            <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
-              <div>
-                <h4 className="text-base font-bold text-gray-900">{selectedStudent.userName}</h4>
-                <p className="text-xs text-gray-500">{selectedStudent.quizTitle || 'Assessment Result'}</p>
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-in zoom-in-95 cursor-default"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
+                <div>
+                  <h4 className="text-base font-bold text-gray-900">{selectedStudent.userName}</h4>
+                  <p className="text-xs text-gray-500">{selectedStudent.quizTitle || 'Assessment Result'}</p>
+                </div>
+                <span
+                  className={`rounded-md border px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
+                    selectedStudent.status === 'PASSED'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : selectedStudent.status === 'BORDERLINE'
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'bg-rose-50 text-rose-700 border-rose-200'
+                  }`}
+                >
+                  {selectedStudent.status}
+                </span>
               </div>
-              <span
-                className={`rounded-md border px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase ${
-                  selectedStudent.status === 'PASSED'
-                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    : selectedStudent.status === 'BORDERLINE'
-                    ? 'bg-amber-50 text-amber-700 border-amber-200'
-                    : 'bg-rose-50 text-rose-700 border-rose-200'
-                }`}
-              >
-                {selectedStudent.status}
-              </span>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div className="rounded-xl bg-gray-50 p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Score</p>
-                <p className="text-xl font-bold text-gray-900 mt-0.5 font-sans">
-                  {selectedStudent.percentage}%
-                </p>
-                <p className="text-[11px] text-gray-500 mt-0.5">
-                  {selectedStudent.score} of {selectedStudent.totalQuestions} correct
-                </p>
-              </div>
-              <div className="rounded-xl bg-gray-50 p-3">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Duration</p>
-                <p className="text-xl font-bold text-gray-900 mt-0.5 font-sans">
-                  {selectedStudent.timeSpentFormatted}
-                </p>
-                <p className="text-[11px] text-gray-500 mt-0.5">
-                  {new Date(selectedStudent.completedAt).toLocaleTimeString([], {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                </p>
-              </div>
-            </div>
-
-            {selectedStudent.missedTopics && selectedStudent.missedTopics.length > 0 && (
-              <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50/50 p-3 text-xs">
-                <p className="font-semibold text-gray-800 mb-1.5">Topics with Errors:</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {selectedStudent.missedTopics.map((topic, i) => (
-                    <span
-                      key={i}
-                      className="rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700 border border-rose-200/80"
-                    >
-                      {topic}
-                    </span>
-                  ))}
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="rounded-xl bg-gray-50 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Score</p>
+                  <p className="text-xl font-bold text-gray-900 mt-0.5 font-sans">
+                    {selectedStudent.percentage}%
+                  </p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    {selectedStudent.score} of {selectedStudent.totalQuestions} correct
+                  </p>
+                </div>
+                <div className="rounded-xl bg-gray-50 p-3">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-gray-400">Duration</p>
+                  <p className="text-xl font-bold text-gray-900 mt-0.5 font-sans">
+                    {selectedStudent.timeSpentFormatted}
+                  </p>
+                  <p className="text-[11px] text-gray-500 mt-0.5">
+                    {new Date(selectedStudent.completedAt).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </p>
                 </div>
               </div>
-            )}
 
-            {selectedStudent.isFlagged && (
-              <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-900">
-                <p className="font-bold flex items-center gap-1.5 text-rose-700">
-                  <Flag className="h-3.5 w-3.5 fill-rose-600" />
-                  Anti-Cheat Proctoring Flag
-                </p>
-                <p className="mt-1 text-rose-700/90">{selectedStudent.flagReason || 'Proctoring security anomaly flagged.'}</p>
+              {selectedStudent.missedTopics && selectedStudent.missedTopics.length > 0 && (
+                <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50/50 p-3 text-xs">
+                  <p className="font-semibold text-gray-800 mb-1.5">Topics with Errors:</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedStudent.missedTopics.map((topic, i) => (
+                      <span
+                        key={i}
+                        className="rounded-md bg-rose-50 px-2 py-0.5 text-[11px] font-medium text-rose-700 border border-rose-200/80"
+                      >
+                        {topic}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedStudent.isFlagged && (
+                <div className="mb-4 rounded-xl border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-900">
+                  <p className="font-bold flex items-center gap-1.5 text-rose-700">
+                    <Flag className="h-3.5 w-3.5 fill-rose-600" />
+                    Anti-Cheat Proctoring Flag
+                  </p>
+                  <p className="mt-1 text-rose-700/90">{selectedStudent.flagReason || 'Proctoring security anomaly flagged.'}</p>
+                </div>
+              )}
+
+              <div className="flex justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedStudent(null)}
+                  className="rounded-xl bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-black transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
               </div>
-            )}
-
-            <div className="flex justify-end pt-2">
-              <button
-                type="button"
-                onClick={() => setSelectedStudent(null)}
-                className="rounded-xl bg-gray-900 px-4 py-2 text-xs font-semibold text-white hover:bg-black transition-colors cursor-pointer"
-              >
-                Close
-              </button>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* In-App Confirmation Modal for Reset Benchmark */}
-      {showResetModal && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setShowResetModal(false)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in cursor-pointer"
-        >
+      {showResetModal &&
+        createPortal(
           <div
-            onClick={(e) => e.stopPropagation()}
-            className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-in zoom-in-95 cursor-default"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setShowResetModal(false)}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in cursor-pointer"
           >
-            {/* Top Close Button */}
-            <button
-              type="button"
-              onClick={() => setShowResetModal(false)}
-              className="absolute top-5 right-5 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-in zoom-in-95 cursor-default"
             >
-              <X className="h-5 w-5" />
-            </button>
-
-            {/* Icon & Title */}
-            <div className="flex items-center gap-3.5 mb-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100 shrink-0">
-                <RotateCcw className="h-5 w-5" />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-gray-900">Reset Benchmark Data</h3>
-                <p className="text-xs text-gray-500">Restore default team performance baseline</p>
-              </div>
-            </div>
-
-            {/* Details Box */}
-            <div className="mb-4 rounded-xl border border-gray-100 bg-gray-50/80 p-3.5 text-xs text-gray-600 leading-relaxed">
-              This action will reset the 8-week assessment performance metrics and restore the default baseline for all 8 members of your team:
-              <span className="block font-semibold text-gray-800 mt-1">
-                Daniel Botan, Daniel Chigaianu, Daniel Chitanu, Gicu Caraman, Mihail Goncearov, Sergiu Negara, Valeriu Bulgaru, and Veaceslav Nagorneac.
-              </span>
-            </div>
-
-            <p className="text-xs text-gray-500 mb-6">
-              Are you sure you want to proceed with resetting the benchmark data?
-            </p>
-
-            {/* Actions */}
-            <div className="flex items-center justify-end gap-3">
+              {/* Top Close Button */}
               <button
                 type="button"
                 onClick={() => setShowResetModal(false)}
-                className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-2xs hover:bg-gray-50 transition-colors cursor-pointer"
+                className="absolute top-5 right-5 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors cursor-pointer"
               >
-                Cancel
+                <X className="h-5 w-5" />
               </button>
-              <button
-                type="button"
-                onClick={handleConfirmReset}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[#1e3a2c] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#162d22] transition-colors cursor-pointer"
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Confirm Reset
-              </button>
+
+              {/* Icon & Title */}
+              <div className="flex items-center gap-3.5 mb-4">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-800 border border-emerald-100 shrink-0">
+                  <RotateCcw className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Reset Benchmark Data</h3>
+                  <p className="text-xs text-gray-500">Restore default team performance baseline</p>
+                </div>
+              </div>
+
+              {/* Details Box */}
+              <div className="mb-4 rounded-xl border border-gray-100 bg-gray-50/80 p-3.5 text-xs text-gray-600 leading-relaxed">
+                This action will reset the 8-week assessment performance metrics and restore the default baseline for all 8 members of your team:
+                <span className="block font-semibold text-gray-800 mt-1">
+                  Daniel Botan, Daniel Chigaianu, Daniel Chitanu, Gicu Caraman, Mihail Goncearov, Sergiu Negara, Valeriu Bulgaru, and Veaceslav Nagorneac.
+                </span>
+              </div>
+
+              <p className="text-xs text-gray-500 mb-6">
+                Are you sure you want to proceed with resetting the benchmark data?
+              </p>
+
+              {/* Actions */}
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowResetModal(false)}
+                  className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-xs font-semibold text-gray-700 shadow-2xs hover:bg-gray-50 transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmReset}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[#1e3a2c] px-4 py-2 text-xs font-semibold text-white shadow-xs hover:bg-[#162d22] transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" />
+                  Confirm Reset
+                </button>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
 
       {/* Floating Toast Notification */}
       {resetToast && (

@@ -26,6 +26,7 @@ using InternshipPlatform.BusinessLayer.Admin.Users;
 using InternshipPlatform.BusinessLayer.Admin.Verification;
 using InternshipPlatform.BusinessLayer.Admin.Companies;
 using InternshipPlatform.BusinessLayer.Admin.Dashboard;
+using InternshipPlatform.BusinessLayer.Quizzes;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -69,6 +70,7 @@ builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
 
 // Register business services
 builder.Services.AddScoped<IDocumentService, DocumentService>();
+builder.Services.AddScoped<IQuizService, QuizService>();
 
 // Auth / JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt").Get<JwtSettings>()
