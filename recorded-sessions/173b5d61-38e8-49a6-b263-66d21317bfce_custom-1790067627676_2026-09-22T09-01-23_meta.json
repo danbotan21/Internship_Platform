@@ -1,0 +1,24 @@
+{
+  "sessionId": "sess_1790067683441",
+  "studentId": "173b5d61-38e8-49a6-b263-66d21317bfce",
+  "studentName": "Danu",
+  "quizId": "custom-1790067627676",
+  "quizTitle": "testing",
+  "startedAt": "2026-09-22T09:01:10.091Z",
+  "finishedAt": "2026-09-22T09:01:23.441Z",
+  "durationSeconds": 13,
+  "score": 2,
+  "totalQuestions": 2,
+  "percentage": 100,
+  "isPassed": true,
+  "isCompromised": false,
+  "violationsCount": 1,
+  "violations": [
+    {
+      "id": "v-1790067677280",
+      "timestamp": "2026-09-22T09:01:17.280Z",
+      "type": "WINDOW_BLUR",
+      "description": "Window focus lost (switched application or secondary monitor)"
+    }
+  ]
+}

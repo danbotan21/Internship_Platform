@@ -24,12 +24,15 @@ import {
 import {
   getApplicationsByOpportunity,
   getOpportunityById,
+  downloadDocument,
 } from '../api/opportunities'
 
 interface ApplicantFile {
   name: string
+  rawName?: string
   size: string
   type: string
+  fileType?: string
 }
 
 interface Applicant {
@@ -62,88 +65,17 @@ interface MentorOpp {
   applicantsCount: number
 }
 
-const MOCK_OPP_META: Record<string, MentorOpp> = {
-  '1': { id: '1', title: 'Software Development Intern', company: 'GreenTech Solutions', location: 'Chișinău, MD', locationType: 'On-site', type: 'Full-time', duration: '3–6 months', logoBg: 'bg-[#1b5e3a]', logoType: 'leaf', applicantsCount: 12 },
-  '2': { id: '2', title: 'Frontend Intern', company: 'TechVision', location: 'Remote', locationType: 'Remote', type: 'Full-time', duration: '3 months', logoBg: 'bg-[#2563eb]', logoType: 'code', applicantsCount: 20 },
-  '3': { id: '3', title: 'Data Analytics Intern', company: 'NextGen Analytics', location: 'Chișinău, MD', locationType: 'Hybrid', type: 'Full-time', duration: '6 months', logoBg: 'bg-[#0f172a]', logoType: 'chart', applicantsCount: 8 },
-  '4': { id: '4', title: 'QA Automation Intern', company: 'AlphaSystems', location: 'Remote', locationType: 'Remote', type: 'Part-time', duration: '3 months', logoBg: 'bg-[#ea580c]', logoType: 'check', applicantsCount: 5 },
-  '5': { id: '5', title: 'Technical Writing Intern', company: 'GreenTech Solutions', location: 'Remote', locationType: 'Remote', type: 'Part-time', duration: '2 months', logoBg: 'bg-gray-600', logoType: 'code', applicantsCount: 3 },
-  '6': { id: '6', title: 'Sustainability Research Intern', company: 'GreenTech Solutions', location: 'Chișinău, MD', locationType: 'On-site', type: 'Full-time', duration: '4 months', logoBg: 'bg-[#1b5e3a]', logoType: 'leaf', applicantsCount: 15 },
-  '7': { id: '7', title: 'Business Analysis Intern', company: 'NextGen Analytics', location: 'Remote', locationType: 'Remote', type: 'Full-time', duration: '3–6 months', logoBg: 'bg-[#0f172a]', logoType: 'chart', applicantsCount: 9 },
-  '8': { id: '8', title: 'Marketing Intern', company: 'TechVision', location: 'Chișinău, MD', locationType: 'On-site', type: 'Part-time', duration: '2–3 months', logoBg: 'bg-[#ea580c]', logoType: 'check', applicantsCount: 6 },
-}
-
-const generateApplicants = (oppId: string): Applicant[] => {
-  const base: Applicant[] = [
-    {
-      id: 'a1', firstName: 'Daniel', lastName: 'Chițanu',
-      email: 'daniel.chitanu@gmail.com', phone: '+373 68 123 456',
-      educationLevel: "Bachelor's Degree", fieldOfStudy: 'Computer Science',
-      expectedGraduation: 'June 2026', availability: 'Full-time',
-      motivation: 'I am passionate about software development and want to gain hands-on experience in a company that builds innovative and sustainable solutions. I believe this internship will significantly accelerate my learning curve.',
-      appliedDate: 'Sep 15, 2026', status: 'Under Review', avatar: 'bg-[#1b5e3a]',
-      files: [
-        { name: 'Resume_Daniel_Chitanu.pdf', size: '245 KB', type: 'PDF' },
-        { name: 'Cover_Letter.pdf', size: '180 KB', type: 'PDF' },
-        { name: 'Transcript.pdf', size: '350 KB', type: 'PDF' },
-      ],
-    },
-    {
-      id: 'a2', firstName: 'Maria', lastName: 'Ionescu',
-      email: 'maria.ionescu@student.utm.md', phone: '+373 79 456 789',
-      educationLevel: "Master's Degree", fieldOfStudy: 'Software Engineering',
-      expectedGraduation: 'January 2027', availability: 'Part-time',
-      motivation: 'With a strong background in software engineering and a genuine interest in building scalable applications, I am eager to contribute to your team and grow professionally.',
-      appliedDate: 'Sep 14, 2026', status: 'Accepted', avatar: 'bg-[#2563eb]',
-      files: [
-        { name: 'Maria_Ionescu_CV.pdf', size: '312 KB', type: 'PDF' },
-        { name: 'Portfolio_Links.pdf', size: '95 KB', type: 'PDF' },
-      ],
-    },
-    {
-      id: 'a3', firstName: 'Alexandru', lastName: 'Moraru',
-      email: 'alex.moraru@mail.com', phone: '+373 60 789 012',
-      educationLevel: "Bachelor's Degree", fieldOfStudy: 'Information Technology',
-      expectedGraduation: 'July 2026', availability: 'Full-time',
-      motivation: "I have been following the company's work for over a year and deeply admire the focus on sustainability. I want to apply my technical skills towards meaningful impact.",
-      appliedDate: 'Sep 13, 2026', status: 'Pending', avatar: 'bg-[#ea580c]',
-      files: [
-        { name: 'CV_Alexandru_Moraru.pdf', size: '198 KB', type: 'PDF' },
-        { name: 'Cover_Letter_AlexMoraru.pdf', size: '155 KB', type: 'PDF' },
-        { name: 'Recommendation_Letter.pdf', size: '420 KB', type: 'PDF' },
-      ],
-    },
-    {
-      id: 'a4', firstName: 'Elena', lastName: 'Popescu',
-      email: 'elena.popescu@techuni.md', phone: '+373 69 321 654',
-      educationLevel: "Bachelor's Degree", fieldOfStudy: 'Computer Engineering',
-      expectedGraduation: 'May 2026', availability: 'Full-time',
-      motivation: 'As a driven student with hands-on project experience in React and TypeScript, I am confident I can contribute to your frontend team from day one while continuing to grow my skills.',
-      appliedDate: 'Sep 12, 2026', status: 'Rejected', avatar: 'bg-[#0f172a]',
-      files: [
-        { name: 'Elena_Popescu_Resume.pdf', size: '267 KB', type: 'PDF' },
-        { name: 'GitHub_Portfolio.pdf', size: '88 KB', type: 'PDF' },
-      ],
-    },
-    {
-      id: 'a5', firstName: 'Andrei', lastName: 'Văcaru',
-      email: 'andrei.vacaru@gmail.com', phone: '+373 62 654 321',
-      educationLevel: "Bachelor's Degree", fieldOfStudy: 'Mathematics & Informatics',
-      expectedGraduation: 'September 2026', availability: 'Full-time',
-      motivation: "I have a strong foundation in algorithms and data structures, and I've built several personal projects using modern frameworks. I am excited to bring my enthusiasm and skills to a real-world team.",
-      appliedDate: 'Sep 10, 2026', status: 'Under Review', avatar: 'bg-purple-600',
-      files: [
-        { name: 'Andrei_Vacaru_CV.pdf', size: '302 KB', type: 'PDF' },
-        { name: 'Transcript_2026.pdf', size: '410 KB', type: 'PDF' },
-      ],
-    },
-  ]
-
-  const meta = MOCK_OPP_META[oppId]
-  const count = meta?.applicantsCount ?? 3
-  if (count <= 3) return base.slice(0, 3)
-  if (count <= 5) return base.slice(0, 5)
-  return base
+const DEFAULT_OPP: MentorOpp = {
+  id: '',
+  title: 'Internship Opportunity',
+  company: 'Company',
+  location: 'On-site',
+  locationType: 'On-site',
+  type: 'Full-time',
+  duration: '',
+  logoBg: 'bg-[#1b5e3a]',
+  logoType: 'leaf',
+  applicantsCount: 0,
 }
 
 const STATUS_CONFIG: Record<Applicant['status'], { label: string; classes: string; dotClass: string }> = {
@@ -163,9 +95,9 @@ function getLogoIcon(logoType: MentorOpp['logoType'], cls = 'w-6 h-6') {
 export default function OpportunityApplications() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
-  const oppId = searchParams.get('id') || '1'
-  const [opp, setOpp] = useState<MentorOpp>(() => MOCK_OPP_META[oppId] ?? MOCK_OPP_META['1'])
-  const [applicants, setApplicants] = useState<Applicant[]>(() => generateApplicants(oppId))
+  const oppId = searchParams.get('id') || ''
+  const [opp, setOpp] = useState<MentorOpp>(DEFAULT_OPP)
+  const [applicants, setApplicants] = useState<Applicant[]>([])
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -197,17 +129,41 @@ export default function OpportunityApplications() {
           const mapped: Applicant[] = appsData.map((item, idx) => {
             const files: ApplicantFile[] = []
             if (item.resumePath) {
+              const rawName = item.resumePath.split(/[\/\\]/).pop() || 'Resume.pdf'
+              const displayName = rawName.replace(/^[0-9a-fA-F-]{36}_/, '')
+              const ext = displayName.split('.').pop()?.toUpperCase() || 'PDF'
               files.push({
-                name: item.resumePath.split(/[\/\\]/).pop() || 'Resume.pdf',
-                size: '245 KB',
-                type: 'PDF',
+                name: displayName,
+                rawName,
+                size: 'Document',
+                type: ext,
+                fileType: 'resume',
               })
             }
             if (item.coverLetterPath) {
+              const rawName = item.coverLetterPath.split(/[\/\\]/).pop() || 'Cover_Letter.pdf'
+              const displayName = rawName.replace(/^[0-9a-fA-F-]{36}_/, '')
+              const ext = displayName.split('.').pop()?.toUpperCase() || 'PDF'
               files.push({
-                name: item.coverLetterPath.split(/[\/\\]/).pop() || 'Cover_Letter.pdf',
-                size: '180 KB',
-                type: 'PDF',
+                name: displayName,
+                rawName,
+                size: 'Document',
+                type: ext,
+                fileType: 'coverLetter',
+              })
+            }
+            if (Array.isArray(item.additionalFilePaths)) {
+              item.additionalFilePaths.forEach((p) => {
+                const rawName = p.split(/[\/\\]/).pop() || 'Additional_File.pdf'
+                const displayName = rawName.replace(/^[0-9a-fA-F-]{36}_/, '')
+                const ext = displayName.split('.').pop()?.toUpperCase() || 'FILE'
+                files.push({
+                  name: displayName,
+                  rawName,
+                  size: 'Document',
+                  type: ext,
+                  fileType: 'additional',
+                })
               })
             }
 
@@ -235,7 +191,12 @@ export default function OpportunityApplications() {
             }
           })
           setApplicants(mapped)
+        } else {
+          setApplicants([])
         }
+      })
+      .catch(() => {
+        setApplicants([])
       })
       .finally(() => setIsLoading(false))
   }, [oppId])
@@ -248,6 +209,8 @@ export default function OpportunityApplications() {
   const [statusOverrides, setStatusOverrides] = useState<Record<string, Applicant['status']>>({})
   const [previewFile, setPreviewFile]     = useState<ApplicantFile | null>(null)
   const [pendingStatus, setPendingStatus] = useState<Applicant['status'] | null>(null)
+  const [isDownloading, setIsDownloading] = useState(false)
+  const [downloadError, setDownloadError] = useState<string | null>(null)
 
   const getStatus = (a: Applicant): Applicant['status'] => statusOverrides[a.id] ?? a.status
 
@@ -387,7 +350,13 @@ export default function OpportunityApplications() {
           </div>
         )}
 
-        {!isLoading && filtered.length === 0 && (
+        {!isLoading && allApplicants.length === 0 && (
+          <div className="bg-white border border-gray-200/80 rounded-2xl p-10 text-center text-gray-500 font-medium shadow-xs">
+            No applications have been received for this opportunity yet.
+          </div>
+        )}
+
+        {!isLoading && allApplicants.length > 0 && filtered.length === 0 && (
           <div className="bg-white border border-gray-200/80 rounded-2xl p-10 text-center text-gray-500 font-medium shadow-xs">
             No applicants match your search criteria.
           </div>
@@ -611,7 +580,7 @@ export default function OpportunityApplications() {
       {previewFile && (
         <div
           className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 backdrop-blur-xs p-4"
-          onClick={() => setPreviewFile(null)}
+          onClick={() => { setPreviewFile(null); setDownloadError(null) }}
         >
           <div
             className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full space-y-4"
@@ -619,35 +588,73 @@ export default function OpportunityApplications() {
           >
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-bold text-gray-900">Download File</h3>
-              <button type="button" onClick={() => setPreviewFile(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
+              <button
+                type="button"
+                onClick={() => { setPreviewFile(null); setDownloadError(null) }}
+                className="text-gray-400 hover:text-gray-600 cursor-pointer"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl p-3">
-              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded">{previewFile.type}</span>
-              <div>
-                <p className="text-xs font-semibold text-gray-800">{previewFile.name}</p>
+              <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0">
+                {previewFile.type}
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-gray-800 truncate">{previewFile.name}</p>
                 <p className="text-xs text-gray-400">{previewFile.size}</p>
               </div>
             </div>
+            {downloadError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-200 rounded-lg p-2.5">
+                {downloadError}
+              </p>
+            )}
             <p className="text-xs text-gray-500">
-              In a real application this would trigger a secure download from the server. For this demo the file download is simulated.
+              Download applicant file securely from the server.
             </p>
             <div className="flex gap-2 justify-end">
               <button
                 type="button"
-                onClick={() => setPreviewFile(null)}
-                className="px-4 py-2 text-xs font-semibold text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer"
+                disabled={isDownloading}
+                onClick={() => { setPreviewFile(null); setDownloadError(null) }}
+                className="px-4 py-2 text-xs font-semibold text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 cursor-pointer disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={() => setPreviewFile(null)}
-                className="px-4 py-2 text-xs font-semibold text-white bg-[#1b5e3a] hover:bg-[#154d2f] rounded-xl flex items-center gap-2 cursor-pointer"
+                disabled={isDownloading}
+                onClick={async () => {
+                  if (!selectedApplicant) return
+                  setIsDownloading(true)
+                  setDownloadError(null)
+                  try {
+                    await downloadDocument(
+                      selectedApplicant.id,
+                      previewFile.rawName || previewFile.name,
+                      previewFile.fileType
+                    )
+                    setPreviewFile(null)
+                  } catch (err: any) {
+                    setDownloadError(err.message || 'Failed to download file.')
+                  } finally {
+                    setIsDownloading(false)
+                  }
+                }}
+                className="px-4 py-2 text-xs font-semibold text-white bg-[#1b5e3a] hover:bg-[#154d2f] rounded-xl flex items-center gap-2 cursor-pointer disabled:opacity-50"
               >
-                <Download className="w-3.5 h-3.5" />
-                Download
+                {isDownloading ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Downloading...
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-3.5 h-3.5" />
+                    Download
+                  </>
+                )}
               </button>
             </div>
           </div>

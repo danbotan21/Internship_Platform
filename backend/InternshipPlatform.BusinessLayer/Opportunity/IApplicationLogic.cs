@@ -21,4 +21,6 @@ public interface IApplicationLogic
 
     // Documents
     Task<(Stream stream, string contentType, string fileName)> DownloadDocumentAsync(Guid documentId, Guid requestingUserId);
+    Task<(Stream stream, string contentType, string fileName)> DownloadApplicationFileAsync(
+        Guid applicationId, Guid requestingUserId, string? fileType = null, string? fileName = null);
 }

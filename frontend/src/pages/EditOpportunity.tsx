@@ -24,93 +24,22 @@ import { CustomSelect } from '../components/CustomSelect'
 import { getOpportunityById, updateOpportunity } from '../api/opportunities'
 import type { CreateOpportunityPayload } from '../types/opportunities'
 
-// Mirror of MOCK_MENTOR_OPPORTUNITIES data from MyOpportunities
-const INITIAL_DATA: Record<string, {
-  title: string; field: string; location: string; locationType: string
-  type: string; duration: string; deadline: string; aboutInternship: string
-  responsibilities: string[]; requirements: string[]; technologies: string[]
-  logoBg: string; logoType: string; company: string
-}> = {
-  '1': {
-    title: 'Software Development Intern', field: 'Software Engineering',
-    location: 'Chișinău, MD', locationType: 'On-site', type: 'Full-time',
-    duration: '3–6 months', deadline: '2025-12-31',
-    company: 'GreenTech Solutions', logoBg: 'bg-[#1b5e3a]', logoType: 'leaf',
-    aboutInternship: 'Join our engineering team and work on real products that make a difference. As a Software Development Intern, you will collaborate with experienced developers, contribute to meaningful features, and gain hands-on experience with modern technologies.',
-    responsibilities: ['Work on backend and/or frontend features', 'Collaborate with the development team', 'Write clean, maintainable code', 'Participate in code reviews', 'Learn and apply best practices'],
-    requirements: ['Currently enrolled in a relevant field', 'Basic knowledge of C# and .NET (or C / C++)', 'Eagerness to learn and a problem-solving mindset', 'Good communication skills'],
-    technologies: ['C#', '.NET', 'SQL', 'C++', 'Azure', 'Git', 'Docker'],
-  },
-  '2': {
-    title: 'Frontend Intern', field: 'Web Development',
-    location: 'Remote', locationType: 'Remote', type: 'Full-time',
-    duration: '3–6 months', deadline: '2025-10-31',
-    company: 'TechVision', logoBg: 'bg-[#2563eb]', logoType: 'code',
-    aboutInternship: 'We are looking for an enthusiastic Frontend Intern to build responsive, modern interfaces using React and modern CSS. You will work closely with UI designers and senior frontend developers.',
-    responsibilities: ['Develop scalable React components', 'Translate UI mockups into pixel-perfect pages', 'Optimize application performance', 'Fix UI bugs and improve accessibility'],
-    requirements: ['Proficiency in JavaScript/TypeScript, HTML5, and CSS3', 'Familiarity with React', 'Understanding of responsive design principles', 'Strong attention to detail'],
-    technologies: ['TypeScript', 'React', 'JavaScript', 'Tailwind CSS', 'Vite', 'Git'],
-  },
-  '3': {
-    title: 'Data Analytics Intern', field: 'Data & Analytics',
-    location: 'Chișinău, MD', locationType: 'Hybrid', type: 'Full-time',
-    duration: '6+ months', deadline: '2025-11-30',
-    company: 'NextGen Analytics', logoBg: 'bg-[#0f172a]', logoType: 'chart',
-    aboutInternship: 'Gain hands-on experience building SQL queries, Python data analysis scripts, and Business Intelligence dashboards working directly with data engineers.',
-    responsibilities: ['Analyze complex dataset queries using SQL and Python', 'Build BI reports and automated data pipelines', 'Assist senior data scientists with data cleaning'],
-    requirements: ['Knowledge of Python, SQL, and basic statistical analysis', 'Familiarity with Pandas, NumPy, or PowerBI', 'Analytical mindset'],
-    technologies: ['Python', 'SQL', 'PowerBI', 'Pandas', 'PostgreSQL'],
-  },
-  '4': {
-    title: 'QA Automation Intern', field: 'Quality Assurance',
-    location: 'Remote', locationType: 'Remote', type: 'Part-time',
-    duration: '1–3 months', deadline: '2025-09-15',
-    company: 'AlphaSystems', logoBg: 'bg-[#ea580c]', logoType: 'check',
-    aboutInternship: 'Learn automated testing frameworks, write Java/Python automation test suites, and perform manual & API testing for enterprise web services.',
-    responsibilities: ['Write end-to-end automation scripts', 'Perform API integration testing with Postman', 'Document bug reports and verify fix releases'],
-    requirements: ['Basic knowledge of Java or Python programming', 'Understanding of software testing fundamentals', 'Strong logical thinking'],
-    technologies: ['Java', 'Selenium', 'Python', 'Postman', 'Git'],
-  },
-  '5': {
-    title: 'Technical Writing Intern', field: 'Software Engineering',
-    location: 'Remote', locationType: 'Remote', type: 'Part-time',
-    duration: '1–3 months', deadline: '',
-    company: 'GreenTech Solutions', logoBg: 'bg-gray-600', logoType: 'code',
-    aboutInternship: 'As a Technical Writing Intern, you will work with our engineering and product teams to produce high-quality documentation, guides, and knowledge-base articles.',
-    responsibilities: ['Write and maintain technical documentation', 'Create user guides and API references', 'Collaborate with developers'],
-    requirements: ['Excellent written English communication skills', 'Ability to understand technical concepts', 'Experience with Markdown'],
-    technologies: ['Markdown', 'Git', 'Confluence', 'Jira'],
-  },
-  '6': {
-    title: 'Sustainability Research Intern', field: 'Software Engineering',
-    location: 'Chișinău, MD', locationType: 'On-site', type: 'Full-time',
-    duration: '3–6 months', deadline: '2025-08-31',
-    company: 'GreenTech Solutions', logoBg: 'bg-[#1b5e3a]', logoType: 'leaf',
-    aboutInternship: 'Join our research team to study environmental data and contribute to sustainability reports.',
-    responsibilities: ['Conduct environmental impact research', 'Analyze sustainability data and metrics', 'Prepare research reports'],
-    requirements: ['Background in Environmental Science or related field', 'Strong analytical and writing skills', 'Proficiency in data analysis tools'],
-    technologies: ['Excel', 'Python', 'R', 'PowerBI'],
-  },
-  '7': {
-    title: 'Business Analysis Intern', field: 'Data & Analytics',
-    location: 'Remote', locationType: 'Remote', type: 'Full-time',
-    duration: '3–6 months', deadline: '2025-09-30',
-    company: 'NextGen Analytics', logoBg: 'bg-[#0f172a]', logoType: 'chart',
-    aboutInternship: 'As a Business Analysis Intern, you will help translate complex business requirements into actionable data insights.',
-    responsibilities: ['Gather and document business requirements', 'Analyze business processes and workflows', 'Create data-driven reports'],
-    requirements: ['Interest in business analysis and data', 'Strong communication and documentation skills', 'Basic knowledge of SQL or Excel'],
-    technologies: ['SQL', 'Excel', 'PowerBI', 'Jira'],
-  },
-  '8': {
-    title: 'Marketing Intern', field: 'Software Engineering',
-    location: 'Chișinău, MD', locationType: 'On-site', type: 'Part-time',
-    duration: '1–3 months', deadline: '2025-07-31',
-    company: 'TechVision', logoBg: 'bg-[#ea580c]', logoType: 'check',
-    aboutInternship: 'Join our marketing team to run campaigns, analyze engagement data, and help grow our brand presence.',
-    responsibilities: ['Plan and execute digital marketing campaigns', 'Monitor social media metrics', 'Create content for web and social channels'],
-    requirements: ['Interest in digital marketing', 'Basic knowledge of social media platforms', 'Creative thinking and strong written skills'],
-    technologies: ['Google Analytics', 'Meta Ads', 'Canva', 'HubSpot'],
-  },
+const BLANK_FORM_DATA = {
+  title: '',
+  field: 'Software Engineering',
+  location: '',
+  locationType: 'Hybrid',
+  type: 'Full-time',
+  duration: '3–6 months',
+  deadline: '',
+  company: '',
+  logoBg: 'bg-[#1b5e3a]',
+  logoType: 'leaf',
+  aboutCompany: '',
+  aboutInternship: '',
+  responsibilities: [] as string[],
+  requirements: [] as string[],
+  technologies: [] as string[],
 }
 
 function LogoIcon({ type, cls = 'w-7 h-7' }: { type: string; cls?: string }) {
@@ -123,45 +52,61 @@ function LogoIcon({ type, cls = 'w-7 h-7' }: { type: string; cls?: string }) {
 export default function EditOpportunity() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const id = searchParams.get('id') || '1'
-  const initial = INITIAL_DATA[id] ?? INITIAL_DATA['1']
+  const id = searchParams.get('id') || ''
 
   const [currentStep, setCurrentStep] = useState<1 | 2>(1)
   const [isSaved, setIsSaved] = useState(false)
 
-  const [formData, setFormData] = useState({ ...initial })
+  const [formData, setFormData] = useState(BLANK_FORM_DATA)
   const [newResp, setNewResp] = useState('')
   const [newReq, setNewReq]   = useState('')
   const [newTech, setNewTech] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
+  const [opportunityStatus, setOpportunityStatus] = useState<'Open' | 'Closed' | 'Draft'>('Open')
 
   useEffect(() => {
-    if (!id) return
+    if (!id) {
+      setIsLoading(false)
+      setLoadError('No opportunity ID provided.')
+      return
+    }
     setIsLoading(true)
+    setLoadError(null)
     getOpportunityById(id)
       .then((opp) => {
         if (opp) {
+          const normDuration = (opp.duration || opp.durationCategory || '3-6 months').replace('-', '–')
+          if (opp.status === 'Closed' || opp.status === 'Draft' || opp.status === 'Open') {
+            setOpportunityStatus(opp.status)
+          }
           setFormData({
-            title: opp.title,
+            title: opp.title || '',
             field: opp.field || 'Software Engineering',
-            location: opp.location,
-            locationType: opp.locationType,
-            type: opp.type,
-            duration: opp.duration,
-            deadline: opp.deadline || '2026-12-31',
-            company: opp.company,
+            location: opp.location || '',
+            locationType: opp.locationType || 'Hybrid',
+            type: opp.type || 'Full-time',
+            duration: normDuration,
+            deadline: opp.deadline || '',
+            company: opp.company || '',
             logoBg: opp.logoBg || 'bg-[#1b5e3a]',
             logoType: opp.logoType || 'leaf',
+            aboutCompany: opp.aboutCompany || '',
             aboutInternship: opp.aboutInternship || '',
-            responsibilities: opp.responsibilities || [],
-            requirements: opp.requirements || [],
-            technologies: opp.technologies || [],
+            responsibilities: Array.isArray(opp.responsibilities) ? opp.responsibilities : [],
+            requirements: Array.isArray(opp.requirements) ? opp.requirements : [],
+            technologies: Array.isArray(opp.technologies) ? opp.technologies : [],
           })
+        } else {
+          setLoadError('Opportunity not found.')
         }
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error('Failed to load opportunity:', err)
+        setLoadError(err.message || 'Failed to load opportunity details.')
+      })
       .finally(() => setIsLoading(false))
   }, [id])
 
@@ -195,11 +140,11 @@ export default function EditOpportunity() {
         locationType: formData.locationType === 'On-site' ? 'OnSite' : formData.locationType,
         type: formData.type === 'Full-time' ? 'FullTime' : 'PartTime',
         field: formData.field,
-        durationCategory: formData.duration || '3-6 months',
+        durationCategory: (formData.duration || '3-6 months').replace('–', '-'),
         company: formData.company,
         logoBg: formData.logoBg,
         logoType: formData.logoType,
-        aboutCompany: `${formData.company} description`,
+        aboutCompany: formData.aboutCompany || `${formData.company} description`,
         aboutInternship: formData.aboutInternship,
         responsibilities: formData.responsibilities,
         requirements: formData.requirements,
@@ -207,6 +152,7 @@ export default function EditOpportunity() {
         deadline: formData.deadline ? new Date(formData.deadline).toISOString() : new Date().toISOString(),
         startDate: new Date().toISOString(),
         endDate: new Date(Date.now() + 90 * 86400000).toISOString(),
+        status: opportunityStatus,
       }
 
       await updateOpportunity(id, payload)
@@ -224,6 +170,28 @@ export default function EditOpportunity() {
     return (
       <div className="flex items-center justify-center py-20">
         <Loader2 className="w-8 h-8 text-[#ff5500] animate-spin" />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="max-w-xl mx-auto py-16 px-4 text-center space-y-4">
+        <div className="w-14 h-14 bg-red-50 text-red-500 rounded-2xl flex items-center justify-center mx-auto shadow-xs">
+          <AlertCircle className="w-7 h-7" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-xl font-bold text-gray-900">Failed to Load Opportunity</h2>
+          <p className="text-sm text-gray-500">{loadError}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/my-opportunities')}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#ff5500] hover:bg-[#e64d00] text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to My Opportunities</span>
+        </button>
       </div>
     )
   }

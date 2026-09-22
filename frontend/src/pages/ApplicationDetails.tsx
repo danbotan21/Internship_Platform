@@ -18,41 +18,53 @@ import {
   MessageSquare,
   Loader2,
 } from 'lucide-react'
-import { MOCK_OPPORTUNITIES } from '../types/opportunities'
 import type { Opportunity } from '../types/opportunities'
 import { getMyApplicationById, getOpportunityById } from '../api/opportunities'
+
+const EMPTY_OPPORTUNITY: Opportunity = {
+  id: '',
+  title: 'Internship Opportunity',
+  company: 'Company',
+  location: 'On-site',
+  locationType: 'On-site',
+  type: 'Full-time',
+  duration: '',
+  durationCategory: '',
+  field: '',
+  tags: [],
+  logoBg: 'bg-[#1b5e3a]',
+  logoType: 'leaf',
+  aboutCompany: '',
+  aboutInternship: '',
+  responsibilities: [],
+  requirements: [],
+  technologies: [],
+}
 
 export default function ApplicationDetails() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const appId = searchParams.get('id') || ''
-  const oppId = searchParams.get('oppId') || searchParams.get('id') || '1'
+  const oppId = searchParams.get('oppId') || searchParams.get('id') || ''
 
-  const [opportunity, setOpportunity] = useState<Opportunity>(() => {
-    return MOCK_OPPORTUNITIES.find((opp) => opp.id === oppId) || MOCK_OPPORTUNITIES[0]
-  })
+  const [opportunity, setOpportunity] = useState<Opportunity>(EMPTY_OPPORTUNITY)
 
   const [applicationData, setApplicationData] = useState({
-    appliedDate: '18 Sep 2026',
-    status: 'Under Review',
+    appliedDate: '',
+    status: 'Pending',
     step: 'Document Review',
-    firstName: 'Daniel',
-    lastName: 'Chițanu',
-    email: 'daniel.chitanu@example.com',
+    firstName: '',
+    lastName: '',
+    email: '',
     phoneCountryCode: '+373',
-    phoneNumber: '68 123 456',
-    educationLevel: "Bachelor's Degree",
-    fieldOfStudy: 'Computer Science',
-    expectedGraduation: 'June 2026',
-    availability: 'Full-time',
-    motivation:
-      'I am passionate about software development and want to gain hands-on experience in a company that builds innovative and sustainable solutions.',
+    phoneNumber: '',
+    educationLevel: '',
+    fieldOfStudy: '',
+    expectedGraduation: '',
+    availability: '',
+    motivation: '',
     reviewFeedback: null as string | null,
-    files: [
-      { name: 'Resume_Daniel_Chitanu.pdf', size: '245 KB', type: 'PDF' },
-      { name: 'Cover_Letter.pdf', size: '180 KB', type: 'PDF' },
-      { name: 'Transcript.pdf', size: '350 KB', type: 'PDF' },
-    ],
+    files: [] as { name: string; size: string; type: string }[],
   })
 
   const [isLoading, setIsLoading] = useState(false)

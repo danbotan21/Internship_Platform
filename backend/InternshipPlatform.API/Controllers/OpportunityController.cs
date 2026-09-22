@@ -163,15 +163,49 @@ public class OpportunityController(IOpportunityLogic opportunityLogic, IApplicat
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
+    //GET /api/applications/{applicationId:guid}/download
+    [HttpGet("api/applications/{applicationId:guid}/download")]
+    [Authorize]
+    public async Task<IActionResult> DownloadApplicationFile(
+        Guid applicationId,
+        [FromQuery] string? fileType = null,
+        [FromQuery] string? fileName = null)
+    {
+        if (CurrentUserId is null) return Unauthorized();
+        try
+        {
+            var (stream, contentType, downloadFileName) = await applicationLogic.DownloadApplicationFileAsync(
+                applicationId, CurrentUserId.Value, fileType, fileName);
+            return File(stream, contentType, downloadFileName);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
+        }
+        catch (FileNotFoundException)
+        {
+            return NotFound();
+        }
+    }
+
     //GET /api/documents/{documentId:guid}/download
     [HttpGet("api/documents/{documentId:guid}/download")]
     [Authorize]
-    public async Task<IActionResult> DownloadDocument(Guid documentId)
+    public async Task<IActionResult> DownloadDocument(
+        Guid documentId,
+        [FromQuery] string? fileType = null,
+        [FromQuery] string? fileName = null)
     {
+        if (CurrentUserId is null) return Unauthorized();
         try
         {
-            var (stream, contentType, fileName) = await applicationLogic.DownloadDocumentAsync(documentId, CurrentUserId!.Value);
-            return File(stream, contentType, fileName);
+            var (stream, contentType, downloadFileName) = await applicationLogic.DownloadApplicationFileAsync(
+                documentId, CurrentUserId.Value, fileType, fileName);
+            return File(stream, contentType, downloadFileName);
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return Forbid();
         }
         catch (FileNotFoundException)
         {

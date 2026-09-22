@@ -42,265 +42,9 @@ interface MentorOpportunity {
   technologies: string[]
 }
 
-const MOCK_MENTOR_OPPORTUNITIES: MentorOpportunity[] = [
-  {
-    id: '1',
-    title: 'Software Development Intern',
-    company: 'GreenTech Solutions',
-    location: 'Chișinău, MD',
-    locationType: 'On-site',
-    type: 'Full-time',
-    duration: '3–6 months',
-    applicationsCount: 12,
-    status: 'Open',
-    createdOn: 'Sep 10, 2025',
-    deadline: 'Dec 31, 2025',
-    logoBg: 'bg-[#1b5e3a]',
-    logoType: 'leaf',
-    tags: ['Software Engineering', 'Internship'],
-    aboutCompany:
-      'GreenTech Solutions is a technology company focused on creating innovative solutions for a more sustainable future. We develop digital products that help businesses reduce their environmental footprint and operate more efficiently.',
-    aboutInternship:
-      'Join our engineering team and work on real products that make a difference. As a Software Development Intern, you will collaborate with experienced developers, contribute to meaningful features, and gain hands-on experience with modern technologies.',
-    responsibilities: [
-      'Work on backend and/or frontend features',
-      'Collaborate with the development team',
-      'Write clean, maintainable code',
-      'Participate in code reviews',
-      'Learn and apply best practices',
-    ],
-    requirements: [
-      'Currently enrolled in a relevant field (Computer Science, Software Engineering, etc.)',
-      'Basic knowledge of C# and .NET (or C / C++)',
-      'Eagerness to learn and a problem-solving mindset',
-      'Good communication skills',
-    ],
-    technologies: ['C#', '.NET', 'SQL', 'C++', 'Azure', 'Git', 'Docker'],
-  },
-  {
-    id: '3',
-    title: 'Data Analytics Intern',
-    company: 'NextGen Analytics',
-    location: 'Chișinău, MD',
-    locationType: 'Hybrid',
-    type: 'Full-time',
-    duration: '6 months',
-    applicationsCount: 8,
-    status: 'Open',
-    createdOn: 'Aug 28, 2025',
-    deadline: 'Nov 30, 2025',
-    logoBg: 'bg-[#0f172a]',
-    logoType: 'chart',
-    tags: ['Data & Analytics', 'Internship'],
-    aboutCompany:
-      'NextGen Analytics builds enterprise data pipelines, predictive AI models, and real-time visualization dashboards for global clients.',
-    aboutInternship:
-      'Gain hands-on experience building SQL queries, Python data analysis scripts, and Business Intelligence dashboards working directly with data engineers.',
-    responsibilities: [
-      'Analyze complex dataset queries using SQL and Python',
-      'Build BI reports and automated data pipelines',
-      'Assist senior data scientists with data cleaning and ETL process',
-    ],
-    requirements: [
-      'Knowledge of Python, SQL, and basic statistical analysis',
-      'Familiarity with Pandas, NumPy, or PowerBI',
-      'Analytical mindset with strong problem-solving skills',
-    ],
-    technologies: ['Python', 'SQL', 'PowerBI', 'Pandas', 'PostgreSQL'],
-  },
-  {
-    id: '4',
-    title: 'QA Automation Intern',
-    company: 'AlphaSystems',
-    location: 'Remote',
-    locationType: 'Remote',
-    type: 'Part-time',
-    duration: '3 months',
-    applicationsCount: 5,
-    status: 'Closed',
-    createdOn: 'Aug 1, 2025',
-    deadline: 'Sep 15, 2025',
-    logoBg: 'bg-[#ea580c]',
-    logoType: 'check',
-    tags: ['Quality Assurance', 'Internship'],
-    aboutCompany:
-      'AlphaSystems delivers high-reliability fintech software used by millions of transaction users.',
-    aboutInternship:
-      'Learn automated testing frameworks, write Java/Python automation test suites, and perform manual & API testing for enterprise web services.',
-    responsibilities: [
-      'Write end-to-end automation scripts using Java and Selenium',
-      'Perform API integration testing with Postman',
-      'Document bug reports and verify fix releases',
-    ],
-    requirements: [
-      'Basic knowledge of Java or Python programming',
-      'Understanding of software testing fundamentals',
-      'Strong logical thinking and attention to edge cases',
-    ],
-    technologies: ['Java', 'Selenium', 'Python', 'Postman', 'Git'],
-  },
-  {
-    id: '2',
-    title: 'Frontend Intern',
-    company: 'TechVision',
-    location: 'Chișinău, MD',
-    locationType: 'Remote',
-    type: 'Full-time',
-    duration: '3 months',
-    applicationsCount: 20,
-    status: 'Open',
-    createdOn: 'Jul 15, 2025',
-    deadline: 'Oct 31, 2025',
-    logoBg: 'bg-[#2563eb]',
-    logoType: 'code',
-    tags: ['Web Development', 'Internship'],
-    aboutCompany:
-      'TechVision is a leading digital studio crafting high-performance web and mobile applications for clients around the globe.',
-    aboutInternship:
-      'We are looking for an enthusiastic Frontend Intern to build responsive, modern interfaces using React and modern CSS.',
-    responsibilities: [
-      'Develop scalable React components and web interfaces',
-      'Translate UI design mockups into pixel-perfect web pages',
-      'Optimize application performance and responsiveness',
-      'Fix UI bugs and improve user accessibility',
-    ],
-    requirements: [
-      'Proficiency in JavaScript/TypeScript, HTML5, and CSS3',
-      'Familiarity with React and modern frontend build tools',
-      'Understanding of responsive design principles',
-      'Strong attention to detail and UI aesthetic sense',
-    ],
-    technologies: ['TypeScript', 'React', 'JavaScript', 'Tailwind CSS', 'Vite', 'Git'],
-  },
-  {
-    id: '5',
-    title: 'Technical Writing Intern',
-    company: 'GreenTech Solutions',
-    location: 'Remote',
-    locationType: 'Remote',
-    type: 'Part-time',
-    duration: '2 months',
-    applicationsCount: 3,
-    status: 'Draft',
-    createdOn: 'Jul 5, 2025',
-    deadline: '—',
-    logoBg: 'bg-gray-600',
-    logoType: 'code',
-    tags: ['Technical Writing', 'Internship'],
-    aboutCompany:
-      'GreenTech Solutions is a technology company focused on creating innovative solutions for a more sustainable future.',
-    aboutInternship:
-      'As a Technical Writing Intern, you will work with our engineering and product teams to produce high-quality documentation, guides, and knowledge-base articles.',
-    responsibilities: [
-      'Write and maintain technical documentation',
-      'Create user guides and API references',
-      'Collaborate with developers to understand product features',
-    ],
-    requirements: [
-      'Excellent written English communication skills',
-      'Ability to understand technical concepts',
-      'Experience with Markdown or documentation tools',
-    ],
-    technologies: ['Markdown', 'Git', 'Confluence', 'Jira'],
-  },
-  {
-    id: '6',
-    title: 'Sustainability Research Intern',
-    company: 'GreenTech Solutions',
-    location: 'Chișinău, MD',
-    locationType: 'On-site',
-    type: 'Full-time',
-    duration: '4 months',
-    applicationsCount: 15,
-    status: 'Closed',
-    createdOn: 'Jun 20, 2025',
-    deadline: 'Aug 31, 2025',
-    logoBg: 'bg-[#1b5e3a]',
-    logoType: 'leaf',
-    tags: ['Research', 'Sustainability'],
-    aboutCompany:
-      'GreenTech Solutions is a technology company focused on creating innovative solutions for a more sustainable future.',
-    aboutInternship:
-      'Join our research team to study environmental data and contribute to sustainability reports.',
-    responsibilities: [
-      'Conduct environmental impact research',
-      'Analyze sustainability data and metrics',
-      'Prepare research reports and presentations',
-    ],
-    requirements: [
-      'Background in Environmental Science or related field',
-      'Strong analytical and writing skills',
-      'Proficiency in data analysis tools',
-    ],
-    technologies: ['Excel', 'Python', 'R', 'PowerBI'],
-  },
-  {
-    id: '7',
-    title: 'Business Analysis Intern',
-    company: 'NextGen Analytics',
-    location: 'Remote',
-    locationType: 'Remote',
-    type: 'Full-time',
-    duration: '3–6 months',
-    applicationsCount: 9,
-    status: 'Open',
-    createdOn: 'Jun 10, 2025',
-    deadline: 'Sep 30, 2025',
-    logoBg: 'bg-[#0f172a]',
-    logoType: 'chart',
-    tags: ['Business Analysis', 'Internship'],
-    aboutCompany:
-      'NextGen Analytics builds enterprise data pipelines, predictive AI models, and real-time visualization dashboards for global clients.',
-    aboutInternship:
-      'As a Business Analysis Intern, you will help translate complex business requirements into actionable data insights.',
-    responsibilities: [
-      'Gather and document business requirements',
-      'Analyze business processes and workflows',
-      'Create data-driven reports and dashboards',
-    ],
-    requirements: [
-      'Interest in business analysis and data',
-      'Strong communication and documentation skills',
-      'Basic knowledge of SQL or Excel',
-    ],
-    technologies: ['SQL', 'Excel', 'PowerBI', 'Jira'],
-  },
-  {
-    id: '8',
-    title: 'Marketing Intern',
-    company: 'TechVision',
-    location: 'Chișinău, MD',
-    locationType: 'On-site',
-    type: 'Part-time',
-    duration: '2–3 months',
-    applicationsCount: 6,
-    status: 'Closed',
-    createdOn: 'May 18, 2025',
-    deadline: 'Jul 31, 2025',
-    logoBg: 'bg-[#ea580c]',
-    logoType: 'check',
-    tags: ['Marketing', 'Internship'],
-    aboutCompany:
-      'TechVision is a leading digital studio crafting high-performance web and mobile applications for clients around the globe.',
-    aboutInternship:
-      'Join our marketing team to run campaigns, analyze engagement data, and help grow our brand presence.',
-    responsibilities: [
-      'Plan and execute digital marketing campaigns',
-      'Monitor social media metrics and engagement',
-      'Create content for web and social channels',
-    ],
-    requirements: [
-      'Interest in digital marketing',
-      'Basic knowledge of social media platforms',
-      'Creative thinking and strong written skills',
-    ],
-    technologies: ['Google Analytics', 'Meta Ads', 'Canva', 'HubSpot'],
-  },
-]
-
 export default function MyOpportunities() {
   const navigate = useNavigate()
-  const [opportunities, setOpportunities] = useState<MentorOpportunity[]>(MOCK_MENTOR_OPPORTUNITIES)
+  const [opportunities, setOpportunities] = useState<MentorOpportunity[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [filterStatus, setFilterStatus] = useState('All')
@@ -318,11 +62,11 @@ export default function MyOpportunities() {
         if (res && res.length > 0) {
           setOpportunities(res as any)
         } else {
-          setOpportunities(MOCK_MENTOR_OPPORTUNITIES)
+          setOpportunities([])
         }
       })
       .catch(() => {
-        setOpportunities(MOCK_MENTOR_OPPORTUNITIES)
+        setOpportunities([])
       })
       .finally(() => {
         setIsLoading(false)
@@ -654,9 +398,26 @@ export default function MyOpportunities() {
                 <tr>
                   <td
                     colSpan={6}
-                    className="px-5 py-10 text-center text-gray-500 font-medium"
+                    className="px-5 py-12 text-center text-gray-500 font-medium"
                   >
-                    No opportunities found matching your criteria.
+                    <div className="max-w-sm mx-auto space-y-3">
+                      <Briefcase className="w-10 h-10 text-gray-300 mx-auto" />
+                      <p className="text-gray-900 font-semibold text-sm">
+                        {totalCount === 0
+                          ? "You haven't posted any internship opportunities yet."
+                          : "No opportunities found matching your criteria."}
+                      </p>
+                      {totalCount === 0 && (
+                        <button
+                          type="button"
+                          onClick={() => navigate('/my-opportunities/create')}
+                          className="inline-flex items-center gap-2 bg-[#ff5500] hover:bg-[#e64d00] text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors shadow-xs"
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>Post First Opportunity</span>
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )}

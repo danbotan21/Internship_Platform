@@ -26,11 +26,12 @@ public class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
             .AddEnvironmentVariables()
             .Build();
 
+        const string fallbackConnection =
+            "Host=localhost;Port=5432;Database=internship_platform;Username=internship_user;Password=chitanu123";
+
         var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? throw new InvalidOperationException(
-                "No 'DefaultConnection' connection string was found. Set it in appsettings.json, " +
-                "with 'dotnet user-secrets set \"ConnectionStrings:DefaultConnection\" \"...\"', " +
-                "or in the ConnectionStrings__DefaultConnection environment variable.");
+            ?? Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection")
+            ?? fallbackConnection;
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
             .UseNpgsql(connectionString)
