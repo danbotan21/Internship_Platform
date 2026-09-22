@@ -25,7 +25,7 @@ export default function Contributions() {
   // The auth modal may cover this route before login; do not fetch as a guest.
   if (!session) return null
 
-  if (session.role === 'Mentor') {
+  if (session.role === 'Mentor' || session.role === 'Company') {
     return (
       <Routes key={session.userId}>
         <Route index element={<MentorReviewQueuePage />} />
@@ -33,6 +33,10 @@ export default function Contributions() {
         <Route path='*' element={<Navigate to='/contributions' replace />} />
       </Routes>
     )
+  }
+
+  if (session?.role !== 'Student') {
+    return <p role="status">Contribution management is available to students and mentors.</p>
   }
 
   return (

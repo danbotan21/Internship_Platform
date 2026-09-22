@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, ImagePlus, Link as LinkIcon, List, ListOrdered } from 'lucide-react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import Topbar from '../components/Topbar'
 import { createResource, getResources, getUserRole, updateResource, type Resource } from '../api/resources'
 
 export default function CreateArticle() {
@@ -181,7 +180,6 @@ export default function CreateArticle() {
 
   return (
     <div className="-m-8">
-      <Topbar />
       <section className="min-h-[calc(100vh-6rem)] bg-[#f7f9f8] px-6 py-8 sm:px-8">
         <div className="mx-auto max-w-6xl">
           <Link

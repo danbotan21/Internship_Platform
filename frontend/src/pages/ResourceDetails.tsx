@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Bookmark, Trash2 } from 'lucide-react'
 import { Link, useParams } from 'react-router-dom'
-import Topbar from '../components/Topbar'
 import FluidBackground from '../components/FluidBackground'
 import {
   addResourceFavorite,
@@ -67,7 +66,6 @@ export default function ResourceDetails() {
 
   return (
     <div className="-m-8">
-      <Topbar />
       <section className="min-h-[calc(100vh-6rem)] bg-[#f7f9f8] px-6 py-8 sm:px-8">
         <div className="mx-auto max-w-7xl">
           <Link to="/resources" className="inline-flex items-center gap-2 text-xs font-medium text-[#527467] hover:text-[#164c3a]">

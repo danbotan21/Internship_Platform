@@ -1,7 +1,7 @@
 import type { AuthResult } from '../types/auth'
 import { getSession, sessionFromAuthResult, setSession } from './session'
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:5080'
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? import.meta.env.VITE_API_URL ?? 'http://localhost:5080'
 
 export class ApiError extends Error {
   readonly status: number
@@ -14,8 +14,15 @@ export class ApiError extends Error {
 }
 
 async function toError(response: Response) {
-  const body = await response.json().catch(() => null)
-  return new ApiError(body?.message ?? `The server responded with ${response.status}.`, response.status)
+  const text = await response.text()
+  let message = text
+  try {
+    const body = JSON.parse(text)
+    message = typeof body === 'string' ? body : body?.message ?? body?.title ?? text
+  } catch {
+    // Some endpoints return plain-text validation errors.
+  }
+  return new ApiError(message || `The server responded with ${response.status}.`, response.status)
 }
 
 /**
@@ -28,7 +35,6 @@ export function refreshAccessToken(): Promise<string | null> {
   refreshing ??= (async () => {
     const refreshToken = getSession()?.refreshToken
     if (!refreshToken) return null
-
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
         method: 'POST',
@@ -55,21 +61,27 @@ export function refreshAccessToken(): Promise<string | null> {
 function withAuth(init: RequestInit, token: string | undefined): RequestInit {
   const headers = new Headers(init.headers)
   if (token) headers.set('Authorization', `Bearer ${token}`)
-  if (init.body !== undefined) headers.set('Content-Type', 'application/json')
+  if (typeof init.body === 'string' && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
   return { ...init, headers }
 }
 
-async function request(path: string, init: RequestInit = {}): Promise<Response> {
+export async function apiRequest(path: string, init: RequestInit = {}): Promise<Response> {
   const send = (token: string | undefined) =>
     fetch(`${API_BASE_URL}${path}`, withAuth(init, token)).catch((error: unknown) => {
       if (init.signal?.aborted) throw error
       throw new ApiError(`No response from ${API_BASE_URL}. Is the API running?`, 0)
     })
 
-  let response = await send(getSession()?.accessToken)
+  const originalToken = getSession()?.accessToken
+  let response = await send(originalToken)
 
   if (response.status === 401 && !init.signal?.aborted) {
-    const token = await refreshAccessToken()
+    const currentToken = getSession()?.accessToken
+    const token = currentToken && currentToken !== originalToken
+      ? currentToken
+      : await refreshAccessToken()
     if (token) response = await send(token)
   }
 
@@ -78,12 +90,12 @@ async function request(path: string, init: RequestInit = {}): Promise<Response> 
 }
 
 export async function apiGet<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const response = await request(path, { signal })
+  const response = await apiRequest(path, { signal })
   return response.json() as Promise<T>
 }
 
 export async function apiSend<T>(method: string, path: string, body?: unknown): Promise<T> {
-  const response = await request(path, {
+  const response = await apiRequest(path, {
     method,
     body: body === undefined ? undefined : JSON.stringify(body),
   })
