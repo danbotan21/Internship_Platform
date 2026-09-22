@@ -1,9 +1,11 @@
 using InternshipPlatform.BusinessLayer.Admin.Companies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InternshipPlatform.API.Controllers;
 
 [ApiController]
+[Authorize(Roles = "Admin")]
 [Route("api/admin/companies")]
 public class AdminCompaniesController(ICompanyAdminService companies) : ControllerBase
 {
@@ -25,8 +27,6 @@ public class AdminCompaniesController(ICompanyAdminService companies) : Controll
         return company is null ? NotFound() : Ok(company);
     }
 
-    // TODO: pass the signed-in admin's id as actorUserId once the Authentication epic is merged.
-
     [HttpPost("{id:guid}/suspend")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -37,7 +37,7 @@ public class AdminCompaniesController(ICompanyAdminService companies) : Controll
         CompanyActionRequestDto body,
         CancellationToken cancellationToken)
     {
-        var result = await companies.SuspendAsync(id, body.Reason, actorUserId: null, cancellationToken);
+        var result = await companies.SuspendAsync(id, body.Reason, actorUserId: User.GetUserId(), cancellationToken);
 
         return ToActionResult(result);
     }
@@ -52,7 +52,7 @@ public class AdminCompaniesController(ICompanyAdminService companies) : Controll
         CompanyActionRequestDto body,
         CancellationToken cancellationToken)
     {
-        var result = await companies.RestoreAsync(id, body.Reason, actorUserId: null, cancellationToken);
+        var result = await companies.RestoreAsync(id, body.Reason, actorUserId: User.GetUserId(), cancellationToken);
 
         return ToActionResult(result);
     }

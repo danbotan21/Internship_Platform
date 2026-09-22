@@ -1,9 +1,11 @@
 using InternshipPlatform.BusinessLayer.Admin.Users;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace InternshipPlatform.API.Controllers;
 
 [ApiController]
+[Authorize(Roles = "Admin")]
 [Route("api/admin/users")]
 public class AdminUsersController(
     IUserDirectoryService directory,
@@ -27,9 +29,6 @@ public class AdminUsersController(
         return user is null ? NotFound() : Ok(user);
     }
 
-    // TODO: pass the signed-in admin's id as actorUserId once the Authentication epic is merged;
-    // until then the "cannot act on your own account" rule (#717) cannot trigger.
-
     [HttpPost("{id:guid}/deactivate")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -40,7 +39,7 @@ public class AdminUsersController(
         AccountActionRequestDto body,
         CancellationToken cancellationToken)
     {
-        var result = await lifecycle.DeactivateAsync(id, body.Reason, actorUserId: null, cancellationToken);
+        var result = await lifecycle.DeactivateAsync(id, body.Reason, actorUserId: User.GetUserId(), cancellationToken);
 
         return ToActionResult(result);
     }
@@ -55,7 +54,7 @@ public class AdminUsersController(
         AccountActionRequestDto body,
         CancellationToken cancellationToken)
     {
-        var result = await lifecycle.ReactivateAsync(id, body.Reason, actorUserId: null, cancellationToken);
+        var result = await lifecycle.ReactivateAsync(id, body.Reason, actorUserId: User.GetUserId(), cancellationToken);
 
         return ToActionResult(result);
     }
@@ -71,7 +70,7 @@ public class AdminUsersController(
         CancellationToken cancellationToken)
     {
         var result = await lifecycle.ChangePlatformRoleAsync(
-            id, body.Role!.Value, body.Reason, actorUserId: null, cancellationToken);
+            id, body.Role!.Value, body.Reason, actorUserId: User.GetUserId(), cancellationToken);
 
         return ToActionResult(result);
     }

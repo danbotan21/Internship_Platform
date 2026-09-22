@@ -1,5 +1,6 @@
-import { NavLink } from 'react-router-dom'
-import { BadgeCheck, Building2, LayoutGrid, Users } from 'lucide-react'
+import { Link, NavLink } from 'react-router-dom'
+import { ArrowLeft, BadgeCheck, Building2, LayoutGrid, LogOut, Users } from 'lucide-react'
+import { useAuth } from '../../hooks/authContext'
 import type { LucideIcon } from 'lucide-react'
 
 type NavItem = {
@@ -27,7 +28,15 @@ const sections: NavSection[] = [
   },
 ]
 
+function initials(fullName: string): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return '?'
+  return (parts[0][0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase()
+}
+
 export default function AdminSidebar() {
+  const { session, logout } = useAuth()
+
   return (
     <aside className="flex h-screen w-58 shrink-0 flex-col justify-between bg-[#1b4332] p-5">
       <div className="flex flex-col gap-5.5">
@@ -70,14 +79,32 @@ export default function AdminSidebar() {
         </nav>
       </div>
 
-      {/* TODO: show the signed-in admin once the Authentication epic is merged. */}
-      <div className="flex items-center gap-2.5">
-        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white">
-          AD
-        </div>
-        <div>
-          <p className="text-[13px] font-bold text-white">Administrator</p>
-          <p className="text-[11px] text-[#b5ccbe]">Admin · Settings</p>
+      <div className="flex flex-col gap-3">
+        <Link
+          to="/"
+          className="flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-[12px] font-medium text-[#cfe0d6] transition-colors hover:bg-white/5 hover:text-white"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+          Back to internflow
+        </Link>
+
+        <div className="flex items-center gap-2.5 border-t border-white/10 pt-3">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-white">
+            {initials(session?.fullName ?? '')}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-bold text-white">{session?.fullName ?? 'Administrator'}</p>
+            <p className="truncate text-[11px] text-[#b5ccbe]">{session?.email ?? 'Admin'}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void logout()}
+            title="Sign out"
+            aria-label="Sign out"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#cfe0d6] transition-colors hover:bg-white/5 hover:text-white"
+          >
+            <LogOut className="h-4 w-4" strokeWidth={1.75} aria-hidden="true" />
+          </button>
         </div>
       </div>
     </aside>

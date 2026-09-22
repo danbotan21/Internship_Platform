@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import ReasonDialog from '../../../components/admin/ReasonDialog'
 import type { PlatformRole } from '../../../types/adminUsers'
+import { platformRoleLabels } from '../format'
 import { formatLongDate } from '../format'
 
 type BaseProps = {
@@ -32,7 +33,7 @@ export function DeactivateAccountDialog({
       reasonPlaceholder="Left the programme early — confirmed by the faculty office."
       note={{
         tone: 'success',
-        heading: 'Required · kept for the audit trail',
+        heading: 'Required · kept in the server log',
         text: 'Deactivation is reversible. Reactivating restores access.',
       }}
       confirmLabel="Deactivate account"
@@ -63,7 +64,7 @@ export function ReactivateAccountDialog({
       reasonPlaceholder="Returned to the programme — confirmed by the faculty office."
       note={{
         tone: 'warning',
-        heading: 'Required · kept for the audit trail',
+        heading: 'Required · kept in the server log',
         text: 'Old sessions stay ended. The user signs in fresh.',
       }}
       confirmLabel="Reactivate account"
@@ -74,9 +75,8 @@ export function ReactivateAccountDialog({
   )
 }
 
-const roleCopy: Record<PlatformRole, { title: (name: string) => string; heading: string; items: string[]; confirm: string }> = {
+const roleCopy: Record<PlatformRole, { heading: string; items: string[]; confirm: string }> = {
   Admin: {
-    title: (name) => `Make ${name} an admin?`,
     heading: 'What they gain',
     items: [
       'Full access to the admin panel and every record in it',
@@ -84,13 +84,33 @@ const roleCopy: Record<PlatformRole, { title: (name: string) => string; heading:
     ],
     confirm: 'Make admin',
   },
-  User: {
-    title: (name) => `Make ${name} a regular user?`,
-    heading: 'What they lose',
-    items: ['Access to the admin panel', 'Ability to verify companies and manage accounts'],
-    confirm: 'Make user',
+  Student: {
+    heading: 'What this means',
+    items: [
+      'A regular account: their own progress, tasks and contributions',
+      'No access to the admin panel',
+    ],
+    confirm: 'Make student',
+  },
+  Mentor: {
+    heading: 'What they gain',
+    items: [
+      'Reviews the contributions of the students assigned to them',
+      'No access to the admin panel',
+    ],
+    confirm: 'Make mentor',
+  },
+  Company: {
+    heading: 'What they gain',
+    items: [
+      'Represents their company: opportunities and applications',
+      'No access to the admin panel',
+    ],
+    confirm: 'Make company representative',
   },
 }
+
+const assignableRoles: PlatformRole[] = ['Student', 'Mentor', 'Company', 'Admin']
 
 export function ChangeRoleDialog({
   userName,
@@ -98,12 +118,14 @@ export function ChangeRoleDialog({
   onCancel,
   onConfirm,
 }: BaseProps & { currentRole: PlatformRole; onConfirm: (role: PlatformRole, reason: string) => Promise<void> }) {
-  const [newRole, setNewRole] = useState<PlatformRole>(currentRole === 'Admin' ? 'User' : 'Admin')
+  const [newRole, setNewRole] = useState<PlatformRole>(
+    currentRole === 'Admin' ? 'Student' : 'Admin',
+  )
   const copy = roleCopy[newRole]
 
   return (
     <ReasonDialog
-      title={copy.title(userName)}
+      title={`Change the role of ${userName}?`}
       description={<p>Admins can see every user, company and verification request on the platform.</p>}
       info={{
         tone: 'warning',
@@ -114,8 +136,8 @@ export function ChangeRoleDialog({
       reasonLabel="Reason for role change"
       note={{
         tone: 'success',
-        heading: 'Required · kept for the audit trail',
-        text: 'The new role applies from their next request. You can change it back at any time.',
+        heading: 'Required · kept in the server log',
+        text: 'The change signs them out, so the new role applies the next time they sign in.',
       }}
       confirmLabel={copy.confirm}
       busyLabel="Saving…"
@@ -127,7 +149,7 @@ export function ChangeRoleDialog({
         <label className="flex flex-col gap-2">
           <span className="text-xs font-bold uppercase">Current role</span>
           <input
-            value={currentRole}
+            value={platformRoleLabels[currentRole]}
             readOnly
             className="h-10.5 rounded-lg border border-[#e2e8e4] bg-[#f8f9fa] px-3 text-[13px] text-[#718078]"
           />
@@ -139,8 +161,11 @@ export function ChangeRoleDialog({
             onChange={(event) => setNewRole(event.target.value as PlatformRole)}
             className="h-10.5 rounded-lg border border-[#e2e8e4] bg-white px-3 text-[13px] outline-none focus:ring-2 focus:ring-[#1b4332]/30"
           >
-            <option value="User">User</option>
-            <option value="Admin">Admin</option>
+            {assignableRoles.map((role) => (
+              <option key={role} value={role}>
+                {platformRoleLabels[role]}
+              </option>
+            ))}
           </select>
         </label>
       </div>

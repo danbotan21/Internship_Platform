@@ -1,6 +1,7 @@
 using InternshipPlatform.BusinessLayer.Progress;
 using InternshipPlatform.DataAccess.Context;
 using InternshipPlatform.Domain;
+using InternshipPlatform.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace InternshipPlatform.BusinessLayer.Auth;
@@ -39,10 +40,19 @@ public class AuthService(AppDbContext db, ITokenService tokenService, JwtSetting
         var email = request.Email.Trim().ToLowerInvariant();
         var user = await db.Users.SingleOrDefaultAsync(u => u.Email == email);
 
-        if (user is null || !BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+        if (user is null || !PasswordMatches(request.Password, user.PasswordHash))
         {
             throw new InvalidCredentialsException();
         }
+
+        // An account an admin deactivated must not be able to sign back in.
+        if (user.Status == UserStatus.Deactivated)
+        {
+            throw new AccountDeactivatedException();
+        }
+
+        // Feeds the "last active" column in the admin user directory.
+        user.LastLoginAt = DateTimeOffset.UtcNow;
 
         return await IssueTokensAsync(user);
     }
@@ -58,6 +68,15 @@ public class AuthService(AppDbContext db, ITokenService tokenService, JwtSetting
             throw new InvalidRefreshTokenException();
         }
 
+        // A deactivated account keeps no valid session, even with a token issued earlier.
+        if (existing.User.Status == UserStatus.Deactivated)
+        {
+            existing.RevokedAt = DateTime.UtcNow;
+            await db.SaveChangesAsync();
+
+            throw new AccountDeactivatedException();
+        }
+
         existing.RevokedAt = DateTime.UtcNow;
 
         return await IssueTokensAsync(existing.User);
@@ -70,6 +89,20 @@ public class AuthService(AppDbContext db, ITokenService tokenService, JwtSetting
         {
             existing.RevokedAt = DateTime.UtcNow;
             await db.SaveChangesAsync();
+        }
+    }
+
+    private static bool PasswordMatches(string password, string passwordHash)
+    {
+        try
+        {
+            return BCrypt.Net.BCrypt.Verify(password, passwordHash);
+        }
+        catch (BCrypt.Net.SaltParseException)
+        {
+            // Seed data stores a placeholder, not a hash: treat it as a failed sign-in
+            // instead of letting the request fail with a 500.
+            return false;
         }
     }
 
