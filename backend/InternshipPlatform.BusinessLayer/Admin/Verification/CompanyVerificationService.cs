@@ -1,5 +1,6 @@
 using InternshipPlatform.BusinessLayer.Common;
 using InternshipPlatform.DataAccess.Context;
+using InternshipPlatform.Domain;
 using InternshipPlatform.Domain.Entities;
 using InternshipPlatform.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
@@ -156,6 +157,9 @@ public class CompanyVerificationService(AppDbContext context) : ICompanyVerifica
             return VerificationDecisionResult.Fail(VerificationDecisionError.RequesterAlreadyInCompany);
         }
 
+        var requester = await context.Users
+            .FirstOrDefaultAsync(u => u.Id == request.RequesterUserId, cancellationToken);
+
         var now = DateTimeOffset.UtcNow;
 
         var company = new Company
@@ -179,6 +183,13 @@ public class CompanyVerificationService(AppDbContext context) : ICompanyVerifica
             Role = CompanyRole.Owner,
             JoinedAt = now,
         });
+
+        // Approving makes this person their company's representative on the platform.
+        // An admin keeps the admin role; only a plain account is upgraded.
+        if (requester is not null && requester.Role == UserRole.Student)
+        {
+            requester.Role = UserRole.Company;
+        }
 
         request.Status = VerificationStatus.Approved;
         request.DecidedAt = now;

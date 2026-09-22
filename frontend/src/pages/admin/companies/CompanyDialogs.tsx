@@ -33,7 +33,7 @@ export function RevokeAccessDialog({
       reasonPlaceholder="Posted a paid course as an internship, twice after a warning."
       note={{
         tone: 'success',
-        heading: 'Required · kept for the audit trail',
+        heading: 'Required · kept in the server log',
         text: 'Reversible. An admin can restore access from the company page.',
       }}
       confirmLabel="Revoke access"
@@ -67,7 +67,7 @@ export function RestoreAccessDialog({
       reasonPlaceholder="Listing removed and the correction confirmed in writing by the owner."
       note={{
         tone: 'warning',
-        heading: 'Required · kept for the audit trail',
+        heading: 'Required · kept in the server log',
         text: 'If the problem repeats, access can be revoked again.',
       }}
       confirmLabel="Restore access"

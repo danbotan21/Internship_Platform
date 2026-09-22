@@ -33,6 +33,7 @@ public class UserLifecycleService(AppDbContext context, ILogger<UserLifecycleSer
 
         user.Status = UserStatus.Deactivated;
         user.DeactivatedAt = DateTimeOffset.UtcNow;
+        await RevokeSessionsAsync(user.Id, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
 
         LogAction("Deactivated", user, reason, actorUserId);
@@ -91,10 +92,28 @@ public class UserLifecycleService(AppDbContext context, ILogger<UserLifecycleSer
 
         var previous = user.Role;
         user.Role = role;
+        // The role travels in the access token, so end the sessions that still carry the old one.
+        await RevokeSessionsAsync(user.Id, cancellationToken);
         await context.SaveChangesAsync(cancellationToken);
 
         LogAction($"Changed platform role {previous} -> {role}", user, reason, actorUserId);
         return UserLifecycleResult.Success;
+    }
+
+    // Deactivating or re-roling a user must not leave a usable refresh token behind:
+    // without this the account keeps renewing its session as if nothing had changed.
+    private async Task RevokeSessionsAsync(Guid userId, CancellationToken cancellationToken)
+    {
+        var now = DateTime.UtcNow;
+
+        var active = await context.RefreshTokens
+            .Where(token => token.UserId == userId && token.RevokedAt == null)
+            .ToListAsync(cancellationToken);
+
+        foreach (var token in active)
+        {
+            token.RevokedAt = now;
+        }
     }
 
     private async Task<(User? User, UserLifecycleResult? Error)> LoadTargetAsync(
@@ -127,8 +146,8 @@ public class UserLifecycleService(AppDbContext context, ILogger<UserLifecycleSer
         return !anotherActiveAdminExists;
     }
 
-    // TODO: write to the audit log table once the Audit Log feature exists; until then the reason
-    // is kept in the structured application log.
+    // The reason an admin gave is kept in the structured application log. There is no audit
+    // log table yet, so this is the only place it survives.
     private void LogAction(string action, User user, string reason, Guid? actorUserId) =>
         logger.LogInformation(
             "Admin action: {Action} for user {UserId} by {ActorUserId}. Reason: {Reason}",
