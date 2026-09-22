@@ -56,6 +56,7 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
     Complete: false,
   })
   const [mandatoryOnly, setMandatoryOnly] = useState(false)
+  const [metricFilter, setMetricFilter] = useState<'expiring' | null>(null)
   const [searchParams, setSearchParams] = useSearchParams()
   const searchQuery = searchParams.get('q') || ''
 
@@ -77,8 +78,8 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
         userRole,
       })
       setDocuments(Array.isArray(docs) ? docs : [])
-      const newStats = await documentationService.getStats()
-      setStats(newStats || {})
+      const newStats = await documentationService.getStats(docs)
+      setStats(newStats)
     } finally {
       setIsLoading(false)
     }
@@ -124,21 +125,55 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
         if (!matchesTitle && !matchesFile && !matchesCategory) return false
       }
 
+      // Metric cards can apply a date-based filter that is not represented by a
+      // document status (for example, documents expiring in the next 14 days).
+      if (metricFilter === 'expiring') {
+        if (!doc.expiresAt) return false
+        const expiry = new Date(doc.expiresAt).getTime()
+        const now = Date.now()
+        const fourteenDaysFromNow = now + 14 * 24 * 60 * 60 * 1000
+        if (expiry < now || expiry > fourteenDaysFromNow) return false
+      }
+
       return true
     })
-  }, [documents, activeTab, categoryFilters, statusFilters, mandatoryOnly, searchQuery])
+  }, [documents, activeTab, categoryFilters, statusFilters, mandatoryOnly, searchQuery, metricFilter])
 
   // Handlers
   const handleToggleCategory = useCallback((cat: DocumentCategory) => {
+    setMetricFilter(null)
     setCategoryFilters((prev) => ({ ...prev, [cat]: !prev[cat] }))
   }, [])
 
   const handleToggleStatus = useCallback((status: DocumentStatus) => {
+    setMetricFilter(null)
     setStatusFilters((prev) => ({ ...prev, [status]: !prev[status] }))
   }, [])
 
   const handleToggleMandatory = useCallback(() => {
+    setMetricFilter(null)
     setMandatoryOnly((prev) => !prev)
+  }, [])
+
+  const handleMetricFilter = useCallback((metric: 'pending' | 'agreements' | 'expiring' | 'verification') => {
+    setMetricFilter(metric === 'expiring' ? 'expiring' : null)
+    setActiveTab(metric === 'agreements' ? 'Agreements' : 'All Docs')
+    setMandatoryOnly(metric === 'verification')
+    setCategoryFilters({
+      Reports: true,
+      Certificates: true,
+      Evaluations: true,
+      Agreements: true,
+      Templates: true,
+      Other: true,
+    })
+    setStatusFilters({
+      Approved: metric === 'agreements' || metric === 'verification' || metric === 'expiring',
+      Pending: metric === 'pending' || metric === 'expiring',
+      Rejected: metric === 'expiring',
+      Expiring: metric === 'expiring',
+      Complete: metric === 'expiring',
+    })
   }, [])
 
   const handleSelectAll = useCallback(() => {
@@ -275,9 +310,10 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
           },
           ...prev,
         ])
+        await refreshData()
       }
     },
-    [userRole, currentActorName, documents]
+    [userRole, currentActorName, documents, refreshData]
   )
 
   const handleDeleteDocument = useCallback(
@@ -357,6 +393,7 @@ export function useDocumentation(userRole = 'Student', userName?: string) {
     handleToggleCategory,
     handleToggleStatus,
     handleToggleMandatory,
+    handleMetricFilter,
     handleSelectAll,
     handleToggleSelectRow,
     handleOpenPreview,
