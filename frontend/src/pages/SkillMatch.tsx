@@ -420,11 +420,7 @@ export default function SkillMatch() {
 
       setIsShowingLiveApplicants(liveCandidates.length > 0)
       setCandidates(liveCandidates)
-      if (liveCandidates.length > 0) {
-        setSelectedCandidateId(liveCandidates[0].id)
-      } else {
-        setSelectedCandidateId(null)
-      }
+      setSelectedCandidateId(null)
     } catch {
       setIsShowingLiveApplicants(false)
       setCandidates([])
@@ -528,6 +524,7 @@ export default function SkillMatch() {
 
   // Handle reset to default
   const handleResetDefault = () => {
+    setSelectedCandidateId(null)
     if (selectedOpportunity) {
       handleSelectOpportunity(selectedOpportunity)
     } else {
