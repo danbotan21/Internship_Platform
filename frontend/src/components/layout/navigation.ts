@@ -15,6 +15,7 @@ import {
   Upload,
   Box,
   Pencil,
+  SlidersHorizontal,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import type { UserRole } from '../../types/auth'
@@ -72,6 +73,7 @@ const mentorSections: NavSection[] = [
       { label: 'Internship progress', to: '/internship-progress', icon: TrendingUp },
       { label: 'Review queue', to: '/contributions', icon: Upload },
       { label: 'Custom Quizzes', to: '/custom-quizzes', icon: Pencil },
+      { label: 'Skill Match', to: '/skill-match', icon: SlidersHorizontal },
       { label: 'Reports', to: '/reports', icon: FileText },
       { label: 'Evaluation', to: '/evaluation', icon: Star },
       { label: 'Opportunities', to: '/opportunities', icon: Briefcase },
@@ -110,6 +112,7 @@ const pageTitles: Record<string, string> = {
   '/my-opportunities': 'My Opportunities',
   '/quizzes': 'Quizzes',
   '/custom-quizzes': 'Custom Quizzes',
+  '/skill-match': 'Skill Match & Applications',
   '/messages': 'Messages',
   '/calendar': 'Calendar',
   '/documentation': 'Documentation',

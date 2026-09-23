@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import {
   Leaf,
@@ -27,6 +27,8 @@ import {
 import type { Opportunity } from '../types/opportunities'
 import { CustomSelect } from '../components/CustomSelect'
 import { getOpportunityById, applyToOpportunity } from '../api/opportunities'
+import { splitRequirements } from '../utils/opportunityRequirements'
+import { getQuizAttempts, type UserQuizAttempt } from '../services/quizResultsDb'
 
 const EMPTY_OPPORTUNITY: Opportunity = {
   id: '',
@@ -96,6 +98,73 @@ export default function OpportunityApply() {
         setIsLoading(false)
       })
   }, [opportunityId])
+
+  const { quizRequirements } = useMemo(
+    () => splitRequirements(opportunity.requirements || []),
+    [opportunity.requirements]
+  )
+
+  const [quizAttempts, setQuizAttempts] = useState<UserQuizAttempt[]>([])
+
+  useEffect(() => {
+    setQuizAttempts(getQuizAttempts())
+  }, [])
+
+  const quizStatusList = useMemo(() => {
+    const studentEmail = (session?.email || '').trim().toLowerCase()
+    const studentName = (session?.fullName || '').trim().toLowerCase()
+    const studentId = session?.userId
+
+    return quizRequirements.map((req) => {
+      const match = quizAttempts.find((a) => {
+        const aEmail = (a.userEmail || '').trim().toLowerCase()
+        const aName = (a.userName || '').trim().toLowerCase()
+        const aUid = (a.userId || '').toLowerCase()
+        const sUid = (studentId || '').toLowerCase()
+
+        const matchesUser =
+          (aEmail && studentEmail && aEmail === studentEmail) ||
+          (aUid && sUid && aUid === sUid) ||
+          (aName && studentName && (
+            aName === studentName ||
+            studentName.includes(aName) ||
+            aName.includes(studentName)
+          )) ||
+          (studentEmail.includes('dan') && aEmail.includes('dan'))
+
+        const aQId = (a.quizId || '').toLowerCase().replace(/^quiz-/, '')
+        const rQId = (req.quizId || '').toLowerCase().replace(/^quiz-/, '')
+        const cleanReqTitle = (req.quizTitle || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+        const cleanAttemptTitle = (a.quizTitle || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+
+        const matchesQuiz =
+          (aQId && rQId && aQId === rQId) ||
+          (cleanReqTitle && cleanAttemptTitle && (
+            cleanReqTitle === cleanAttemptTitle ||
+            cleanReqTitle.includes(cleanAttemptTitle) ||
+            cleanAttemptTitle.includes(cleanReqTitle)
+          ))
+
+        return matchesUser && matchesQuiz
+      })
+
+      return {
+        ...req,
+        attempt: match || null,
+        isCompleted: Boolean(match),
+        score: match?.percentage ?? null,
+      }
+    })
+  }, [quizRequirements, quizAttempts, session])
+
+  const hasUncompletedQuizzes = useMemo(() => {
+    return quizStatusList.some((q) => !q.isCompleted)
+  }, [quizStatusList])
+
+  const handleGoToQuiz = (quizId: string) => {
+    const returnUrl = encodeURIComponent(window.location.pathname + window.location.search)
+    navigate(`/quizzes?quiz=${quizId}&returnTo=${returnUrl}`)
+  }
 
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
   const [isSubmitted, setIsSubmitted] = useState(false)
@@ -191,11 +260,19 @@ export default function OpportunityApply() {
   }
 
   const handleStep1Next = () => {
-    if (validateStep1()) {
-      setStepError(null)
-      setCurrentStep(2)
+    if (!validateStep1()) return
+
+    if (hasUncompletedQuizzes) {
+      setStepError(
+        'This internship requires completing the assessment quiz(zes) listed above before continuing.'
+      )
       window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
     }
+
+    setStepError(null)
+    setCurrentStep(2)
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleStep2Next = () => {
@@ -267,6 +344,15 @@ export default function OpportunityApply() {
 
     if (!validateStep1()) {
       setCurrentStep(1)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+
+    if (hasUncompletedQuizzes) {
+      setCurrentStep(1)
+      setStepError(
+        'Please complete all required assessment quiz(zes) listed in step 1 before submitting.'
+      )
       window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
@@ -623,6 +709,91 @@ export default function OpportunityApply() {
           {/* STEP 1 CONTENT: Personal Information */}
           {currentStep === 1 && (
             <div className="space-y-6 animate-in fade-in duration-200">
+              {/* Required Quiz Assessments Banner */}
+              {quizRequirements.length > 0 && (
+                <div className="bg-gradient-to-r from-emerald-50/90 to-teal-50/70 border border-emerald-200/80 rounded-2xl p-5 space-y-3.5 shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                        <Award className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-bold text-gray-900">
+                          Required Skill Assessment Quizzes
+                        </h3>
+                        <p className="text-[11px] text-gray-500">
+                          {hasUncompletedQuizzes
+                            ? 'Complete the required test(s) so your performance data is available for mentor review.'
+                            : 'All required assessments completed. Your scores will be submitted to the mentor.'}
+                        </p>
+                      </div>
+                    </div>
+                    <div>
+                      {hasUncompletedQuizzes ? (
+                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100/90 border border-amber-200/80 px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
+                          <AlertCircle className="w-3 h-3 text-amber-600" />
+                          <span>Action Required</span>
+                        </span>
+                      ) : (
+                        <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 bg-emerald-100 border border-emerald-200 px-2.5 py-1 rounded-lg inline-flex items-center gap-1">
+                          <Check className="w-3 h-3 text-emerald-700" />
+                          <span>All Tests Taken</span>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 pt-1">
+                    {quizStatusList.map((q) => (
+                      <div
+                        key={q.quizId}
+                        className="bg-white border border-emerald-100/80 rounded-xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs"
+                      >
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-bold text-gray-900">{q.quizTitle}</span>
+                            <span className="text-[10px] text-gray-400 font-semibold">
+                              Target: {q.minScore}%
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500 mt-0.5">
+                            {q.isCompleted
+                              ? `Completed with score: ${q.score}%. The mentor will review your performance on Skill Match.`
+                              : 'You have not taken this quiz yet. Click the button to start the assessment.'}
+                          </p>
+                        </div>
+
+                        <div className="shrink-0">
+                          {q.isCompleted ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-bold px-3 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                Score: {q.score}%
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleGoToQuiz(q.quizId)}
+                                className="text-xs text-gray-500 hover:text-emerald-700 font-medium px-2 py-1 cursor-pointer"
+                              >
+                                Retake
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleGoToQuiz(q.quizId)}
+                              className="bg-[#1b5e3a] hover:bg-[#14472c] text-white text-xs font-semibold px-4 py-2 rounded-xl transition-colors cursor-pointer inline-flex items-center gap-1.5 shadow-2xs"
+                            >
+                              <span>Take Quiz Assessment</span>
+                              <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {stepError && (
                 <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs sm:text-sm flex items-start gap-2.5 animate-in fade-in duration-200">
                   <AlertCircle className="w-4 h-4 shrink-0 text-red-500 mt-0.5" />
@@ -1348,6 +1519,55 @@ export default function OpportunityApply() {
                   </div>
                 </div>
 
+                {/* Card 4: Required Assessments (if applicable) */}
+                {quizRequirements.length > 0 && (
+                  <div className="bg-gray-50/40 border border-gray-200/80 rounded-2xl p-5 space-y-3 relative">
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                        <Award className="w-4 h-4 text-emerald-700" />
+                        Skill Assessments Status
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setCurrentStep(1)}
+                        className="text-xs font-medium text-gray-600 hover:text-emerald-700 border border-gray-200 bg-white hover:bg-gray-50 px-3 py-1 rounded-lg flex items-center gap-1 cursor-pointer shadow-2xs"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        Review
+                      </button>
+                    </div>
+
+                    <div className="space-y-2 pt-1">
+                      {quizStatusList.map((q) => (
+                        <div
+                          key={q.quizId}
+                          className="bg-white border border-gray-200/70 rounded-xl p-3 flex items-center justify-between text-xs"
+                        >
+                          <div>
+                            <span className="font-semibold text-gray-800">{q.quizTitle}</span>
+                            <span className="text-gray-400 ml-2">Target: {q.minScore}%</span>
+                          </div>
+
+                          {q.isCompleted ? (
+                            <span className="text-emerald-700 font-semibold flex items-center gap-1 bg-emerald-50 px-2.5 py-0.5 rounded-md text-[11px]">
+                              <Check className="w-3 h-3" /> Completed: {q.score}%
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => handleGoToQuiz(q.quizId)}
+                              className="text-amber-700 font-bold bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-md text-[11px] cursor-pointer inline-flex items-center gap-1"
+                            >
+                              <span>Take Test Now</span>
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Terms confirmation checkbox */}
                 <div className="bg-emerald-50/40 border border-emerald-200/70 rounded-2xl p-4 flex items-start gap-3">
                   <input
@@ -1366,6 +1586,18 @@ export default function OpportunityApply() {
                   </label>
                 </div>
               </div>
+
+              {hasUncompletedQuizzes && (
+                <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs sm:text-sm flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-600 mt-0.5" />
+                  <div className="leading-relaxed">
+                    <p className="font-semibold text-amber-900">Quiz Assessment Required</p>
+                    <p className="text-xs mt-0.5 text-amber-800">
+                      You must take all required quizzes before submitting your application so the mentor can review your performance in Skill Match.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {submitError && (
                 <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs sm:text-sm flex items-start gap-2.5">
@@ -1389,8 +1621,8 @@ export default function OpportunityApply() {
 
                 <button
                   type="submit"
-                  disabled={!isConfirmed || isSubmitting}
-                  className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${isConfirmed && !isSubmitting
+                  disabled={!isConfirmed || isSubmitting || hasUncompletedQuizzes}
+                  className={`text-white text-xs sm:text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors flex items-center gap-2 shadow-xs ${isConfirmed && !isSubmitting && !hasUncompletedQuizzes
                       ? 'bg-[#ff5500] hover:bg-[#e64d00] cursor-pointer'
                       : 'bg-gray-300 cursor-not-allowed'
                     }`}
@@ -1400,6 +1632,8 @@ export default function OpportunityApply() {
                       <Loader2 className="w-4 h-4 animate-spin" />
                       <span>Submitting...</span>
                     </>
+                  ) : hasUncompletedQuizzes ? (
+                    <span>Complete Required Tests First</span>
                   ) : (
                     <>
                       <span>Submit Application</span>

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   SquarePen,
   Trash2,
@@ -36,12 +36,33 @@ import {
 
 const CUSTOM_QUIZZES_KEY = 'internflow_custom_quizzes'
 
+const DEFAULT_CUSTOM_QUESTION = {
+  id: 'q-custom-default-1',
+  numberLabel: 'Q01',
+  category: 'TYPESCRIPT',
+  question: 'Which TypeScript utility type constructs a type with all properties of T set to optional?',
+  hint: 'Think about the utility keyword that makes every property non-mandatory.',
+  correctOptionId: 'a',
+  options: [
+    { id: 'a', label: 'A' as const, text: 'Partial<T>' },
+    { id: 'b', label: 'B' as const, text: 'Required<T>' },
+    { id: 'c', label: 'C' as const, text: 'Readonly<T>' },
+    { id: 'd', label: 'D' as const, text: 'Pick<T, K>' },
+  ],
+}
+
 function loadSavedCustomQuizzes(): QuizCatalogItem[] {
   if (typeof window === 'undefined') return []
   try {
     const raw = localStorage.getItem(CUSTOM_QUIZZES_KEY)
     if (raw) {
-      return JSON.parse(raw) as QuizCatalogItem[]
+      const parsed = JSON.parse(raw) as QuizCatalogItem[]
+      return parsed.map((item) => {
+        if (!item.questions || item.questions.length === 0) {
+          return { ...item, questions: [DEFAULT_CUSTOM_QUESTION] }
+        }
+        return item
+      })
     }
   } catch (err) {
     console.warn('Failed to load custom quizzes from localStorage:', err)
@@ -60,7 +81,7 @@ function mapDtoToCatalogItem(dto: QuizDto | QuizDetailDto): QuizCatalogItem {
         iconColor: 'text-emerald-700',
       })
 
-  const questions =
+  let questions =
     'questions' in dto && Array.isArray((dto as QuizDetailDto).questions) && (dto as QuizDetailDto).questions.length > 0
       ? (dto as QuizDetailDto).questions.map((q) => ({
           id: q.id,
@@ -77,12 +98,24 @@ function mapDtoToCatalogItem(dto: QuizDto | QuizDetailDto): QuizCatalogItem {
         }))
       : catalogMatch?.questions
 
+  if ((!questions || questions.length === 0) && isCustom) {
+    const saved = loadSavedCustomQuizzes()
+    const match = saved.find(
+      (s) => s.id === dto.id || s.id === dto.slug || s.title.toLowerCase() === dto.title.toLowerCase()
+    )
+    if (match?.questions && match.questions.length > 0) {
+      questions = match.questions
+    } else {
+      questions = [DEFAULT_CUSTOM_QUESTION]
+    }
+  }
+
   return {
     id: dto.slug || dto.id,
     title: dto.title,
     description: dto.description,
     category: dto.category,
-    questionCount: dto.questionCount,
+    questionCount: dto.questionCount || (questions ? questions.length : 1),
     durationMinutes: dto.durationMinutes,
     passingScore: dto.passingScore,
     difficulty: dto.difficulty,
@@ -96,7 +129,9 @@ export default function Quizzes() {
   const role = session?.role ?? 'Student'
   const isMentor = role === 'Mentor' || role === 'Admin' || role === 'Company'
 
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const returnTo = searchParams.get('returnTo')
   const [recordingStream, setRecordingStream] = useState<MediaStream | null>(null)
   const [webcamStream, setWebcamStream] = useState<MediaStream | null>(null)
   const [activeTab, setActiveTab] = useState<'catalog' | 'analytics'>('catalog')
@@ -119,10 +154,30 @@ export default function Quizzes() {
           setApiQuizzes(data)
           const custom = data.filter((q) => q.isCustom).map(mapDtoToCatalogItem)
           if (custom.length > 0) {
-            setCustomQuizzes(custom)
-            if (typeof window !== 'undefined') {
-              localStorage.setItem(CUSTOM_QUIZZES_KEY, JSON.stringify(custom))
-            }
+            setCustomQuizzes((prev) => {
+              const merged = custom.map((c) => {
+                const existing = prev.find(
+                  (p) => p.id === c.id || (p as any).slug === c.id || p.title === c.title
+                )
+                if (
+                  existing?.questions &&
+                  existing.questions.length > 0 &&
+                  (!c.questions || c.questions.length === 0)
+                ) {
+                  return { ...c, questions: existing.questions }
+                }
+                return c
+              })
+              prev.forEach((p) => {
+                if (!merged.some((m) => m.id === p.id || m.title === p.title)) {
+                  merged.push(p)
+                }
+              })
+              if (typeof window !== 'undefined') {
+                localStorage.setItem(CUSTOM_QUIZZES_KEY, JSON.stringify(merged))
+              }
+              return merged
+            })
           }
         }
       })
@@ -144,7 +199,18 @@ export default function Quizzes() {
 
   const allQuizzes = useMemo(() => {
     if (apiQuizzes.length > 0) {
-      return apiQuizzes.map(mapDtoToCatalogItem)
+      return apiQuizzes.map((dto) => {
+        const item = mapDtoToCatalogItem(dto)
+        if (!item.questions || item.questions.length === 0) {
+          const fromCustom = customQuizzes.find(
+            (c) => c.id === item.id || (dto.slug && c.id === dto.slug) || c.title === item.title
+          )
+          if (fromCustom?.questions && fromCustom.questions.length > 0) {
+            return { ...item, questions: fromCustom.questions }
+          }
+        }
+        return item
+      })
     }
     return [...customQuizzes, ...quizzesCatalog]
   }, [apiQuizzes, customQuizzes])
@@ -181,11 +247,28 @@ export default function Quizzes() {
 
   const selectedQuiz = useMemo(() => {
     if (!selectedQuizId) return null
-    if (loadedQuizDetail && (loadedQuizDetail.id === selectedQuizId)) {
+    if (
+      loadedQuizDetail &&
+      (loadedQuizDetail.id === selectedQuizId ||
+        (loadedQuizDetail as any).slug === selectedQuizId ||
+        apiQuizzes.find((a) => a.id === selectedQuizId)?.slug === loadedQuizDetail.id)
+    ) {
       return loadedQuizDetail
     }
-    return allQuizzes.find((q) => q.id === selectedQuizId) ?? null
-  }, [selectedQuizId, loadedQuizDetail, allQuizzes])
+    const found = allQuizzes.find((q) => q.id === selectedQuizId)
+    if (found) {
+      if (!found.questions || found.questions.length === 0) {
+        const fromCustom = customQuizzes.find(
+          (c) => c.id === selectedQuizId || c.title === found.title
+        )
+        if (fromCustom?.questions && fromCustom.questions.length > 0) {
+          return { ...found, questions: fromCustom.questions }
+        }
+      }
+      return found
+    }
+    return null
+  }, [selectedQuizId, loadedQuizDetail, allQuizzes, customQuizzes, apiQuizzes])
 
   useEffect(() => {
     if (!selectedQuizId) {
@@ -253,7 +336,11 @@ export default function Quizzes() {
   const handleBackToCatalog = () => {
     cleanUpStreamsAndSession()
     setEditingQuiz(null)
-    setSearchParams({})
+    if (returnTo) {
+      navigate(returnTo)
+    } else {
+      setSearchParams({})
+    }
   }
 
   const handleEditQuiz = (e: React.MouseEvent, quiz: QuizCatalogItem) => {
@@ -350,13 +437,19 @@ export default function Quizzes() {
     setRecordingStream(streams.recordingStream)
     setWebcamStream(streams.webcamStream)
     if (selectedQuiz) {
-      setSearchParams({ quiz: selectedQuiz.id, status: 'active' })
+      const nextParams: Record<string, string> = { quiz: selectedQuiz.id, status: 'active' }
+      if (returnTo) nextParams.returnTo = returnTo
+      setSearchParams(nextParams)
     }
   }
 
   const handleFinishAssessment = () => {
     cleanUpStreamsAndSession()
-    setSearchParams({})
+    if (returnTo) {
+      navigate(returnTo)
+    } else {
+      setSearchParams({})
+    }
   }
 
   // Verificare dacă sesiunea anterioară a fost marcată activă

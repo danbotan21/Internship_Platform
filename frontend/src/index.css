@@ -10,6 +10,16 @@
   scrollbar-color: #cbd5e1 transparent;
 }
 
+/* Remove native number input spinners across the application */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
 /* Lightweight scrollbar with smooth rounded thumb */
 .hardware-scroll::-webkit-scrollbar {
   width: 6px;
