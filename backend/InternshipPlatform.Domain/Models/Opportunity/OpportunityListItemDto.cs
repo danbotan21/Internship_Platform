@@ -14,6 +14,7 @@ public class OpportunityListItemDto
     public string DurationCategory { get; set; } = string.Empty;
     public string Field { get; set; } = string.Empty;
     public List<string> Technologies { get; set; } = [];
+    public List<string> Requirements { get; set; } = [];
     public List<string> Tags { get; set; } = [];
     public DateTime Deadline { get; set; }
     public DateTime CreatedAt { get; set; }
