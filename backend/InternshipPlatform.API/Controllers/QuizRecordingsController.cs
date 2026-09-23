@@ -45,10 +45,7 @@ public class QuizRecordingsController : ControllerBase
     [HttpPost("upload")]
     [HttpPost("/api/save-recording")]
     [RequestSizeLimit(100_000_000)] // 100 MB max
-    public async Task<IActionResult> UploadRecording(
-        [FromForm] IFormFile? video,
-        [FromForm] string? metadata,
-        [FromForm] string? filename)
+    public async Task<IActionResult> UploadRecording([FromForm] RecordingUploadForm form)
     {
         try
         {
@@ -103,17 +100,17 @@ public class QuizRecordingsController : ControllerBase
                 });
             }
 
-            var baseName = !string.IsNullOrWhiteSpace(filename)
-                ? Path.GetFileNameWithoutExtension(filename)
+            var baseName = !string.IsNullOrWhiteSpace(form.Filename)
+                ? Path.GetFileNameWithoutExtension(form.Filename)
                 : $"quiz_session_{timestamp}";
 
             string? savedVideoPath = null;
             string? savedMetaPath = null;
 
             // 1. Save video file if present
-            if (video != null && video.Length > 0)
+            if (form.Video != null && form.Video.Length > 0)
             {
-                var ext = Path.GetExtension(video.FileName);
+                var ext = Path.GetExtension(form.Video.FileName);
                 if (string.IsNullOrWhiteSpace(ext)) ext = ".webm";
 
                 var videoFileName = $"{baseName}{ext}";
@@ -121,7 +118,7 @@ public class QuizRecordingsController : ControllerBase
 
                 using (var stream = new FileStream(videoFilePath, FileMode.Create))
                 {
-                    await video.CopyToAsync(stream);
+                    await form.Video.CopyToAsync(stream);
                 }
 
                 savedVideoPath = $"recorded-sessions/{videoFileName}";
@@ -129,12 +126,12 @@ public class QuizRecordingsController : ControllerBase
             }
 
             // 2. Save metadata JSON if present
-            if (!string.IsNullOrWhiteSpace(metadata))
+            if (!string.IsNullOrWhiteSpace(form.Metadata))
             {
                 var metaFileName = $"{baseName}_meta.json";
                 var metaFilePath = Path.Combine(recordingsDir, metaFileName);
 
-                await System.IO.File.WriteAllTextAsync(metaFilePath, metadata);
+                await System.IO.File.WriteAllTextAsync(metaFilePath, form.Metadata);
                 savedMetaPath = $"recorded-sessions/{metaFileName}";
                 _logger.LogInformation("Saved quiz session metadata: {Path}", metaFilePath);
             }
@@ -190,4 +187,11 @@ public class QuizRecordingsController : ControllerBase
             return StatusCode(500, new { error = ex.Message });
         }
     }
+}
+
+public sealed class RecordingUploadForm
+{
+    public IFormFile? Video { get; set; }
+    public string? Metadata { get; set; }
+    public string? Filename { get; set; }
 }
