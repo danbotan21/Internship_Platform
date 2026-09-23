@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import Layout from '../components/layout/Layout'
 import DocumentationPage from '../pages/DocumentationPage'
 import Attendance from '../pages/Attendance'
+import BecomeCompany from '../pages/BecomeCompany'
 import AuditLog from '../pages/AuditLog'
 import Calendar from '../pages/Calendar'
 import Contributions from '../pages/Contributions'
@@ -64,6 +65,7 @@ export default function AppRoutes() {
         <Route path='/resources/:resourceSlug' element={<ResourceDetails />} />
         <Route path='/documentation' element={<DocumentationPage />} />
         <Route path='/skills' element={<Skills />} />
+        <Route path='/become-company' element={<BecomeCompany />} />
         <Route path='/audit-log' element={<AuditLog />} />
       </Route>
 

@@ -26,6 +26,7 @@ using InternshipPlatform.BusinessLayer.Admin.Users;
 using InternshipPlatform.BusinessLayer.Admin.Verification;
 using InternshipPlatform.BusinessLayer.Admin.Companies;
 using InternshipPlatform.BusinessLayer.Admin.Dashboard;
+using InternshipPlatform.BusinessLayer.Onboarding;
 using InternshipPlatform.BusinessLayer.Quizzes;
 
 
@@ -66,6 +67,7 @@ builder.Services.AddScoped<IUserLifecycleService, UserLifecycleService>();
 builder.Services.AddScoped<ICompanyVerificationService, CompanyVerificationService>();
 builder.Services.AddScoped<ICompanyAdminService, CompanyAdminService>();
 builder.Services.AddScoped<IAdminDashboardService, AdminDashboardService>();
+builder.Services.AddScoped<ICompanyVerificationRequestService, CompanyVerificationRequestService>();
 
 
 // Register business services
