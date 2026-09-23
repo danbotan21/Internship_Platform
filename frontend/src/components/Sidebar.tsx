@@ -18,6 +18,7 @@ import {
   FolderKanban,
   UserCheck,
   LogOut,
+  SlidersHorizontal,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
@@ -63,6 +64,9 @@ export default function Sidebar() {
           ? { label: 'My Applications', to: '/my-applications', icon: FileCheck }
           : { label: 'My Opportunities', to: '/my-opportunities', icon: FolderKanban },
         { label: 'Quizzes', to: '/quizzes', icon: Timer },
+        ...(role !== 'Student'
+          ? [{ label: 'Skill Match', to: '/skill-match', icon: SlidersHorizontal }]
+          : []),
       ],
     },
     {

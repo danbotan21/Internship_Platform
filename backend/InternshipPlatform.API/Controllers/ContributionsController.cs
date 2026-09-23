@@ -85,17 +85,16 @@ public sealed class ContributionsController : ContributionControllerBase
     [RequestFormLimits(MultipartBodyLengthLimit = MaximumUploadBytes)]
     public async Task<IActionResult> AddFileEvidence(
         Guid contributionId,
-        [FromForm] IFormFile file,
-        [FromForm] string? caption,
+        [FromForm] AddFileEvidenceForm form,
         CancellationToken ct)
     {
-        await using var content = file.OpenReadStream();
+        await using var content = form.File.OpenReadStream();
         return ToActionResult(await _contributionAction.AddFileEvidenceAsync(
             contributionId,
             CurrentUserId,
-            caption ?? string.Empty,
-            file.FileName,
-            file.Length,
+            form.Caption ?? string.Empty,
+            form.File.FileName,
+            form.File.Length,
             content,
             ct));
     }
@@ -116,4 +115,10 @@ public sealed class ContributionsController : ContributionControllerBase
     [HttpGet("team-members")]
     public async Task<IActionResult> GetTeamMembers(CancellationToken ct) =>
         ToActionResult(await _contributionAction.GetTeamMembersAsync(CurrentUserId, ct));
+}
+
+public sealed class AddFileEvidenceForm
+{
+    public required IFormFile File { get; set; }
+    public string? Caption { get; set; }
 }

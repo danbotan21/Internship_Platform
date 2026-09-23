@@ -23,6 +23,8 @@ import {
 import { CustomSelect } from '../components/CustomSelect'
 import { getOpportunityById, updateOpportunity } from '../api/opportunities'
 import type { CreateOpportunityPayload } from '../types/opportunities'
+import OpportunityQuizRequirements from '../components/opportunities/OpportunityQuizRequirements'
+import { splitRequirements, combineRequirements, type QuizRequirement } from '../utils/opportunityRequirements'
 
 const BLANK_FORM_DATA = {
   title: '',
@@ -61,6 +63,7 @@ export default function EditOpportunity() {
   const [newResp, setNewResp] = useState('')
   const [newReq, setNewReq]   = useState('')
   const [newTech, setNewTech] = useState('')
+  const [quizRequirements, setQuizRequirements] = useState<QuizRequirement[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
@@ -82,6 +85,10 @@ export default function EditOpportunity() {
           if (opp.status === 'Closed' || opp.status === 'Draft' || opp.status === 'Open') {
             setOpportunityStatus(opp.status)
           }
+          const rawReqs = Array.isArray(opp.requirements) ? opp.requirements : []
+          const { textRequirements, quizRequirements: parsedQuizzes } = splitRequirements(rawReqs)
+          setQuizRequirements(parsedQuizzes)
+
           setFormData({
             title: opp.title || '',
             field: opp.field || 'Software Engineering',
@@ -96,7 +103,7 @@ export default function EditOpportunity() {
             aboutCompany: opp.aboutCompany || '',
             aboutInternship: opp.aboutInternship || '',
             responsibilities: Array.isArray(opp.responsibilities) ? opp.responsibilities : [],
-            requirements: Array.isArray(opp.requirements) ? opp.requirements : [],
+            requirements: textRequirements,
             technologies: Array.isArray(opp.technologies) ? opp.technologies : [],
           })
         } else {
@@ -147,7 +154,7 @@ export default function EditOpportunity() {
         aboutCompany: formData.aboutCompany || `${formData.company} description`,
         aboutInternship: formData.aboutInternship,
         responsibilities: formData.responsibilities,
-        requirements: formData.requirements,
+        requirements: combineRequirements(formData.requirements, quizRequirements),
         technologies: formData.technologies,
         deadline: formData.deadline ? new Date(formData.deadline).toISOString() : new Date().toISOString(),
         startDate: new Date().toISOString(),
@@ -459,6 +466,12 @@ export default function EditOpportunity() {
                   ))}
                 </ul>
               </div>
+
+              {/* Quiz Requirements */}
+              <OpportunityQuizRequirements
+                quizRequirements={quizRequirements}
+                onChange={setQuizRequirements}
+              />
 
               {/* Technologies */}
               <div className="space-y-2 pt-2">

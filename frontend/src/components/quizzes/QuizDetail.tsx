@@ -103,6 +103,50 @@ export default function QuizDetail({ quiz, onBack, onBegin }: QuizDetailProps) {
   const isStartingAssessmentRef = useRef(false)
   const videoRef = useRef<HTMLVideoElement | null>(null)
 
+  // Multi-monitor detection
+  const [isMultiMonitor, setIsMultiMonitor] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    const scr = window.screen as unknown as { isExtended?: boolean; availLeft?: number; availTop?: number }
+    if (typeof scr?.isExtended === 'boolean') {
+      return scr.isExtended
+    }
+    if (typeof scr?.availLeft === 'number' && scr.availLeft !== 0) return true
+    if (typeof scr?.availTop === 'number' && scr.availTop !== 0) return true
+    if (window.screenLeft > window.screen.width || window.screenTop > window.screen.height) return true
+    return false
+  })
+
+  useEffect(() => {
+    const checkScreens = () => {
+      const scr = window.screen as unknown as { isExtended?: boolean; availLeft?: number; availTop?: number }
+      let extended = false
+      if (typeof scr?.isExtended === 'boolean') {
+        extended = scr.isExtended
+      } else if (
+        (typeof scr?.availLeft === 'number' && scr.availLeft !== 0) ||
+        (typeof scr?.availTop === 'number' && scr.availTop !== 0)
+      ) {
+        extended = true
+      } else if (window.screenLeft > window.screen.width || window.screenTop > window.screen.height) {
+        extended = true
+      }
+      setIsMultiMonitor(extended)
+    }
+
+    checkScreens()
+    window.addEventListener('resize', checkScreens)
+    const screenTarget = window.screen as unknown as EventTarget | undefined
+    if (screenTarget && typeof screenTarget.addEventListener === 'function') {
+      screenTarget.addEventListener('change', checkScreens)
+    }
+    return () => {
+      window.removeEventListener('resize', checkScreens)
+      if (screenTarget && typeof screenTarget.removeEventListener === 'function') {
+        screenTarget.removeEventListener('change', checkScreens)
+      }
+    }
+  }, [])
+
   // Păstrează ref-ul sincronizat cu starea
   useEffect(() => {
     previewStreamRef.current = previewStream
@@ -318,6 +362,56 @@ export default function QuizDetail({ quiz, onBack, onBegin }: QuizDetailProps) {
         return
       }
 
+      // Validare Multi-Monitor: Verificăm dacă ecranul ales corespunde ecranului pe care se află fereastra testului
+      if (isMultiMonitor && settings?.width && settings?.height) {
+        const dpr = window.devicePixelRatio || 1
+        const currentScreenWidth = window.screen.width
+        const currentScreenHeight = window.screen.height
+
+        const expectedPhysicalWidth = Math.round(currentScreenWidth * dpr)
+        const expectedPhysicalHeight = Math.round(currentScreenHeight * dpr)
+
+        const capturedRatio = settings.width / settings.height
+        const currentRatio = currentScreenWidth / currentScreenHeight
+
+        // Verificăm dacă aspect ratio-ul diferă semnificativ (ex: 16:9 vs 16:10 / 21:9 / ecran vertical)
+        const ratioMismatch = Math.abs(capturedRatio - currentRatio) > 0.08
+
+        // Verificăm dacă rezoluția diferă atât de dimensiunile CSS, cât și de cele native DPR
+        const widthDiffCSS = Math.abs(settings.width - currentScreenWidth)
+        const heightDiffCSS = Math.abs(settings.height - currentScreenHeight)
+        const widthDiffPhysical = Math.abs(settings.width - expectedPhysicalWidth)
+        const heightDiffPhysical = Math.abs(settings.height - expectedPhysicalHeight)
+
+        const isCloseMatch =
+          (widthDiffCSS < 50 && heightDiffCSS < 50) ||
+          (widthDiffPhysical < 50 && heightDiffPhysical < 50)
+
+        const isSignificantResolutionMismatch =
+          Math.min(widthDiffCSS, widthDiffPhysical) > 100 ||
+          Math.min(heightDiffCSS, heightDiffPhysical) > 100
+
+        if (!isCloseMatch && (ratioMismatch || isSignificantResolutionMismatch)) {
+          console.warn('[Proctoring] Multi-monitor screen mismatch:', {
+            captured: { width: settings.width, height: settings.height, ratio: capturedRatio },
+            screen: {
+              width: currentScreenWidth,
+              height: currentScreenHeight,
+              dpr,
+              ratio: currentRatio,
+              expectedPhysical: [expectedPhysicalWidth, expectedPhysicalHeight],
+            },
+          })
+          videoTrack.stop()
+          screenStream.getTracks().forEach((t) => t.stop())
+          setIsRequestingMedia(false)
+          setScreenShareError(
+            'Ai selectat un ecran diferit de cel pe care rulează testul! În fereastra de selecție («Entire Screen»), te rugăm să alegi ecranul pe care este afișată această pagină a testului.'
+          )
+          return
+        }
+      }
+
       // PASUL 2: Solicitare permisiuni cameră și microfon (cu eliberare stream anterior, constrângeri ideale și fallback automat)
       let webcamStream: MediaStream | null = null
       try {
@@ -461,6 +555,22 @@ export default function QuizDetail({ quiz, onBack, onBegin }: QuizDetailProps) {
             Anti-cheat monitoring is active. Tab switches, screen, camera, and microphone will be recorded for review.
           </p>
         </div>
+
+        {/* Multi-monitor Guidance Notice */}
+        {isMultiMonitor && (
+          <div className="mt-4 flex items-start justify-start gap-3 rounded-xl border border-blue-200/80 bg-blue-50/80 p-4 text-left shadow-2xs animate-in fade-in">
+            <Monitor className="h-5 w-5 shrink-0 text-blue-600 mt-0.5" />
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-blue-900 md:text-sm">
+                Configurație cu 2 sau mai multe monitoare detectată
+              </p>
+              <p className="text-xs text-blue-800 leading-relaxed">
+                În fereastra de partajare a ecranului, alege din tab-ul <strong>«Entire Screen»</strong> ecranul pe care se află acest test (nu ecranul secundar).
+                Orice interacțiune, click sau mutare a cursorului pe celălalt monitor în timpul testului va genera automat un incident anti-cheat (Window Blur).
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Live Camera preview widget if toggled for testing */}
         {cameraActive && (

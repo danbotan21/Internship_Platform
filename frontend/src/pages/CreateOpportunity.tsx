@@ -22,6 +22,8 @@ import {
 import { CustomSelect } from '../components/CustomSelect'
 import { createOpportunity, getCompanyInfo } from '../api/opportunities'
 import type { CreateOpportunityPayload } from '../types/opportunities'
+import OpportunityQuizRequirements from '../components/opportunities/OpportunityQuizRequirements'
+import { combineRequirements, type QuizRequirement } from '../utils/opportunityRequirements'
 
 export default function CreateOpportunity() {
   const navigate = useNavigate()
@@ -81,6 +83,7 @@ export default function CreateOpportunity() {
   const [newResp, setNewResp] = useState('')
   const [newReq, setNewReq] = useState('')
   const [newTech, setNewTech] = useState('')
+  const [quizRequirements, setQuizRequirements] = useState<QuizRequirement[]>([])
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -169,7 +172,7 @@ export default function CreateOpportunity() {
         aboutCompany: mentorCompany.aboutCompany,
         aboutInternship: formData.aboutInternship,
         responsibilities: formData.responsibilities,
-        requirements: formData.requirements,
+        requirements: combineRequirements(formData.requirements, quizRequirements),
         technologies: formData.technologies,
         deadline: formData.deadline ? new Date(formData.deadline).toISOString() : new Date(Date.now() + 60 * 86400000).toISOString(),
         startDate: new Date().toISOString(),
@@ -636,6 +639,12 @@ export default function CreateOpportunity() {
                   ))}
                 </ul>
               </div>
+
+              {/* Quiz Requirements Section */}
+              <OpportunityQuizRequirements
+                quizRequirements={quizRequirements}
+                onChange={setQuizRequirements}
+              />
 
               {/* Required Technologies Manager */}
               <div className="space-y-2 pt-2">
