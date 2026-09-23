@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import * as docx from 'docx-preview'
+import * as XLSX from 'xlsx'
 import { FileText, Loader2 } from 'lucide-react'
 import type { VaultDocument } from '../../types/documentation'
 
@@ -46,16 +47,15 @@ export default function InlineDocumentPreview({ document }: InlineDocumentPrevie
             ignoreLastRenderedPageBreak: true,
           })
         } else if (isExcel) {
-          const XLSX = await import('xlsx')
-          const workbook = XLSX.read(await response.arrayBuffer(), { type: 'array' })
+          const workbook = (XLSX as any).read(await response.arrayBuffer(), { type: 'array' })
           const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
           if (!firstSheet) throw new Error('Workbook has no sheets')
-          const rows = XLSX.utils.sheet_to_json<unknown[]>(firstSheet, {
+          const rows = ((XLSX as any).utils.sheet_to_json(firstSheet, {
             header: 1,
             blankrows: false,
             defval: '',
-          })
-          if (isActive) setWorksheet(rows.slice(0, 20).map((row) => row.slice(0, 8)))
+          }) || []) as unknown[][]
+          if (isActive) setWorksheet(rows.slice(0, 20).map((row: unknown[]) => row.slice(0, 8)))
         }
 
         if (isActive) setState('ready')

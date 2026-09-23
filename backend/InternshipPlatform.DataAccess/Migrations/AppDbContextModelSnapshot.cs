@@ -936,6 +936,236 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.ToTable("DocumentAudits");
                 });
 
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.Evaluation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("AcknowledgedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("AreasForImprovement")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("FinalScore")
+                        .HasPrecision(5, 1)
+                        .HasColumnType("numeric(5,1)");
+
+                    b.Property<DateTimeOffset?>("FinalizedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MentorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("NextSteps")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("OverallComment")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<DateOnly>("PeriodEnd")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("PeriodStart")
+                        .HasColumnType("date");
+
+                    b.Property<DateTimeOffset?>("ReadyForReviewAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("RubricVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Strengths")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<Guid>("StudentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("StudentResponse")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RubricVersionId");
+
+                    b.HasIndex("MentorId", "Status");
+
+                    b.HasIndex("StudentId", "Type")
+                        .IsUnique();
+
+                    b.ToTable("Evaluations", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_Evaluations_FinalScore", "(\"Status\" = 3 AND \"FinalScore\" IS NOT NULL) OR (\"Status\" <> 3)");
+
+                            t.HasCheckConstraint("CK_Evaluations_Period", "\"PeriodEnd\" >= \"PeriodStart\"");
+
+                            t.HasCheckConstraint("CK_Evaluations_Status", "\"Status\" IN (1, 2, 3)");
+
+                            t.HasCheckConstraint("CK_Evaluations_Type", "\"Type\" IN (1, 2, 3)");
+                        });
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.EvaluationCriterion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<string>("Guidance")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("IsVisibleToStudents")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("integer");
+
+                    b.Property<decimal>("RatingStep")
+                        .HasPrecision(3, 1)
+                        .HasColumnType("numeric(3,1)");
+
+                    b.Property<Guid>("RubricVersionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("ScaleMax")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Weight")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RubricVersionId", "Position")
+                        .IsUnique();
+
+                    b.ToTable("EvaluationCriteria", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_EvaluationCriteria_Scale", "\"ScaleMax\" IN (5, 10) AND \"RatingStep\" IN (0.5, 1)");
+
+                            t.HasCheckConstraint("CK_EvaluationCriteria_Weight", "\"Weight\" BETWEEN 1 AND 100");
+                        });
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.EvaluationRubricVersion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("ArchivedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ChangeNote")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("MentorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTimeOffset?>("PublishedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("VersionNumber")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MentorId", "VersionNumber")
+                        .IsUnique();
+
+                    b.HasIndex(new[] { "MentorId" }, "IX_EvaluationRubricVersions_OneDraftPerMentor")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 1");
+
+                    b.HasIndex(new[] { "MentorId" }, "IX_EvaluationRubricVersions_OnePublishedPerMentor")
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 2");
+
+                    b.ToTable("EvaluationRubricVersions", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_EvaluationRubricVersions_Status", "\"Status\" IN (1, 2, 3)");
+
+                            t.HasCheckConstraint("CK_EvaluationRubricVersions_VersionNumber", "\"VersionNumber\" >= 1");
+                        });
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.EvaluationScore", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid>("CriterionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("EvaluationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("Rating")
+                        .HasPrecision(4, 1)
+                        .HasColumnType("numeric(4,1)");
+
+                    b.Property<DateTimeOffset>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CriterionId");
+
+                    b.HasIndex("EvaluationId", "CriterionId")
+                        .IsUnique();
+
+                    b.ToTable("EvaluationScores", (string)null);
+                });
+
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Notification", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1071,6 +1301,181 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("Opportunities");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.Quiz", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Difficulty")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("DurationMinutes")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsCustom")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("MentorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("PassingScore")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("QuestionCount")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MentorId");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("Quizzes");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.QuizAttempt", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AnswersJson")
+                        .HasColumnType("text");
+
+                    b.Property<int>("CohortWeek")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FlagReason")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsFlagged")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("PassingScore")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Percentage")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("QuizId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Score")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<int>("TimeSpentSeconds")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalQuestions")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)");
+
+                    b.Property<string>("ViolationsJson")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuizId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("QuizAttempts");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.QuizQuestion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("CorrectOptionId")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
+                    b.Property<string>("Hint")
+                        .HasColumnType("text");
+
+                    b.Property<string>("NumberLabel")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("OptionsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("QuestionText")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("QuizId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("QuizId", "OrderIndex");
+
+                    b.ToTable("QuizQuestions");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Resource", b =>
@@ -1719,6 +2124,68 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.Navigation("Document");
                 });
 
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.Evaluation", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("MentorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("InternshipPlatform.Domain.Entities.EvaluationRubricVersion", "RubricVersion")
+                        .WithMany()
+                        .HasForeignKey("RubricVersionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("InternshipPlatform.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RubricVersion");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.EvaluationCriterion", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.Entities.EvaluationRubricVersion", "RubricVersion")
+                        .WithMany("Criteria")
+                        .HasForeignKey("RubricVersionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RubricVersion");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.EvaluationRubricVersion", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.User", null)
+                        .WithMany()
+                        .HasForeignKey("MentorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.EvaluationScore", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.Entities.EvaluationCriterion", "Criterion")
+                        .WithMany()
+                        .HasForeignKey("CriterionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("InternshipPlatform.Domain.Entities.Evaluation", "Evaluation")
+                        .WithMany("Scores")
+                        .HasForeignKey("EvaluationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Criterion");
+
+                    b.Navigation("Evaluation");
+                });
+
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Opportunity", b =>
                 {
                     b.HasOne("InternshipPlatform.Domain.User", "Mentor")
@@ -1732,6 +2199,45 @@ namespace InternshipPlatform.DataAccess.Migrations
                         .HasForeignKey("UserId");
 
                     b.Navigation("Mentor");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.Quiz", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.User", "Mentor")
+                        .WithMany()
+                        .HasForeignKey("MentorId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Mentor");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.QuizAttempt", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.Entities.Quiz", "Quiz")
+                        .WithMany("Attempts")
+                        .HasForeignKey("QuizId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("InternshipPlatform.Domain.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("Quiz");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.QuizQuestion", b =>
+                {
+                    b.HasOne("InternshipPlatform.Domain.Entities.Quiz", "Quiz")
+                        .WithMany("Questions")
+                        .HasForeignKey("QuizId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.ResourceFavorite", b =>
@@ -1992,9 +2498,26 @@ namespace InternshipPlatform.DataAccess.Migrations
                     b.Navigation("Audits");
                 });
 
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.Evaluation", b =>
+                {
+                    b.Navigation("Scores");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.EvaluationRubricVersion", b =>
+                {
+                    b.Navigation("Criteria");
+                });
+
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Opportunity", b =>
                 {
                     b.Navigation("Applications");
+                });
+
+            modelBuilder.Entity("InternshipPlatform.Domain.Entities.Quiz", b =>
+                {
+                    b.Navigation("Attempts");
+
+                    b.Navigation("Questions");
                 });
 
             modelBuilder.Entity("InternshipPlatform.Domain.Entities.Resource", b =>

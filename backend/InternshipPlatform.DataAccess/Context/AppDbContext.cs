@@ -357,5 +357,7 @@ public partial class AppDbContext : DbContext
             }
         );
         ConfigureContributionModule(modelBuilder);
+        ConfigureEvaluationModule(modelBuilder);
+        ConfigureQuizzesModule(modelBuilder);
     }
 }
