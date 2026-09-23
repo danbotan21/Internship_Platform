@@ -15,6 +15,7 @@ import {
   Upload,
   Box,
   Pencil,
+  Building2,
   SlidersHorizontal,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
@@ -61,7 +62,10 @@ const studentSections: NavSection[] = [
   },
   {
     title: 'Manage',
-    items: [{ label: 'Skills', to: '/skills', icon: Box }],
+    items: [
+      { label: 'Skills', to: '/skills', icon: Box },
+      { label: 'Represent a company', to: '/become-company', icon: Building2 },
+    ],
   },
 ]
 
@@ -118,6 +122,7 @@ const pageTitles: Record<string, string> = {
   '/documentation': 'Documentation',
   '/resources': 'Resources',
   '/skills': 'Skills',
+  '/become-company': 'Represent a company',
   '/audit-log': 'Audit log',
 }
 
