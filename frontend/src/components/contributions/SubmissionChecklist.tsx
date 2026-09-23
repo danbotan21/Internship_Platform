@@ -1,13 +1,19 @@
 import { CircleCheck, CircleDashed } from 'lucide-react'
 import type { SubmissionCheck } from '../../types/contribution'
 
-// Requirements computed by the backend; the same rules block the submit call.
-export default function SubmissionChecklist({ checks }: { checks: SubmissionCheck[] }) {
+// Requirements computed by the backend; the same rules block the related action.
+export default function SubmissionChecklist({
+  checks,
+  title = 'Ready to submit?',
+}: {
+  checks: SubmissionCheck[]
+  title?: string
+}) {
   const passed = checks.filter((check) => check.passed).length
   return (
     <div>
       <div className='flex items-center justify-between gap-3'>
-        <p className='text-[13px] font-semibold text-[#14211b]'>Ready to submit?</p>
+        <p className='text-[13px] font-semibold text-[#14211b]'>{title}</p>
         <span className='text-[12px] tabular-nums text-[#5d6b64]'>
           {passed} / {checks.length}
         </span>

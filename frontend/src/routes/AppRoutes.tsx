@@ -46,7 +46,7 @@ export default function AppRoutes() {
         <Route path='/attendance' element={<Attendance />} />
         <Route path='/reports' element={<Reports />} />
         <Route path='/contributions/*' element={<Contributions />} />
-        <Route path='/evaluation' element={<Evaluation />} />
+        <Route path='/evaluation/*' element={<Evaluation />} />
         <Route path='/opportunities' element={<Opportunities />} />
         <Route path='/opportunities/apply' element={<OpportunityApply />} />
         <Route path='/my-applications' element={<MyApplications />} />

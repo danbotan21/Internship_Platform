@@ -60,33 +60,27 @@ public class DocumentsController : ControllerBase
     [Consumes("multipart/form-data", "application/json")]
     [ProducesResponseType(typeof(DocumentDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<ActionResult<DocumentDto>> UploadDocument(
-        [FromForm] IFormFile? file,
-        [FromForm] string? title,
-        [FromForm] string? category,
-        [FromForm] string? visibilityRole,
-        [FromForm] bool isMandatory = false,
-        [FromForm] string? uploadedBy = null)
+    public async Task<ActionResult<DocumentDto>> UploadDocument([FromForm] UploadDocumentForm form)
     {
         CreateDocumentDto dto;
 
-        if (file != null && file.Length > 0)
+        if (form.File != null && form.File.Length > 0)
         {
             dto = new CreateDocumentDto
             {
-                Title = !string.IsNullOrWhiteSpace(title) ? title : Path.GetFileNameWithoutExtension(file.FileName),
-                FileName = file.FileName,
-                Category = !string.IsNullOrWhiteSpace(category) ? category : "Other",
-                FileType = Path.GetExtension(file.FileName).TrimStart('.').ToLower(),
-                Size = file.Length,
-                VisibilityRole = !string.IsNullOrWhiteSpace(visibilityRole) ? visibilityRole : "Public",
-                IsMandatory = isMandatory,
-                UploadedBy = !string.IsNullOrWhiteSpace(uploadedBy) ? uploadedBy : "Ana Popescu",
-                FileUrl = $"/uploads/{file.FileName}"
+                Title = !string.IsNullOrWhiteSpace(form.Title) ? form.Title : Path.GetFileNameWithoutExtension(form.File.FileName),
+                FileName = form.File.FileName,
+                Category = !string.IsNullOrWhiteSpace(form.Category) ? form.Category : "Other",
+                FileType = Path.GetExtension(form.File.FileName).TrimStart('.').ToLower(),
+                Size = form.File.Length,
+                VisibilityRole = !string.IsNullOrWhiteSpace(form.VisibilityRole) ? form.VisibilityRole : "Public",
+                IsMandatory = form.IsMandatory,
+                UploadedBy = !string.IsNullOrWhiteSpace(form.UploadedBy) ? form.UploadedBy : "Ana Popescu",
+                FileUrl = $"/uploads/{form.File.FileName}"
             };
 
-            using var stream = file.OpenReadStream();
-            var created = await _documentService.CreateDocumentAsync(dto, stream, file.FileName);
+            using var stream = form.File.OpenReadStream();
+            var created = await _documentService.CreateDocumentAsync(dto, stream, form.File.FileName);
             return CreatedAtAction(nameof(GetDocumentById), new { id = created.Id }, created);
         }
         else
@@ -94,14 +88,14 @@ public class DocumentsController : ControllerBase
             // Support direct JSON or form field upload simulation
             dto = new CreateDocumentDto
             {
-                Title = !string.IsNullOrWhiteSpace(title) ? title : "Uploaded Document",
-                FileName = !string.IsNullOrWhiteSpace(title) ? $"{title}.pdf" : "Document.pdf",
-                Category = !string.IsNullOrWhiteSpace(category) ? category : "Other",
+                Title = !string.IsNullOrWhiteSpace(form.Title) ? form.Title : "Uploaded Document",
+                FileName = !string.IsNullOrWhiteSpace(form.Title) ? $"{form.Title}.pdf" : "Document.pdf",
+                Category = !string.IsNullOrWhiteSpace(form.Category) ? form.Category : "Other",
                 FileType = "pdf",
                 Size = 1048576,
-                VisibilityRole = !string.IsNullOrWhiteSpace(visibilityRole) ? visibilityRole : "Public",
-                IsMandatory = isMandatory,
-                UploadedBy = !string.IsNullOrWhiteSpace(uploadedBy) ? uploadedBy : "Ana Popescu",
+                VisibilityRole = !string.IsNullOrWhiteSpace(form.VisibilityRole) ? form.VisibilityRole : "Public",
+                IsMandatory = form.IsMandatory,
+                UploadedBy = !string.IsNullOrWhiteSpace(form.UploadedBy) ? form.UploadedBy : "Ana Popescu",
                 FileUrl = "/uploads/Document.pdf"
             };
 
@@ -232,4 +226,14 @@ public class DocumentsController : ControllerBase
         var cert = await _documentService.GenerateCertificateAsync(recipientName);
         return Ok(cert);
     }
+}
+
+public sealed class UploadDocumentForm
+{
+    public IFormFile? File { get; set; }
+    public string? Title { get; set; }
+    public string? Category { get; set; }
+    public string? VisibilityRole { get; set; }
+    public bool IsMandatory { get; set; }
+    public string? UploadedBy { get; set; }
 }

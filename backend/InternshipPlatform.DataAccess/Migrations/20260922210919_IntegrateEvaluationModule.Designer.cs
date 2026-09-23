@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using InternshipPlatform.DataAccess.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace InternshipPlatform.DataAccess.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260922210919_IntegrateEvaluationModule")]
+    partial class IntegrateEvaluationModule
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1114,16 +1117,13 @@ namespace InternshipPlatform.DataAccess.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("MentorId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_EvaluationRubricVersions_OnePublishedPerMentor")
+                        .HasFilter("\"Status\" = 2");
+
                     b.HasIndex("MentorId", "VersionNumber")
                         .IsUnique();
-
-                    b.HasIndex(new[] { "MentorId" }, "IX_EvaluationRubricVersions_OneDraftPerMentor")
-                        .IsUnique()
-                        .HasFilter("\"Status\" = 1");
-
-                    b.HasIndex(new[] { "MentorId" }, "IX_EvaluationRubricVersions_OnePublishedPerMentor")
-                        .IsUnique()
-                        .HasFilter("\"Status\" = 2");
 
                     b.ToTable("EvaluationRubricVersions", null, t =>
                         {
