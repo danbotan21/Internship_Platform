@@ -14,14 +14,13 @@ import CandidateDetailModal from '../components/skillMatch/CandidateDetailModal'
 import AddRequirementModal from '../components/skillMatch/AddRequirementModal'
 import {
   getMentorOpportunities,
+  getOpportunityById,
   getApplicationsByOpportunity,
   reviewApplication,
 } from '../api/opportunities'
 import type { Opportunity } from '../types/opportunities'
 import { splitRequirements } from '../utils/opportunityRequirements'
 import { getQuizAttempts, type UserQuizAttempt } from '../services/quizResultsDb'
-
-const STORAGE_KEY_REQUIREMENTS = 'internflow_skillmatch_requirements_v2'
 
 function mapAppStatusToCandidateStatus(appStatus?: string): CandidateStatus {
   switch (appStatus) {
@@ -261,38 +260,8 @@ export default function SkillMatch() {
       })
   }, [])
 
-  // Requirements & Weights (with localStorage persistence)
-  const [requirements, setRequirements] = useState<RequirementWeight[]>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY_REQUIREMENTS)
-      if (stored) {
-        const parsed = JSON.parse(stored) as RequirementWeight[]
-        // Exclude any legacy general skills that aren't assessment quizzes
-        const quizOnly = parsed.filter(
-          (r) =>
-            r.isQuiz ||
-            Boolean(r.quizId) ||
-            ['test', 'test 2', 'test 3'].includes(r.name.toLowerCase()) ||
-            [
-              'react & frontend',
-              'sql & databases',
-              'git & version control',
-              'rest apis & http',
-              'data structures & algorithms',
-            ].includes(r.name.toLowerCase())
-        )
-        if (quizOnly.length > 0) return quizOnly
-      }
-    } catch {}
-    return initialRequirements
-  })
-
-  // Save requirements to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_REQUIREMENTS, JSON.stringify(requirements))
-    } catch {}
-  }, [requirements])
+  // Requirements & Weights: dynamically loaded from the selected opportunity's quiz requirements
+  const [requirements, setRequirements] = useState<RequirementWeight[]>([])
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false)
 
@@ -315,7 +284,20 @@ export default function SkillMatch() {
   const [maxScore, setMaxScore] = useState<number>(100)
 
   // Active overall qualification threshold gate
-  const [activeThresholdGate, setActiveThresholdGate] = useState<number>(75)
+  const [activeThresholdGate, setActiveThresholdGate] = useState<number>(70)
+
+  // Helper to evenly balance weights across requirements to sum to 100%
+  const balanceWeights = (reqs: RequirementWeight[]): RequirementWeight[] => {
+    if (reqs.length === 0) return []
+    const totalCount = reqs.length
+    const baseWeight = Math.floor(100 / totalCount)
+    let remWeight = 100 - baseWeight * totalCount
+    return reqs.map((r) => {
+      const w = baseWeight + (remWeight > 0 ? 1 : 0)
+      if (remWeight > 0) remWeight--
+      return { ...r, weight: w }
+    })
+  }
 
   // Handle selecting an opportunity
   const handleSelectOpportunity = async (opp: Opportunity) => {
@@ -323,62 +305,50 @@ export default function SkillMatch() {
     setSelectedCohort(null)
     setIsDropdownOpen(false)
 
-    const { quizRequirements } = splitRequirements(opp.requirements || [])
+    // Ensure we have full opportunity with requirements from backend
+    let fullOpp = opp
+    if (!fullOpp.requirements || fullOpp.requirements.length === 0) {
+      try {
+        const detailed = await getOpportunityById(opp.id)
+        if (detailed?.requirements && detailed.requirements.length > 0) {
+          fullOpp = detailed
+        }
+      } catch (err) {
+        console.warn('Could not fetch opportunity details:', err)
+      }
+    }
+
+    const { quizRequirements } = splitRequirements(fullOpp.requirements || [])
     let newReqs: RequirementWeight[] = []
 
     if (quizRequirements.length > 0) {
-      // Primary evaluation on required quizzes! 100% of weight is distributed across required assessments
-      const totalCount = quizRequirements.length
-      const baseWeight = Math.floor(100 / totalCount)
-      let remWeight = 100 - baseWeight * totalCount
-
-      const colors = ['#1b5e3a', '#0d9488', '#2563eb', '#7c3aed', '#0891b2']
-      quizRequirements.forEach((q, idx) => {
-        const w = baseWeight + (remWeight > 0 ? 1 : 0)
-        if (remWeight > 0) remWeight--
-        newReqs.push({
-          id: q.quizId,
-          name: q.quizTitle,
-          gate: q.minScore || 70,
-          weight: w,
-          color: colors[idx % colors.length],
-          isQuiz: true,
-          quizId: q.quizId,
-          quizTitle: q.quizTitle,
-        })
-      })
-
+      // Primary evaluation on required quizzes configured by company for this internship
+      const colors = ['#1b5e3a', '#0d9488', '#2563eb', '#7c3aed', '#0891b2', '#ea580c']
+      const unweighted = quizRequirements.map((q, idx) => ({
+        id: q.quizId,
+        name: q.quizTitle,
+        gate: q.minScore || 70,
+        weight: 0,
+        color: colors[idx % colors.length],
+        isQuiz: true,
+        quizId: q.quizId,
+        quizTitle: q.quizTitle,
+      }))
+      newReqs = balanceWeights(unweighted)
       setRequirements(newReqs)
       setActiveThresholdGate(newReqs[0]?.gate || 70)
-    } else if (Array.isArray(opp.technologies) && opp.technologies.length > 0) {
-      // No quizzes required: evaluate against listed technologies
-      const topTech = opp.technologies.slice(0, 4)
-      const baseWeight = Math.floor(100 / topTech.length)
-      let remWeight = 100 - baseWeight * topTech.length
-      const colors = ['#1b5e3a', '#0d9488', '#2563eb', '#d97706']
-      topTech.forEach((tech, idx) => {
-        const w = baseWeight + (remWeight > 0 ? 1 : 0)
-        if (remWeight > 0) remWeight--
-        newReqs.push({
-          id: tech.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-          name: tech,
-          gate: 70,
-          weight: w,
-          color: colors[idx % colors.length],
-        })
-      })
-      setRequirements(newReqs)
-      setActiveThresholdGate(70)
     } else {
-      setRequirements(initialRequirements)
-      setActiveThresholdGate(75)
+      // No quiz requirements configured by company for this internship:
+      // Leave empty so no dummy mock data appears, allowing mentor to click "+ Add Requirement"
+      setRequirements([])
+      setActiveThresholdGate(70)
     }
 
     // Load applications for this opportunity
     try {
       const apps = await getApplicationsByOpportunity(opp.id).catch(() => [])
       const attempts = getQuizAttempts()
-      const activeReqs = newReqs.length > 0 ? newReqs : requirements
+      const activeReqs = newReqs
 
       const liveCandidates: Candidate[] = (Array.isArray(apps) ? apps : []).map((app: any) => {
         const fullName = `${app.firstName} ${app.lastName}`.trim() || 'Applicant'
@@ -449,33 +419,12 @@ export default function SkillMatch() {
       }
 
       setIsShowingLiveApplicants(liveCandidates.length > 0)
-      // Only keep real candidates - NO filler data
       setCandidates(liveCandidates)
+      setSelectedCandidateId(null)
     } catch {
       setIsShowingLiveApplicants(false)
-      const attempts = getQuizAttempts()
-      const activeReqs = newReqs.length > 0 ? newReqs : requirements
-      setCandidates(
-        initialCandidates.map((c) => {
-          const { scores, hasPendingTest } = resolveCandidateScores(
-            c.id,
-            c.status,
-            c.email || '',
-            c.name,
-            activeReqs,
-            attempts,
-            c.scores,
-            true
-          )
-          return {
-            ...c,
-            role: opp.title,
-            scores,
-            pendingTest: hasPendingTest,
-            isLiveApplicant: true,
-          }
-        })
-      )
+      setCandidates([])
+      setSelectedCandidateId(null)
     }
   }
 
@@ -517,7 +466,7 @@ export default function SkillMatch() {
     const toAdd = newReqs.filter((r) => !existingIds.has(r.id))
     if (toAdd.length === 0) return
 
-    const combinedReqs = [...requirements, ...toAdd]
+    const combinedReqs = balanceWeights([...requirements, ...toAdd])
     setRequirements(combinedReqs)
 
     const attempts = getQuizAttempts()
@@ -544,9 +493,8 @@ export default function SkillMatch() {
 
   // Handle saving full updated requirements from modal (support both adding and removing/deselecting)
   const handleSaveRequirements = (updatedReqs: RequirementWeight[]) => {
-    if (!updatedReqs || updatedReqs.length === 0) return
-
-    setRequirements(updatedReqs)
+    const balanced = balanceWeights(updatedReqs || [])
+    setRequirements(balanced)
 
     const attempts = getQuizAttempts()
     setCandidates((prev) =>
@@ -556,7 +504,7 @@ export default function SkillMatch() {
           c.status,
           c.email || '',
           c.name,
-          updatedReqs,
+          balanced,
           attempts,
           c.scores,
           c.isLiveApplicant
@@ -576,15 +524,13 @@ export default function SkillMatch() {
 
   // Handle reset to default
   const handleResetDefault = () => {
+    setSelectedCandidateId(null)
     if (selectedOpportunity) {
       handleSelectOpportunity(selectedOpportunity)
     } else {
-      setRequirements(initialRequirements)
-      setActiveThresholdGate(75)
-      setCandidates(initialCandidates)
-      try {
-        localStorage.removeItem(STORAGE_KEY_REQUIREMENTS)
-      } catch {}
+      setRequirements([])
+      setActiveThresholdGate(70)
+      setCandidates([])
     }
   }
 

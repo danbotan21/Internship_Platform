@@ -7,46 +7,9 @@ export const initialCohorts: CohortOption[] = [
   { id: 'spring-2027-ai', name: 'Data & Machine Learning', term: 'Spring 2027 Cohort' },
 ]
 
-export const initialRequirements: RequirementWeight[] = [
-  { id: 'quiz-custom-test-6ffe4a', name: 'Test', gate: 70, weight: 35, isQuiz: true, quizId: 'custom-test-6ffe4a' },
-  { id: 'quiz-custom-test-2-e9993e', name: 'Test 2', gate: 70, weight: 35, isQuiz: true, quizId: 'custom-test-2-e9993e' },
-  { id: 'quiz-custom-test-3-e33917', name: 'Test 3', gate: 70, weight: 30, isQuiz: true, quizId: 'custom-test-3-e33917' },
-]
+export const initialRequirements: RequirementWeight[] = []
 
-export const initialCandidates: Candidate[] = [
-  {
-    id: 'd8f070b8-1597-45cf-b276-fce7d00f6582',
-    name: 'Daniel 123',
-    initials: 'D1',
-    role: 'Software Development Intern',
-    university: 'Technical University of Moldova',
-    scores: {
-      github: 100,
-      python: 100,
-      react: 100,
-      sql: 100,
-      'system-design': 100,
-      'custom-test-6ffe4a': 100,
-      'quiz-custom-test-6ffe4a': 100,
-      'custom-test-2-e9993e': 100,
-      'quiz-custom-test-2-e9993e': 100,
-      'custom-test-3-e33917': 100,
-      'quiz-custom-test-3-e33917': 100,
-      Test: 100,
-      'Test 2': 100,
-      'Test 3': 100,
-      test: 100,
-      'test-2': 100,
-      'test-3': 100,
-    },
-    status: 'ACCEPTED',
-    isLiveApplicant: true,
-    appliedDate: '2026-09-23',
-    email: 'dan1@gmail.com',
-    phone: '+373 69 123456',
-    bio: 'Software Engineering student with 100% completion on all required assessment tests.',
-  },
-]
+export const initialCandidates: Candidate[] = []
 
 /**
  * Deterministically computes a realistic score for benchmark cohort profiles

@@ -195,6 +195,7 @@ public class OpportunityLogic(OpportunityActions actions) : IOpportunityLogic
         DurationCategory = o.DurationCategory,
         Field = o.Field,
         Technologies = o.Technologies,
+        Requirements = o.Requirements,
         Tags = o.Tags,
         Deadline = o.Deadline,
         CreatedAt = o.CreatedAt,
