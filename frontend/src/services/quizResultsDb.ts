@@ -59,6 +59,69 @@ const API_URL = '/api/quiz-results'
 // Real Team Benchmark Dataset
 export const TEAM_SEED_ATTEMPTS: UserQuizAttempt[] = [
   {
+    id: 'att-daniel-test-1',
+    userId: 'd8f070b8-1597-45cf-b276-fce7d00f6582',
+    userName: 'Daniel',
+    userEmail: 'dan1@gmail.com',
+    quizId: 'custom-test-6ffe4a',
+    quizTitle: 'Test',
+    category: 'FRONTEND',
+    difficulty: 'MEDIUM',
+    score: 1,
+    totalQuestions: 1,
+    percentage: 100,
+    passingScore: 70,
+    status: 'PASSED',
+    timeSpentSeconds: 45,
+    timeSpentFormatted: '0m 45s',
+    isFlagged: false,
+    completedAt: new Date(Date.now() - 1000 * 60 * 5).toISOString(),
+    cohortWeek: 8,
+    missedTopics: [],
+  },
+  {
+    id: 'att-daniel-test-2',
+    userId: 'd8f070b8-1597-45cf-b276-fce7d00f6582',
+    userName: 'Daniel',
+    userEmail: 'dan1@gmail.com',
+    quizId: 'custom-test-2-e9993e',
+    quizTitle: 'Test 2',
+    category: 'FRONTEND',
+    difficulty: 'MEDIUM',
+    score: 1,
+    totalQuestions: 1,
+    percentage: 100,
+    passingScore: 70,
+    status: 'PASSED',
+    timeSpentSeconds: 30,
+    timeSpentFormatted: '0m 30s',
+    isFlagged: false,
+    completedAt: new Date(Date.now() - 1000 * 60 * 4).toISOString(),
+    cohortWeek: 8,
+    missedTopics: [],
+  },
+  {
+    id: 'att-daniel-test-3',
+    userId: 'd8f070b8-1597-45cf-b276-fce7d00f6582',
+    userName: 'Daniel',
+    userEmail: 'dan1@gmail.com',
+    quizId: 'custom-test-3-e33917',
+    quizTitle: 'Test 3',
+    category: 'FRONTEND',
+    difficulty: 'MEDIUM',
+    score: 1,
+    totalQuestions: 1,
+    percentage: 100,
+    passingScore: 70,
+    status: 'PASSED',
+    timeSpentSeconds: 25,
+    timeSpentFormatted: '0m 25s',
+    isFlagged: false,
+    completedAt: new Date(Date.now() - 1000 * 60 * 3).toISOString(),
+    cohortWeek: 8,
+    missedTopics: [],
+  },
+  {
     id: 'att-team-1',
     userId: 'user-daniel-botan',
     userName: 'Daniel Botan',
@@ -419,7 +482,21 @@ export function getQuizAttempts(): UserQuizAttempt[] {
           return merged
         }
 
-        if (idMigrated) {
+        // Ensure any seed attempt not yet in parsed is merged
+        const existingAttemptKeys = new Set(
+          parsed.map((a) => `${(a.userEmail || '').toLowerCase()}_${(a.quizId || '').toLowerCase()}`)
+        )
+        let hasNewSeed = false
+        TEAM_SEED_ATTEMPTS.forEach((seed) => {
+          const key = `${(seed.userEmail || '').toLowerCase()}_${(seed.quizId || '').toLowerCase()}`
+          if (!existingAttemptKeys.has(key)) {
+            parsed.unshift(seed)
+            existingAttemptKeys.add(key)
+            hasNewSeed = true
+          }
+        })
+
+        if (idMigrated || hasNewSeed) {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed))
         }
 

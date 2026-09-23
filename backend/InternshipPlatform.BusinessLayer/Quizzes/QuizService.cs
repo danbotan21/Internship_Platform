@@ -422,6 +422,37 @@ public class QuizService : IQuizService
         return $"{m}m {s:D2}s";
     }
 
+    private static List<QuizQuestionDto> MapQuestions(ICollection<QuizQuestion> questions)
+    {
+        return questions
+            .OrderBy(q => q.OrderIndex)
+            .Select(q =>
+            {
+                List<QuizOptionDto> options = new();
+                if (!string.IsNullOrWhiteSpace(q.OptionsJson))
+                {
+                    try
+                    {
+                        options = JsonSerializer.Deserialize<List<QuizOptionDto>>(q.OptionsJson, _jsonOptions) ?? new();
+                    }
+                    catch { }
+                }
+
+                return new QuizQuestionDto
+                {
+                    Id = q.Id,
+                    NumberLabel = q.NumberLabel,
+                    Category = q.Category,
+                    QuestionText = q.QuestionText,
+                    Hint = q.Hint,
+                    CorrectOptionId = q.CorrectOptionId,
+                    OrderIndex = q.OrderIndex,
+                    Options = options
+                };
+            })
+            .ToList();
+    }
+
     private static QuizDto MapToDto(Quiz quiz)
     {
         return new QuizDto
@@ -437,7 +468,8 @@ public class QuizService : IQuizService
             Difficulty = quiz.Difficulty,
             IsCustom = quiz.IsCustom,
             MentorId = quiz.MentorId,
-            CreatedAt = quiz.CreatedAt
+            CreatedAt = quiz.CreatedAt,
+            Questions = MapQuestions(quiz.Questions)
         };
     }
 
@@ -457,33 +489,7 @@ public class QuizService : IQuizService
             IsCustom = quiz.IsCustom,
             MentorId = quiz.MentorId,
             CreatedAt = quiz.CreatedAt,
-            Questions = quiz.Questions
-                .OrderBy(q => q.OrderIndex)
-                .Select(q =>
-                {
-                    List<QuizOptionDto> options = new();
-                    if (!string.IsNullOrWhiteSpace(q.OptionsJson))
-                    {
-                        try
-                        {
-                            options = JsonSerializer.Deserialize<List<QuizOptionDto>>(q.OptionsJson, _jsonOptions) ?? new();
-                        }
-                        catch { }
-                    }
-
-                    return new QuizQuestionDto
-                    {
-                        Id = q.Id,
-                        NumberLabel = q.NumberLabel,
-                        Category = q.Category,
-                        QuestionText = q.QuestionText,
-                        Hint = q.Hint,
-                        CorrectOptionId = q.CorrectOptionId,
-                        OrderIndex = q.OrderIndex,
-                        Options = options
-                    };
-                })
-                .ToList()
+            Questions = MapQuestions(quiz.Questions)
         };
 
         return dto;

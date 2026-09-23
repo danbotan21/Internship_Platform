@@ -24,6 +24,7 @@ import Reports from '../pages/Reports'
 import Resources from '../pages/Resources'
 import ResourceDetails from '../pages/ResourceDetails'
 import Skills from '../pages/Skills'
+import SkillMatch from '../pages/SkillMatch'
 import Tasks from '../pages/Tasks'
 import PagePlaceholder from '../components/PagePlaceholder'
 import RequireAdmin from '../components/admin/RequireAdmin'
@@ -64,6 +65,7 @@ export default function AppRoutes() {
         <Route path='/resources/:resourceSlug' element={<ResourceDetails />} />
         <Route path='/documentation' element={<DocumentationPage />} />
         <Route path='/skills' element={<Skills />} />
+        <Route path='/skill-match' element={<SkillMatch />} />
         <Route path='/audit-log' element={<AuditLog />} />
       </Route>
 

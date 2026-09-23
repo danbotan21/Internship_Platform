@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Camera,
   Mic,
@@ -21,6 +21,22 @@ import {
   formatDuration,
 } from '../../services/quizResultsDb'
 import fixWebmDuration from 'fix-webm-duration'
+import { fetchQuizByIdOrSlug } from '../../api/quizzes'
+
+const DEFAULT_FALLBACK_QUESTION: QuizQuestion = {
+  id: 'q-custom-default-1',
+  numberLabel: 'Q01',
+  category: 'TYPESCRIPT',
+  question: 'Which TypeScript utility type constructs a type with all properties of T set to optional?',
+  hint: 'Think about the utility keyword that makes every property non-mandatory.',
+  correctOptionId: 'a',
+  options: [
+    { id: 'a', label: 'A', text: 'Partial<T>' },
+    { id: 'b', label: 'B', text: 'Required<T>' },
+    { id: 'c', label: 'C', text: 'Readonly<T>' },
+    { id: 'd', label: 'D', text: 'Pick<T, K>' },
+  ],
+}
 
 interface QuizActiveProps {
   quiz: QuizCatalogItem
@@ -88,6 +104,19 @@ export default function QuizActive({
   }, [isSubmitted])
 
   const [isCompromised, setIsCompromised] = useState<boolean>(Boolean(isReloadViolation))
+
+  // Multi-monitor detection
+  const [isMultiMonitor] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false
+    const scr = window.screen as unknown as { isExtended?: boolean; availLeft?: number; availTop?: number }
+    if (typeof scr?.isExtended === 'boolean') {
+      return scr.isExtended
+    }
+    if (typeof scr?.availLeft === 'number' && scr.availLeft !== 0) return true
+    if (typeof scr?.availTop === 'number' && scr.availTop !== 0) return true
+    if (window.screenLeft > window.screen.width || window.screenTop > window.screen.height) return true
+    return false
+  })
 
   // Anti-cheat activation state: active once valid screen sharing is confirmed
   const [isAntiCheatActive, setIsAntiCheatActive] = useState(false)
@@ -221,7 +250,50 @@ export default function QuizActive({
   // Video PiP ref for webcam
   const videoPipRef = useRef<HTMLVideoElement | null>(null)
 
-  const questions: QuizQuestion[] = useMemo(() => quiz.questions || [], [quiz.questions])
+  const [activeQuestions, setActiveQuestions] = useState<QuizQuestion[]>(() => {
+    if (quiz.questions && quiz.questions.length > 0) return quiz.questions
+    if (quiz.id.startsWith('custom-') || quiz.title.toLowerCase().startsWith('test')) {
+      return [DEFAULT_FALLBACK_QUESTION]
+    }
+    return []
+  })
+
+  useEffect(() => {
+    if (quiz.questions && quiz.questions.length > 0) {
+      setActiveQuestions(quiz.questions)
+      return
+    }
+
+    fetchQuizByIdOrSlug(quiz.id)
+      .then((detail) => {
+        if (detail && Array.isArray(detail.questions) && detail.questions.length > 0) {
+          setActiveQuestions(
+            detail.questions.map((q) => ({
+              id: q.id,
+              numberLabel: q.numberLabel,
+              category: q.category,
+              question: q.questionText,
+              hint: q.hint,
+              correctOptionId: q.correctOptionId,
+              options: q.options.map((opt) => ({
+                id: opt.id,
+                label: opt.label as any,
+                text: opt.text,
+              })),
+            }))
+          )
+        } else if (quiz.id.startsWith('custom-') || quiz.title.toLowerCase().startsWith('test')) {
+          setActiveQuestions([DEFAULT_FALLBACK_QUESTION])
+        }
+      })
+      .catch(() => {
+        if (quiz.id.startsWith('custom-') || quiz.title.toLowerCase().startsWith('test')) {
+          setActiveQuestions([DEFAULT_FALLBACK_QUESTION])
+        }
+      })
+  }, [quiz.id, quiz.questions, quiz.title])
+
+  const questions: QuizQuestion[] = activeQuestions
 
 // Helper pentru determinarea formatului video optim (prioritizând MP4 H.264/AAC pentru compatibilitate nativă Windows)
 const getSupportedMimeTypeAndExt = (): { mimeType: string; ext: 'mp4' | 'webm' } => {
@@ -776,7 +848,7 @@ const getSupportedMimeTypeAndExt = (): { mimeType: string; ext: 'mp4' | 'webm' }
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden' && !isSubmittedRef.current && isWarmupCompleteRef.current) {
-        recordViolation('TAB_SWITCH', 'Tab switch or minimized window detected')
+        recordViolation('TAB_SWITCH', 'Părăsire tab sau minimizare fereastră detectată (Tab Switch)')
       }
     }
 
@@ -784,7 +856,7 @@ const getSupportedMimeTypeAndExt = (): { mimeType: string; ext: 'mp4' | 'webm' }
       if (!isSubmittedRef.current && isWarmupCompleteRef.current) {
         recordViolation(
           'WINDOW_BLUR',
-          'Window focus lost (switched application or secondary monitor)'
+          'Ai părăsit fereastra testului sau ai făcut click pe al doilea monitor (Window Blur)!'
         )
       }
     }
@@ -926,6 +998,14 @@ const getSupportedMimeTypeAndExt = (): { mimeType: string; ext: 'mp4' | 'webm' }
             </div>
           )}
 
+          {/* Dual monitor protected badge */}
+          {isMultiMonitor && (
+            <div className="flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold tracking-wider text-blue-800 uppercase">
+              <Monitor className="h-3.5 w-3.5 text-blue-600" />
+              <span>DUAL SCREEN MONITORED</span>
+            </div>
+          )}
+
           {/* Violations counter chip if any */}
           {violations.length > 0 && (
             <div className="flex items-center gap-1 rounded-md border border-red-200 bg-red-100 px-2.5 py-1 text-xs font-bold text-red-700">
@@ -953,99 +1033,111 @@ const getSupportedMimeTypeAndExt = (): { mimeType: string; ext: 'mp4' | 'webm' }
 
       {/* Questions list */}
       <div className="space-y-6">
-        {questions.map((question) => {
-          const selectedOptionId = answers[question.id]
-          const isHintOpen = activeHints[question.id]
+        {questions.length === 0 ? (
+          <div className="rounded-2xl border border-gray-200/80 bg-white p-8 text-center shadow-xs">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 text-amber-600 mb-3 border border-amber-200">
+              <TriangleAlert className="h-6 w-6" />
+            </div>
+            <h3 className="text-base font-bold text-gray-900">Se încarcă întrebările testului...</h3>
+            <p className="mt-1 text-xs text-gray-500 max-w-sm mx-auto">
+              Te rugăm să aștepți câteva momente pentru inițializarea întrebărilor acestui test.
+            </p>
+          </div>
+        ) : (
+          questions.map((question) => {
+            const selectedOptionId = answers[question.id]
+            const isHintOpen = activeHints[question.id]
 
-          return (
-            <div
-              key={question.id}
-              className="rounded-2xl border border-gray-200/80 bg-white p-6 md:p-7 shadow-xs transition-shadow hover:shadow-sm"
-            >
-              {/* Question Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <span className="font-mono text-xs font-bold text-gray-400">
-                    {question.numberLabel}
-                  </span>
-                  <span className="rounded border border-gray-200/60 bg-gray-100 px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-gray-600 uppercase">
-                    {question.category}
-                  </span>
-                </div>
-
-                {question.hint && (
-                  <button
-                    type="button"
-                    onClick={() => toggleHint(question.id)}
-                    className="rounded border border-gray-200/90 px-2.5 py-0.5 text-xs font-semibold tracking-wider text-gray-400 transition-colors hover:border-gray-400 hover:text-gray-700 cursor-pointer uppercase"
-                  >
-                    HINT
-                  </button>
-                )}
-              </div>
-
-              {/* Hint Callout */}
-              {isHintOpen && question.hint && (
-                <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-amber-200/80 bg-amber-50/60 p-3 text-xs text-amber-900 animate-in fade-in">
-                  <Lightbulb className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
-                  <div>
-                    <span className="font-bold">Hint: </span>
-                    {question.hint}
+            return (
+              <div
+                key={question.id}
+                className="rounded-2xl border border-gray-200/80 bg-white p-6 md:p-7 shadow-xs transition-shadow hover:shadow-sm"
+              >
+                {/* Question Header */}
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <span className="font-mono text-xs font-bold text-gray-400">
+                      {question.numberLabel}
+                    </span>
+                    <span className="rounded border border-gray-200/60 bg-gray-100 px-2.5 py-0.5 text-[10px] font-semibold tracking-wider text-gray-600 uppercase">
+                      {question.category}
+                    </span>
                   </div>
-                </div>
-              )}
 
-              {/* Question text */}
-              <h2 className="mt-3.5 mb-5 text-base font-semibold text-gray-900 md:text-lg">
-                {question.question}
-              </h2>
-
-              {/* Option choices */}
-              <div className="space-y-2.5">
-                {question.options.map((option) => {
-                  const isSelected = selectedOptionId === option.id
-
-                  return (
-                    <div
-                      key={option.id}
-                      role="radio"
-                      aria-checked={isSelected}
-                      tabIndex={0}
-                      onClick={() => handleSelectOption(question.id, option.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault()
-                          handleSelectOption(question.id, option.id)
-                        }
-                      }}
-                      className={`group flex items-center gap-3.5 rounded-xl border p-3.5 transition-all cursor-pointer ${
-                        isSelected
-                          ? 'border-[#1e3a2c] bg-emerald-50/20 text-[#1e3a2c] ring-1 ring-[#1e3a2c]'
-                          : 'border-gray-200/90 bg-white hover:border-gray-300 hover:bg-gray-50/50'
-                      }`}
+                  {question.hint && (
+                    <button
+                      type="button"
+                      onClick={() => toggleHint(question.id)}
+                      className="rounded border border-gray-200/90 px-2.5 py-0.5 text-xs font-semibold tracking-wider text-gray-400 transition-colors hover:border-gray-400 hover:text-gray-700 cursor-pointer uppercase"
                     >
-                      {/* Option letter circle badge */}
-                      <span
-                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors ${
+                      HINT
+                    </button>
+                  )}
+                </div>
+
+                {/* Hint Callout */}
+                {isHintOpen && question.hint && (
+                  <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-amber-200/80 bg-amber-50/60 p-3 text-xs text-amber-900 animate-in fade-in">
+                    <Lightbulb className="h-4 w-4 shrink-0 text-amber-600 mt-0.5" />
+                    <div>
+                      <span className="font-bold">Hint: </span>
+                      {question.hint}
+                    </div>
+                  </div>
+                )}
+
+                {/* Question text */}
+                <h2 className="mt-3.5 mb-5 text-base font-semibold text-gray-900 md:text-lg">
+                  {question.question}
+                </h2>
+
+                {/* Option choices */}
+                <div className="space-y-2.5">
+                  {question.options.map((option) => {
+                    const isSelected = selectedOptionId === option.id
+
+                    return (
+                      <div
+                        key={option.id}
+                        role="radio"
+                        aria-checked={isSelected}
+                        tabIndex={0}
+                        onClick={() => handleSelectOption(question.id, option.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault()
+                            handleSelectOption(question.id, option.id)
+                          }
+                        }}
+                        className={`group flex items-center gap-3.5 rounded-xl border p-3.5 transition-all cursor-pointer ${
                           isSelected
-                            ? 'border-[#1e3a2c] bg-[#1e3a2c] text-white'
-                            : 'border-gray-300 text-gray-400 group-hover:border-gray-400 group-hover:text-gray-600'
+                            ? 'border-[#1e3a2c] bg-emerald-50/20 text-[#1e3a2c] ring-1 ring-[#1e3a2c]'
+                            : 'border-gray-200/90 bg-white hover:border-gray-300 hover:bg-gray-50/50'
                         }`}
                       >
-                        {option.label}
-                      </span>
+                        {/* Option letter circle badge */}
+                        <span
+                          className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-xs font-semibold transition-colors ${
+                            isSelected
+                              ? 'border-[#1e3a2c] bg-[#1e3a2c] text-white'
+                              : 'border-gray-300 text-gray-400 group-hover:border-gray-400 group-hover:text-gray-600'
+                          }`}
+                        >
+                          {option.label}
+                        </span>
 
-                      {/* Option text */}
-                      <span className="text-sm font-medium text-gray-800">
-                        {option.text}
-                      </span>
-                    </div>
-                  )
-                })}
+                        {/* Option text */}
+                        <span className="text-sm font-medium text-gray-800">
+                          {option.text}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
-          )
-        })}
+            )
+          })
+        )}
       </div>
 
       {/* Bottom Submit Action */}
@@ -1053,7 +1145,8 @@ const getSupportedMimeTypeAndExt = (): { mimeType: string; ext: 'mp4' | 'webm' }
         <button
           type="button"
           onClick={handleSubmit}
-          className="rounded-xl bg-[#1e3a2c] px-9 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#162c21] hover:shadow-md active:scale-98 cursor-pointer"
+          disabled={questions.length === 0}
+          className="rounded-xl bg-[#1e3a2c] px-9 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#162c21] hover:shadow-md active:scale-98 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Submit
         </button>

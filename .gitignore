@@ -63,4 +63,13 @@ backend/InternshipPlatform.API/App_Data/
 .dotnet/
 **/.dotnet/
 
+# Temporary quiz video recordings and metadata
+recorded-sessions/
+*.mp4
+*.webm
+
+# Uploaded documents and attachments
+backend/InternshipPlatform.API/uploads/
+uploads/
+
 

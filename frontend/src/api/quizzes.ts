@@ -1,4 +1,4 @@
-﻿import { apiGet, apiSend } from './client'
+import { apiGet, apiSend } from './client'
 import type { QuizDifficulty } from '../types/quiz'
 import type { AnalyticsSummary, UserQuizAttempt } from '../services/quizResultsDb'
 
@@ -15,6 +15,7 @@ export interface QuizDto {
   isCustom: boolean
   mentorId?: string | null
   createdAt: string
+  questions?: QuizQuestionDto[]
 }
 
 export interface QuizQuestionOptionDto {

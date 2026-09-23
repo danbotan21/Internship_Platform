@@ -1,4 +1,4 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 using InternshipPlatform.Domain.Enums;
 
 namespace InternshipPlatform.BusinessLayer.Quizzes;
@@ -17,11 +17,12 @@ public class QuizDto
     public bool IsCustom { get; set; }
     public Guid? MentorId { get; set; }
     public DateTime CreatedAt { get; set; }
+    public List<QuizQuestionDto>? Questions { get; set; }
 }
 
 public class QuizDetailDto : QuizDto
 {
-    public List<QuizQuestionDto> Questions { get; set; } = new();
+    public new List<QuizQuestionDto> Questions { get; set; } = new();
 }
 
 public class QuizOptionDto
