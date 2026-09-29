@@ -3,12 +3,10 @@ import { createPortal } from 'react-dom'
 import {
   Sparkles,
   X,
-  Key,
-  Eye,
-  EyeOff,
   AlertCircle,
   HelpCircle,
   Wand2,
+  CheckCircle2,
   Sliders,
   Layers,
   BookOpen,
@@ -16,8 +14,7 @@ import {
 } from 'lucide-react'
 import {
   generateQuizWithGemini,
-  getStoredGeminiKey,
-  saveStoredGeminiKey,
+  isGeminiConfigured,
   type GeneratedQuizResult,
 } from '../../services/aiQuizGenerator'
 
@@ -46,8 +43,6 @@ export default function AiQuizGeneratorModal({
   currentTopic = '',
   currentCategory = 'BACKEND',
 }: AiQuizGeneratorModalProps) {
-  const [apiKey, setApiKey] = useState('')
-  const [showKey, setShowKey] = useState(false)
   const [topic, setTopic] = useState(currentTopic)
   const [category, setCategory] = useState(currentCategory || 'BACKEND')
   const [difficulty, setDifficulty] = useState<'EASY' | 'MEDIUM' | 'HARD'>('MEDIUM')
@@ -56,10 +51,10 @@ export default function AiQuizGeneratorModal({
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const isConfigured = isGeminiConfigured()
+
   useEffect(() => {
     if (isOpen) {
-      const stored = getStoredGeminiKey()
-      if (stored) setApiKey(stored)
       if (currentTopic && !topic) setTopic(currentTopic)
       if (currentCategory) setCategory(currentCategory)
       setError(null)
@@ -72,13 +67,15 @@ export default function AiQuizGeneratorModal({
     e.preventDefault()
     setError(null)
 
-    if (!apiKey.trim()) {
-      setError('Please enter your Gemini API key.')
+    if (!isConfigured) {
+      setError(
+        'VITE_GEMINI_API_KEY nu este setat în frontend/.env. Te rugăm să adaugi cheia în fișierul .env și să repornești serverul Vite.'
+      )
       return
     }
 
     if (!topic.trim()) {
-      setError('Please specify a quiz title or topic.')
+      setError('Te rugăm să introduci un titlu sau subiect pentru quiz.')
       return
     }
 
@@ -86,7 +83,6 @@ export default function AiQuizGeneratorModal({
 
     try {
       const result = await generateQuizWithGemini({
-        apiKey: apiKey.trim(),
         topic: topic.trim(),
         category,
         difficulty,
@@ -94,12 +90,11 @@ export default function AiQuizGeneratorModal({
         instructions: instructions.trim() || undefined,
       })
 
-      saveStoredGeminiKey(apiKey.trim())
       onSuccess(result)
       onClose()
     } catch (err: any) {
       console.error('Failed to generate quiz:', err)
-      setError(err?.message || 'An error occurred while generating the quiz with Gemini.')
+      setError(err?.message || 'A apărut o eroare la generarea quiz-ului cu Gemini AI.')
     } finally {
       setIsLoading(false)
     }
@@ -131,13 +126,26 @@ export default function AiQuizGeneratorModal({
               <Sparkles className="h-6 w-6 text-yellow-300 animate-pulse" />
             </div>
             <div>
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-[11px] font-semibold text-purple-100 mb-1 border border-white/20">
-                <Wand2 className="h-3 w-3" />
-                Powered by Google Gemini
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/15 text-[11px] font-semibold text-purple-100 border border-white/20">
+                  <Wand2 className="h-3 w-3" />
+                  Powered by Google Gemini
+                </span>
+                {isConfigured ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-400/20 text-[11px] font-semibold text-emerald-200 border border-emerald-400/30">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-300" />
+                    Key loaded from .env
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-400/20 text-[11px] font-semibold text-amber-200 border border-amber-400/30">
+                    <AlertCircle className="h-3 w-3 text-amber-300" />
+                    No key in .env
+                  </span>
+                )}
               </div>
               <h2 className="text-xl font-bold font-serif tracking-tight">AI Quiz Generator</h2>
               <p className="text-xs text-white/80 mt-0.5">
-                Automatically generate questions, options, answers, and educational hints.
+                Generează automat întrebări, variante de răspuns, explicații și indicii didactice (hints).
               </p>
             </div>
           </div>
@@ -145,60 +153,36 @@ export default function AiQuizGeneratorModal({
 
         {/* Form Body */}
         <form onSubmit={handleGenerate} className="p-6 space-y-5">
+          {!isConfigured && (
+            <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-amber-900 text-xs shadow-xs animate-in fade-in">
+              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold">Cheia Gemini API lipsește din .env</p>
+                <p className="mt-0.5 text-amber-800 leading-relaxed">
+                  Pentru a folosi generatorul, adaugă linia:{' '}
+                  <code className="bg-amber-100/80 px-1.5 py-0.5 rounded font-mono text-[11px] font-bold text-amber-950">
+                    VITE_GEMINI_API_KEY=cheia_ta_aici
+                  </code>{' '}
+                  în fișierul <code className="font-bold">frontend/.env</code> și repornește serverul Vite (<code className="font-bold">npm run dev</code>).
+                </p>
+              </div>
+            </div>
+          )}
+
           {error && (
             <div className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-rose-900 text-xs shadow-xs animate-in fade-in">
               <AlertCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-bold">Generation Failed</p>
+                <p className="font-bold">Eroare la generare</p>
                 <p className="mt-0.5 text-rose-700 leading-relaxed">{error}</p>
               </div>
             </div>
           )}
 
-          {/* Gemini API Key */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
-                <Key className="h-3.5 w-3.5 text-purple-600" />
-                Gemini API Key
-              </label>
-              <a
-                href="https://aistudio.google.com/app/apikey"
-                target="_blank"
-                rel="noreferrer"
-                className="text-[11px] text-purple-600 hover:text-purple-800 font-medium underline flex items-center gap-1"
-              >
-                Get free API key
-              </a>
-            </div>
-            <div className="relative">
-              <input
-                type={showKey ? 'text' : 'password'}
-                required
-                disabled={isLoading}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3.5 py-2.5 text-xs text-gray-900 outline-none focus:border-purple-600 focus:bg-white focus:ring-2 focus:ring-purple-600/10 font-mono transition-all pr-10"
-              />
-              <button
-                type="button"
-                onClick={() => setShowKey(!showKey)}
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 cursor-pointer"
-                title={showKey ? 'Hide key' : 'Show key'}
-              >
-                {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            <p className="text-[11px] text-gray-400 mt-1">
-              Your key is saved locally in your browser and used only to communicate directly with Gemini.
-            </p>
-          </div>
-
           {/* Quiz Topic / Title */}
           <div>
             <label className="block text-xs font-bold text-gray-800 mb-1.5">
-              Quiz Title / Topic <span className="text-rose-500">*</span>
+              Titlu sau Subiect Quiz <span className="text-rose-500">*</span>
             </label>
             <input
               type="text"
@@ -206,7 +190,7 @@ export default function AiQuizGeneratorModal({
               disabled={isLoading}
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              placeholder="e.g. ASP.NET Core Dependency Injection & LINQ"
+              placeholder="ex: C# ASP.NET Core Web API, Docker Containers, React Hooks..."
               className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-xs text-gray-900 font-semibold outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10 transition-all placeholder:text-gray-400 placeholder:font-normal"
             />
           </div>
@@ -216,13 +200,13 @@ export default function AiQuizGeneratorModal({
             <div>
               <label className="block text-xs font-bold text-gray-800 mb-1.5 flex items-center gap-1.5">
                 <Layers className="h-3.5 w-3.5 text-gray-500" />
-                Category
+                Categorie
               </label>
               <select
                 disabled={isLoading}
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs font-medium text-gray-800 outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10 cursor-pointer transition-all"
+                className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-xs text-gray-900 outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10 transition-all cursor-pointer font-medium"
               >
                 {CATEGORIES.map((cat) => (
                   <option key={cat.value} value={cat.value}>
@@ -235,70 +219,77 @@ export default function AiQuizGeneratorModal({
             <div>
               <label className="block text-xs font-bold text-gray-800 mb-1.5 flex items-center gap-1.5">
                 <Sliders className="h-3.5 w-3.5 text-gray-500" />
-                Difficulty
+                Dificultate
               </label>
-              <div className="grid grid-cols-3 gap-1.5 p-1 bg-gray-100 rounded-xl">
-                {(['EASY', 'MEDIUM', 'HARD'] as const).map((diff) => (
+              <div className="grid grid-cols-3 gap-1.5">
+                {(['EASY', 'MEDIUM', 'HARD'] as const).map((lvl) => (
                   <button
-                    key={diff}
+                    key={lvl}
                     type="button"
                     disabled={isLoading}
-                    onClick={() => setDifficulty(diff)}
-                    className={`py-1.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
-                      difficulty === diff
-                        ? 'bg-white text-purple-700 shadow-xs'
-                        : 'text-gray-600 hover:text-gray-900'
+                    onClick={() => setDifficulty(lvl)}
+                    className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
+                      difficulty === lvl
+                        ? lvl === 'EASY'
+                          ? 'bg-emerald-50 border-emerald-500 text-emerald-700'
+                          : lvl === 'MEDIUM'
+                          ? 'bg-amber-50 border-amber-500 text-amber-700'
+                          : 'bg-rose-50 border-rose-500 text-rose-700'
+                        : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    {diff === 'EASY' ? 'Junior' : diff === 'MEDIUM' ? 'Mid' : 'Senior'}
+                    {lvl === 'EASY' ? 'Junior' : lvl === 'MEDIUM' ? 'Mid' : 'Senior'}
                   </button>
                 ))}
               </div>
             </div>
           </div>
 
-          {/* Number of Questions */}
+          {/* Question Count Selection */}
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
                 <BookOpen className="h-3.5 w-3.5 text-gray-500" />
-                Number of Questions
+                Număr de Întrebări
               </label>
-              <span className="text-xs font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
-                {questionCount} questions
+              <span className="text-[11px] text-gray-500">
+                Timp estimat: ~{Math.max(10, questionCount * 2)} min
               </span>
             </div>
             <div className="grid grid-cols-4 gap-2">
-              {[3, 5, 8, 10].map((count) => (
+              {[3, 5, 8, 10].map((num) => (
                 <button
-                  key={count}
+                  key={num}
                   type="button"
                   disabled={isLoading}
-                  onClick={() => setQuestionCount(count)}
+                  onClick={() => setQuestionCount(num)}
                   className={`py-2 text-xs font-bold rounded-xl border transition-all cursor-pointer ${
-                    questionCount === count
-                      ? 'border-purple-600 bg-purple-50/70 text-purple-800 shadow-2xs'
-                      : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    questionCount === num
+                      ? 'border-purple-600 bg-purple-50 text-purple-700 ring-2 ring-purple-600/20'
+                      : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'
                   }`}
                 >
-                  {count} Questions
+                  {num} întrebări
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Custom Focus / Specific Requirements */}
+          {/* Optional Prompt Instructions */}
           <div>
-            <label className="block text-xs font-bold text-gray-800 mb-1.5 flex items-center gap-1.5">
-              <HelpCircle className="h-3.5 w-3.5 text-gray-500" />
-              Special Instructions / Focus Area (Optional)
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                <HelpCircle className="h-3.5 w-3.5 text-gray-500" />
+                Instrucțiuni Specifice (Opțional)
+              </label>
+              <span className="text-[11px] text-gray-400">ex: focus pe scenarii practice</span>
+            </div>
             <textarea
               rows={2}
               disabled={isLoading}
               value={instructions}
               onChange={(e) => setInstructions(e.target.value)}
-              placeholder="e.g. Focus on practical code scenarios, async/await edge cases, and include tricky distractors."
+              placeholder="ex: Pune accent pe scenarii de producție, cazuri limită de performanță sau capcane comune de sintaxă."
               className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2 text-xs text-gray-900 outline-none focus:border-purple-600 focus:ring-2 focus:ring-purple-600/10 transition-all placeholder:text-gray-400 resize-none"
             />
           </div>
@@ -311,23 +302,23 @@ export default function AiQuizGeneratorModal({
               onClick={onClose}
               className="px-4 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors cursor-pointer disabled:opacity-50"
             >
-              Cancel
+              Anulează
             </button>
 
             <button
               type="submit"
-              disabled={isLoading || !topic.trim() || !apiKey.trim()}
+              disabled={isLoading || !topic.trim() || !isConfigured}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-600 hover:from-purple-700 hover:to-emerald-700 px-5 py-2.5 text-xs font-bold text-white shadow-md transition-all cursor-pointer hover:shadow-lg active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isLoading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin text-white" />
-                  <span>Generating with Gemini...</span>
+                  <span>Se generează cu Gemini...</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="h-4 w-4 text-yellow-300" />
-                  <span>Generate Quiz</span>
+                  <span>Generează Quiz</span>
                 </>
               )}
             </button>

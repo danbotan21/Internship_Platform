@@ -1,5 +1,5 @@
 export interface GenerateQuizParams {
-  apiKey: string
+  apiKey?: string
   topic: string
   category: string
   difficulty: 'EASY' | 'MEDIUM' | 'HARD'
@@ -36,12 +36,22 @@ export interface GeneratedQuizResult {
 
 const STORAGE_KEY_GEMINI_KEY = 'internflow_gemini_api_key'
 
-export function getStoredGeminiKey(): string {
+export function getGeminiApiKey(): string {
+  const envKey = (import.meta.env.VITE_GEMINI_API_KEY as string | undefined)?.trim()
+  if (envKey) return envKey
   try {
-    return localStorage.getItem(STORAGE_KEY_GEMINI_KEY) || ''
+    return localStorage.getItem(STORAGE_KEY_GEMINI_KEY)?.trim() || ''
   } catch {
     return ''
   }
+}
+
+export function isGeminiConfigured(): boolean {
+  return Boolean(getGeminiApiKey())
+}
+
+export function getStoredGeminiKey(): string {
+  return getGeminiApiKey()
 }
 
 export function saveStoredGeminiKey(key: string): void {
@@ -57,9 +67,11 @@ export function saveStoredGeminiKey(key: string): void {
 export async function generateQuizWithGemini(
   params: GenerateQuizParams
 ): Promise<GeneratedQuizResult> {
-  const cleanKey = params.apiKey.trim()
+  const cleanKey = (params.apiKey || getGeminiApiKey()).trim()
   if (!cleanKey) {
-    throw new Error('Please provide a valid Gemini API key.')
+    throw new Error(
+      'Gemini API Key is not configured. Please set VITE_GEMINI_API_KEY in frontend/.env and restart the Vite server.'
+    )
   }
 
   const prompt = `You are a principal software engineer and expert technical assessment author creating an internship evaluation quiz.
