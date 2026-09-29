@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   SquarePen,
   Eye,
@@ -15,8 +15,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
+  Sparkles,
 } from 'lucide-react'
 import type { QuizCatalogItem, QuizDifficulty, QuizQuestion, QuizOption } from '../../types/quiz'
+import AiQuizGeneratorModal from './AiQuizGeneratorModal'
+import type { GeneratedQuizResult } from '../../services/aiQuizGenerator'
 
 interface BuilderOption {
   id: string
@@ -39,6 +42,7 @@ interface QuestionBuilderProps {
   onCancel: () => void
   onSaveQuiz: (quiz: QuizCatalogItem) => void
   initialQuiz?: QuizCatalogItem | null
+  autoOpenAi?: boolean
 }
 
 const OPTION_LABELS: Array<'A' | 'B' | 'C' | 'D' | 'E' | 'F'> = ['A', 'B', 'C', 'D', 'E', 'F']
@@ -140,7 +144,7 @@ function convertFromCatalogQuestions(catalogQuestions?: QuizQuestion[]): Builder
   })
 }
 
-export default function QuestionBuilder({ onCancel, onSaveQuiz, initialQuiz }: QuestionBuilderProps) {
+export default function QuestionBuilder({ onCancel, onSaveQuiz, initialQuiz, autoOpenAi }: QuestionBuilderProps) {
   const initialThemeIndex = initialQuiz
     ? THEME_OPTIONS.findIndex((th) => th.iconBg === initialQuiz.theme?.iconBg)
     : 0
@@ -163,6 +167,13 @@ export default function QuestionBuilder({ onCancel, onSaveQuiz, initialQuiz }: Q
   const [activeQuestionIndex, setActiveQuestionIndex] = useState(0)
 
   // UI States
+  const [isAiModalOpen, setIsAiModalOpen] = useState(Boolean(autoOpenAi))
+
+  useEffect(() => {
+    if (autoOpenAi) {
+      setIsAiModalOpen(true)
+    }
+  }, [autoOpenAi])
   const [isParamsOpen, setIsParamsOpen] = useState(true)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [previewQuestionIndex, setPreviewQuestionIndex] = useState(0)
@@ -178,6 +189,19 @@ export default function QuestionBuilder({ onCancel, onSaveQuiz, initialQuiz }: Q
     setTimeout(() => {
       setToastMessage((current) => (current === msg ? null : current))
     }, 2500)
+  }
+
+  const handleAiQuizGenerated = (result: GeneratedQuizResult) => {
+    setTitle(result.title)
+    setDescription(result.description)
+    setCategory(result.category)
+    setDifficulty(result.difficulty)
+    setDurationMinutes(result.durationMinutes)
+    setPassingScore(result.passingScore)
+    setQuestions(result.questions)
+    setActiveQuestionIndex(0)
+    setIsParamsOpen(true)
+    showToast(`✨ Generated ${result.questions.length} questions with Gemini AI!`)
   }
 
   const activeQuestion = questions[activeQuestionIndex] || questions[0]
@@ -432,14 +456,26 @@ export default function QuestionBuilder({ onCancel, onSaveQuiz, initialQuiz }: Q
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => setIsParamsOpen((prev) => !prev)}
-          className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer self-start sm:self-auto"
-        >
-          <Settings className="h-4 w-4 text-gray-500" />
-          {isParamsOpen ? 'Hide Quiz Settings' : 'Edit Quiz Settings'}
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 self-start sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setIsAiModalOpen(true)}
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-emerald-700 hover:from-purple-700 hover:to-emerald-800 text-white px-4 py-2 text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer active:scale-95"
+            title="Generate a full quiz with questions, options, and hints using Google Gemini"
+          >
+            <Sparkles className="h-4 w-4 text-yellow-300 animate-pulse" />
+            <span>Generate with AI</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsParamsOpen((prev) => !prev)}
+            className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors cursor-pointer"
+          >
+            <Settings className="h-4 w-4 text-gray-500" />
+            {isParamsOpen ? 'Hide Quiz Settings' : 'Edit Quiz Settings'}
+          </button>
+        </div>
       </div>
 
       {/* Error alert */}
@@ -1108,6 +1144,15 @@ export default function QuestionBuilder({ onCancel, onSaveQuiz, initialQuiz }: Q
           </div>
         </div>
       )}
+
+      {/* AI Quiz Generator Modal */}
+      <AiQuizGeneratorModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        onSuccess={handleAiQuizGenerated}
+        currentTopic={title}
+        currentCategory={category}
+      />
     </div>
   )
 }

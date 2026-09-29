@@ -14,6 +14,7 @@ import {
   Award,
   RotateCcw,
   SearchX,
+  Sparkles,
 } from 'lucide-react'
 import { quizzesCatalog } from '../data/quizzesData'
 import QuizCard from '../components/quizzes/QuizCard'
@@ -501,6 +502,7 @@ export default function Quizzes() {
         initialQuiz={editingQuiz}
         onCancel={handleBackToCatalog}
         onSaveQuiz={handleSaveCustomQuiz}
+        autoOpenAi={searchParams.get('ai') === 'true'}
       />
     )
   }
@@ -569,17 +571,30 @@ export default function Quizzes() {
             </div>
 
             {activeTab === 'catalog' && (
-              <button
-                type="button"
-                onClick={() => {
-                  setEditingQuiz(null)
-                  setSearchParams({ view: 'custom' })
-                }}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#ff5500] hover:bg-[#e64d00] px-4 py-2 text-xs font-semibold text-white shadow-xs transition-colors cursor-pointer"
-              >
-                <SquarePen className="h-3.5 w-3.5" />
-                Create Quiz
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingQuiz(null)
+                    setSearchParams({ view: 'custom', ai: 'true' })
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 px-3.5 py-2 text-xs font-semibold text-white shadow-xs transition-all cursor-pointer hover:shadow-md hover:shadow-purple-500/20 active:scale-[0.98]"
+                >
+                  <Sparkles className="h-3.5 w-3.5 text-amber-300 animate-pulse" />
+                  Generate with AI
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditingQuiz(null)
+                    setSearchParams({ view: 'custom' })
+                  }}
+                  className="inline-flex items-center gap-2 rounded-xl bg-[#ff5500] hover:bg-[#e64d00] px-4 py-2 text-xs font-semibold text-white shadow-xs transition-colors cursor-pointer"
+                >
+                  <SquarePen className="h-3.5 w-3.5" />
+                  Create Quiz
+                </button>
+              </div>
             )}
           </div>
         )}
